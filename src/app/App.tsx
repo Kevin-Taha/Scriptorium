@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { ToastHost } from '@/components/Toast';
 import { LibraryView } from '@/features/library/LibraryView';
 import { ReaderScreen } from '@/features/reader/ReaderScreen';
 import { useRoute } from './router';
@@ -12,6 +13,14 @@ export function App() {
     void loadSettings();
   }, [loadSettings]);
 
-  if (route.name === 'library') return <LibraryView />;
-  return <ReaderScreen docId={route.docId} view={route.name} />;
+  return (
+    <>
+      {route.name === 'library' ? (
+        <LibraryView />
+      ) : (
+        <ReaderScreen docId={route.docId} view={route.name} />
+      )}
+      <ToastHost />
+    </>
+  );
 }
