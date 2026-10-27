@@ -139,21 +139,36 @@ export function nearestHit(
 
 export interface ShownGroup {
   result: PageResult;
-  /** How many of the page's matches are shown (always from the first). */
-  count: number;
+  /** The part of the page's matches that is shown: `matches.slice(start, end)`. */
+  start: number;
+  end: number;
 }
 
-/** The first `limit` matches, still grouped by page. */
-export function limitResults(results: readonly PageResult[], limit: number): ShownGroup[] {
+/** Positions `[from, to)` in the flat list of all matches. */
+export interface HitWindow {
+  from: number;
+  to: number;
+}
+
+/** The matches at flat positions `[from, to)`, still grouped by page. */
+export function windowResults(results: readonly PageResult[], { from, to }: HitWindow): ShownGroup[] {
   const groups: ShownGroup[] = [];
-  let remaining = limit;
+  let offset = 0;
   for (const result of results) {
-    if (remaining <= 0) break;
-    const count = Math.min(result.matches.length, remaining);
-    groups.push({ result, count });
-    remaining -= count;
+    if (offset >= to) break;
+    const end = offset + result.matches.length;
+    if (end > from) {
+      groups.push({ result, start: Math.max(from, offset) - offset, end: Math.min(to, end) - offset });
+    }
+    offset = end;
   }
   return groups;
+}
+
+/** A window of up to `size` matches with `center` in the middle, kept within `[0, total)`. */
+export function centredWindow(center: number, size: number, total: number): HitWindow {
+  const from = Math.min(Math.max(0, center - Math.floor(size / 2)), Math.max(0, total - size));
+  return { from, to: Math.min(total, from + size) };
 }
 
 // ------------------------------------------------------------------ status

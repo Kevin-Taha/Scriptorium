@@ -221,6 +221,10 @@
   margin: var(--space-3) var(--space-2) var(--space-1);
 }
 
+.search__more--earlier {
+  margin: var(--space-1) var(--space-2) var(--space-2);
+}
+
 /* ---- Empty states ------------------------------------------------------------ */
 .search__empty {
   padding: var(--space-6) var(--space-3);

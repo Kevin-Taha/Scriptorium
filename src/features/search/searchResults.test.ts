@@ -1,16 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { createMatcher, DEFAULT_OPTIONS } from './matcher';
 import {
+  centredWindow,
   countHits,
   flatIndexOf,
   formatStatus,
   hitAt,
-  limitResults,
   matchRects,
   matchTop,
   nearestHit,
   pageHighlights,
   searchPage,
+  windowResults,
   type PageResult,
 } from './searchResults';
 import { makePage } from './testPages';
@@ -80,19 +81,65 @@ describe('nearestHit', () => {
   });
 });
 
-describe('limitResults', () => {
-  it('keeps whole pages and trims the last one to the limit', () => {
-    expect(limitResults(FIXTURE, 3).map((g) => [g.result.page, g.count])).toEqual([
-      [2, 2],
-      [5, 1],
+describe('windowResults', () => {
+  const shape = (from: number, to: number) =>
+    windowResults(FIXTURE, { from, to }).map((g) => [g.result.page, g.start, g.end]);
+
+  // Flat positions: 0,1 → page 2; 2 → page 5; 3,4,5 → page 9.
+  it('starts at the first match and trims the last page to the window', () => {
+    expect(shape(0, 3)).toEqual([
+      [2, 0, 2],
+      [5, 0, 1],
     ]);
-    expect(limitResults(FIXTURE, 4).map((g) => [g.result.page, g.count])).toEqual([
-      [2, 2],
-      [5, 1],
-      [9, 1],
+    expect(shape(0, 4)).toEqual([
+      [2, 0, 2],
+      [5, 0, 1],
+      [9, 0, 1],
     ]);
-    expect(limitResults(FIXTURE, 100)).toHaveLength(3);
-    expect(limitResults(FIXTURE, 0)).toEqual([]);
+    expect(shape(0, 100)).toHaveLength(3);
+  });
+
+  it('can begin in the middle of a page and skip the pages before it', () => {
+    expect(shape(1, 4)).toEqual([
+      [2, 1, 2],
+      [5, 0, 1],
+      [9, 0, 1],
+    ]);
+    expect(shape(2, 6)).toEqual([
+      [5, 0, 1],
+      [9, 0, 3],
+    ]);
+    expect(shape(4, 5)).toEqual([[9, 1, 2]]);
+  });
+
+  it('is empty for an empty or out-of-range window', () => {
+    expect(shape(0, 0)).toEqual([]);
+    expect(shape(3, 3)).toEqual([]);
+    expect(shape(6, 9)).toEqual([]);
+    expect(windowResults([], { from: 0, to: 10 })).toEqual([]);
+  });
+});
+
+describe('centredWindow', () => {
+  it('puts the centre in the middle of the window', () => {
+    expect(centredWindow(500, 200, 10_000)).toEqual({ from: 400, to: 600 });
+    expect(centredWindow(5, 4, 100)).toEqual({ from: 3, to: 7 });
+  });
+
+  it('stays inside the list at both ends and keeps its size where it can', () => {
+    expect(centredWindow(10, 200, 10_000)).toEqual({ from: 0, to: 200 });
+    expect(centredWindow(9_999, 200, 10_000)).toEqual({ from: 9_800, to: 10_000 });
+    expect(centredWindow(9_950, 200, 10_000)).toEqual({ from: 9_800, to: 10_000 });
+    expect(centredWindow(3, 200, 50)).toEqual({ from: 0, to: 50 });
+    expect(centredWindow(0, 200, 0)).toEqual({ from: 0, to: 0 });
+  });
+
+  it('always contains the centre', () => {
+    for (const center of [0, 1, 99, 100, 101, 4_999, 9_998, 9_999]) {
+      const { from, to } = centredWindow(center, 200, 10_000);
+      expect(center).toBeGreaterThanOrEqual(from);
+      expect(center).toBeLessThan(to);
+    }
   });
 });
 

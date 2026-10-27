@@ -1,14 +1,30 @@
-import { memo, useEffect, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from 'react';
+import {
+  memo,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type RefObject,
+} from 'react';
 import { CaseSensitive, ChevronDown, ChevronUp, Search, SearchX, WholeWord, X } from 'lucide-react';
 import { sectionForPage } from '@/lib/pdf/outline';
 import { useReaderStore } from '../reader/readerStore';
 import type { Snippet } from './matcher';
 import { focusViewport, SEARCH_INPUT_ID } from './searchDom';
-import { formatStatus, limitResults, type HitRef } from './searchResults';
+import {
+  centredWindow,
+  formatStatus,
+  windowResults,
+  type HitRef,
+  type HitWindow,
+  type PageResult,
+} from './searchResults';
 import { useSearchStore } from './searchStore';
 import './search.css';
 
-/** Matches rendered at first, and added by each "Show more". Keeps thousands of hits cheap. */
+/** Matches mounted at a time, and added by each "Show more" / "Show earlier". Keeps thousands of hits cheap. */
 const PAGE_SIZE = 200;
 const ITEM_SELECTOR = '.search-result, .search__more';
 
@@ -51,7 +67,7 @@ export function SearchPanel() {
         const results = resultsRef.current;
         const target =
           results?.querySelector<HTMLElement>('.search-result.is-active') ??
-          results?.querySelector<HTMLElement>(ITEM_SELECTOR);
+          results?.querySelector<HTMLElement>('.search-result');
         if (!target) return;
         event.preventDefault();
         target.focus();
@@ -242,50 +258,116 @@ function ResultList({ containerRef }: { containerRef: RefObject<HTMLDivElement |
   const active = useSearchStore((s) => s.active);
   const activeIndex = useSearchStore((s) => s.activeIndex);
   const activate = useSearchStore((s) => s.activate);
-  const [limit, setLimit] = useState(PAGE_SIZE);
-  const shown = Math.max(limit, activeIndex + 1);
-  const groups = useMemo(() => limitResults(results, shown), [results, shown]);
-  const shownCount = groups.reduce((sum, group) => sum + group.count, 0);
+  const [range, setRange] = useState<HitWindow>({ from: 0, to: PAGE_SIZE });
+  const scrollBeforeEarlier = useRef<{ height: number; top: number } | null>(null);
+
+  // Only a window of matches is mounted; stepping past its edge re-centres it on the active match.
+  let current = range;
+  if (activeIndex >= 0 && (activeIndex < range.from || activeIndex >= range.to)) {
+    current = centredWindow(activeIndex, PAGE_SIZE, hitCount);
+    setRange(current);
+  }
+  const from = Math.min(current.from, hitCount);
+  const to = Math.min(current.to, hitCount);
+  const groups = useMemo(() => windowResults(results, { from, to }), [results, from, to]);
   const tabStop: HitRef | null = active ?? (results[0] ? { page: results[0].page, index: 0 } : null);
 
   useEffect(() => {
     containerRef.current?.querySelector('.search-result.is-active')?.scrollIntoView?.({ block: 'nearest' });
-  }, [containerRef, activeIndex]);
+  }, [containerRef, active]);
+
+  // Rows added above the reader's place must not push it down the list.
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    const before = scrollBeforeEarlier.current;
+    if (!container || !before) return;
+    scrollBeforeEarlier.current = null;
+    container.scrollTop = before.top + container.scrollHeight - before.height;
+  }, [containerRef, from]);
+
+  const showEarlier = () => {
+    const container = containerRef.current;
+    if (container) {
+      scrollBeforeEarlier.current = { height: container.scrollHeight, top: container.scrollTop };
+    }
+    setRange({ from: Math.max(0, from - PAGE_SIZE), to });
+  };
 
   return (
     <>
+      {from > 0 && (
+        <button
+          type="button"
+          className="btn btn--sm search__more search__more--earlier"
+          onClick={showEarlier}
+        >
+          Show earlier ({from.toLocaleString('en-US')} before)
+        </button>
+      )}
       <ul className="search__groups" role="list">
-        {groups.map(({ result, count }) => (
-          <li key={result.page} className="search-group">
-            <GroupHeading page={result.page} hits={result.matches.length} />
-            <ul className="search-group__hits" role="list">
-              {result.matches.slice(0, count).map((match, index) => (
-                <ResultRow
-                  key={match.start}
-                  page={result.page}
-                  index={index}
-                  snippet={match.snippet}
-                  active={active?.page === result.page && active.index === index}
-                  tabStop={tabStop?.page === result.page && tabStop.index === index}
-                  onActivate={activate}
-                />
-              ))}
-            </ul>
-          </li>
+        {groups.map(({ result, start, end }) => (
+          <PageGroup
+            key={result.page}
+            result={result}
+            start={start}
+            end={end}
+            active={active?.page === result.page ? active.index : -1}
+            tabStop={tabStop?.page === result.page ? tabStop.index : -1}
+            onActivate={activate}
+          />
         ))}
       </ul>
-      {shownCount < hitCount && (
+      {to < hitCount && (
         <button
           type="button"
           className="btn btn--sm search__more"
-          onClick={() => setLimit(shownCount + PAGE_SIZE)}
+          onClick={() => setRange({ from, to: Math.min(hitCount, to + PAGE_SIZE) })}
         >
-          Show more ({(hitCount - shownCount).toLocaleString('en-US')} left)
+          Show more ({(hitCount - to).toLocaleString('en-US')} left)
         </button>
       )}
     </>
   );
 }
+
+interface PageGroupProps {
+  result: PageResult;
+  /** The shown part of the page's matches. */
+  start: number;
+  end: number;
+  /** Position of the active / keyboard-tabbable match within the page, or -1. */
+  active: number;
+  tabStop: number;
+  onActivate(hit: HitRef): void;
+}
+
+const PageGroup = memo(function PageGroup({
+  result,
+  start,
+  end,
+  active,
+  tabStop,
+  onActivate,
+}: PageGroupProps) {
+  return (
+    <li className="search-group">
+      <GroupHeading page={result.page} hits={result.matches.length} />
+      <ul className="search-group__hits" role="list">
+        {result.matches.slice(start, end).map((match, i) => (
+          <ResultRow
+            key={match.start}
+            page={result.page}
+            index={start + i}
+            snippet={match.snippet}
+            active={start + i === active}
+            tabStop={start + i === tabStop}
+            onActivate={onActivate}
+          />
+        ))}
+      </ul>
+    </li>
+  );
+});
 
 function GroupHeading({ page, hits }: { page: number; hits: number }) {
   const outline = useReaderStore((s) => s.outline);

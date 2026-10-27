@@ -212,6 +212,92 @@ describe('SearchPanel', () => {
     expect(screen.queryByRole('button', { name: /Show more/ })).toBeNull();
   });
 
+  describe('with thousands of matches', () => {
+    // 30 pages × 100 matches; the number in each snippet's context identifies the match.
+    const BIG = Array.from({ length: 30 }, () => [Array.from({ length: 100 }, () => 'force').join(' ')]);
+
+    const rows = (container: HTMLElement) => [...container.querySelectorAll('.search-result')];
+    const pagesShown = (container: HTMLElement) =>
+      [...container.querySelectorAll('.search-group__page')].map((p) => p.textContent);
+
+    it('mounts only a window around the active match, however deep it is', () => {
+      openBook(BIG);
+      const { container } = render(<SearchPanel />);
+      typeQuery('force');
+      expect(rows(container)).toHaveLength(200);
+      expect(screen.queryByRole('button', { name: /Show earlier/ })).toBeNull();
+
+      act(() => search().activate({ page: 20, index: 50 })); // flat position 1,950
+      expect(search().activeIndex).toBe(1_950);
+      expect(rows(container)).toHaveLength(200);
+      expect(pagesShown(container)).toEqual(['Page 19', 'Page 20', 'Page 21']);
+      expect(container.querySelector('.search-result.is-active')).not.toBeNull();
+      screen.getByRole('button', { name: 'Show earlier (1,850 before)' });
+      screen.getByRole('button', { name: 'Show more (950 left)' });
+
+      // The page heading still reports every match on the page, though only some are mounted.
+      const heading = container.querySelector('.search-group__count');
+      expect(heading?.textContent).toBe('100');
+    });
+
+    it('keeps the window while stepping inside it and slides it when stepping past an edge', () => {
+      openBook(BIG);
+      const { container } = render(<SearchPanel />);
+      typeQuery('force');
+      act(() => search().activate({ page: 10, index: 50 })); // flat position 950
+      const first = pagesShown(container)[0];
+      for (let i = 0; i < 40; i++) act(() => search().next());
+      expect(rows(container)).toHaveLength(200);
+      expect(pagesShown(container)[0]).toBe(first);
+
+      for (let i = 0; i < 100; i++) act(() => search().next());
+      expect(search().activeIndex).toBe(1_090);
+      expect(rows(container)).toHaveLength(200);
+      expect(container.querySelector('.search-result.is-active')).not.toBeNull();
+    });
+
+    it('shows the end of the list when wrapping backwards from the start', () => {
+      openBook(BIG);
+      const { container } = render(<SearchPanel />);
+      typeQuery('force');
+      act(() => search().activate({ page: 1, index: 0 }));
+      act(() => search().prev());
+      expect(search().activeIndex).toBe(2_999);
+      expect(rows(container)).toHaveLength(200);
+      expect(pagesShown(container)).toEqual(['Page 29', 'Page 30']);
+      expect(screen.queryByRole('button', { name: /Show more/ })).toBeNull();
+      screen.getByRole('button', { name: 'Show earlier (2,800 before)' });
+    });
+
+    it('reveals earlier matches on request', () => {
+      openBook(BIG);
+      const { container } = render(<SearchPanel />);
+      typeQuery('force');
+      act(() => search().activate({ page: 20, index: 50 }));
+      fireEvent.click(screen.getByRole('button', { name: /Show earlier/ }));
+      expect(rows(container)).toHaveLength(400);
+      screen.getByRole('button', { name: 'Show earlier (1,650 before)' });
+      fireEvent.click(screen.getByRole('button', { name: /Show more/ }));
+      expect(rows(container)).toHaveLength(600);
+    });
+
+    it('moves from the field to the active match and between rows and the window buttons', () => {
+      openBook(BIG);
+      const { container } = render(<SearchPanel />);
+      typeQuery('force');
+      act(() => search().activate({ page: 20, index: 50 }));
+      const field = screen.getByRole('searchbox');
+      fireEvent.keyDown(field, { key: 'ArrowDown' });
+      expect(document.activeElement).toBe(container.querySelector('.search-result.is-active'));
+
+      const earlier = screen.getByRole('button', { name: /Show earlier/ });
+      fireEvent.keyDown(rows(container)[0], { key: 'ArrowUp' });
+      expect(document.activeElement).toBe(earlier);
+      fireEvent.keyDown(earlier, { key: 'End' });
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: /Show more/ }));
+    });
+  });
+
   it('starts a fresh recording of history when the panel closes', () => {
     openBook([['force'], ['x'], ['force']]);
     const { unmount } = render(<SearchPanel />);
