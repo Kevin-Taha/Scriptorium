@@ -8,6 +8,7 @@ afterEach(() => clearTextIndexes());
 interface FakeOptions {
   failing?: number[];
   withMarkedContent?: boolean;
+  beforeGetPage?: (number: number) => Promise<void>;
   /** Time each page takes to load, so tests can interrupt extraction. */
   delayMs?: number;
 }
@@ -15,7 +16,7 @@ interface FakeOptions {
 /** A document whose pages hold the given lines of text; records the order pages are requested in. */
 function fakePdf(
   pages: string[][],
-  { failing = [], withMarkedContent = false, delayMs = 0 }: FakeOptions = {},
+  { failing = [], withMarkedContent = false, beforeGetPage, delayMs = 0 }: FakeOptions = {},
 ) {
   const requested: number[] = [];
   const pdf = {
@@ -23,6 +24,7 @@ function fakePdf(
     loadingTask: { destroyed: false },
     getPage: vi.fn(async (number: number) => {
       requested.push(number);
+      await beforeGetPage?.(number);
       await new Promise((resolve) => setTimeout(resolve, delayMs));
       if (failing.includes(number)) throw new Error(`bad page ${number}`);
       return {
@@ -87,18 +89,32 @@ describe('TextIndex', () => {
 
   it('can be cancelled and then resumed where it left off', async () => {
     const pages = Array.from({ length: 12 }, (_, i) => [`page ${i + 1}`]);
-    const { pdf, requested } = fakePdf(pages, { delayMs: 40 });
+    let releaseBlockedPages!: () => void;
+    let finishBlockedPages!: () => void;
+    let finishedBlockedPages = 0;
+    const blockedPages = new Promise<void>((resolve) => {
+      releaseBlockedPages = resolve;
+    });
+    const blockedPagesFinished = new Promise<void>((resolve) => {
+      finishBlockedPages = resolve;
+    });
+    const { pdf, requested } = fakePdf(pages, {
+      beforeGetPage: async (number) => {
+        if (number <= 2) return;
+        await blockedPages;
+        finishedBlockedPages++;
+        if (finishedBlockedPages === 2) finishBlockedPages();
+      },
+    });
     const index = new TextIndex('doc', 12);
     index.start(pdf);
-    // Poll faster than a page takes to index so cancellation always lands mid-run.
-    await vi.waitFor(() => expect(index.indexed).toBeGreaterThan(1), { interval: 2, timeout: 5000 });
+    await vi.waitFor(() => expect(requested).toHaveLength(4));
+    expect(index.indexed).toBe(2);
     index.cancel();
     expect(index.running).toBe(false);
-    await new Promise((resolve) => setTimeout(resolve, 30));
-    const stopped = index.indexed;
-    expect(stopped).toBeLessThan(12);
-    await new Promise((resolve) => setTimeout(resolve, 30));
-    expect(index.indexed).toBe(stopped);
+    releaseBlockedPages();
+    await blockedPagesFinished;
+    expect(index.indexed).toBe(2);
 
     requested.length = 0;
     index.start(pdf);
