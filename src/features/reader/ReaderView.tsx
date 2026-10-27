@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import { LibraryBig, NotebookText, PanelLeft } from 'lucide-react';
+import { Keyboard, LibraryBig, NotebookText, PanelLeft } from 'lucide-react';
 import { AppearanceMenu } from '@/app/AppearanceMenu';
 import { navigate } from '@/app/router';
 import { usePagesInverted } from '@/app/settingsStore';
@@ -12,6 +12,7 @@ import { useHistoryStore } from '../navigation/historyStore';
 import { OutlinePanel } from '../navigation/OutlinePanel';
 import { PageIndicator } from '../navigation/PageIndicator';
 import { ReturnPill } from '../navigation/ReturnPill';
+import { openShortcutsDialog, ShortcutsDialog } from '../navigation/ShortcutsDialog';
 import { useKeyboardShortcuts } from '../navigation/useKeyboardShortcuts';
 import { MarginColumn } from '../notes/MarginColumn';
 import { NotesPanel } from '../notes/NotesPanel';
@@ -54,6 +55,7 @@ export function ReaderView() {
           <SelectionNotePopover />
         </main>
       </div>
+      <ShortcutsDialog />
     </div>
   );
 }
@@ -176,6 +178,20 @@ function ReaderSidebar() {
         {tab === 'contents' && <OutlinePanel />}
         {tab === 'bookmarks' && <BookmarksPanel />}
         {tab === 'notes' && <NotesPanel />}
+      </div>
+      <div className="sidebar__footer">
+        <button
+          className="btn btn--ghost sidebar__shortcuts tooltip"
+          data-tooltip="Keyboard shortcuts (?)"
+          aria-label="Keyboard shortcuts"
+          onClick={openShortcutsDialog}
+        >
+          <Keyboard aria-hidden="true" />
+          <span>Keyboard shortcuts</span>
+          <kbd className="kbd" aria-hidden="true">
+            ?
+          </kbd>
+        </button>
       </div>
     </aside>
   );

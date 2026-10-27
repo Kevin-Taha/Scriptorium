@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { reportSaveError } from '@/app/reportSaveError';
 import { sectionForPage } from '@/lib/pdf/outline';
 import { deleteBookmark, listBookmarks, putBookmark } from '@/lib/storage/repository';
 import type { Bookmark, DocId } from '@/lib/types';
@@ -47,7 +48,7 @@ export const useBookmarksStore = create<BookmarksState>()((set, get) => ({
       createdAt: Date.now(),
     };
     set({ bookmarks: [...bookmarks, bookmark].sort(byPage) });
-    void putBookmark(bookmark);
+    putBookmark(bookmark).catch(reportSaveError);
     return true;
   },
 
@@ -56,13 +57,13 @@ export const useBookmarksStore = create<BookmarksState>()((set, get) => ({
     if (!bookmark) return;
     const updated = { ...bookmark, label: label.trim() || `Page ${bookmark.page}` };
     set((s) => ({ bookmarks: s.bookmarks.map((b) => (b.id === id ? updated : b)) }));
-    void putBookmark(updated);
+    putBookmark(updated).catch(reportSaveError);
   },
 
   remove(id) {
     if (!get().bookmarks.some((b) => b.id === id)) return;
     set((s) => ({ bookmarks: s.bookmarks.filter((b) => b.id !== id) }));
-    void deleteBookmark(id);
+    deleteBookmark(id).catch(reportSaveError);
   },
 }));
 

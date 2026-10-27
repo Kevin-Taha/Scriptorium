@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { deleteNote as deleteNoteRecord, listNotes, putNote } from '@/lib/storage/repository';
 import type { DocId, MarginNote, NoteColor } from '@/lib/types';
 import { clamp, createId } from '@/lib/util';
+import { reportSaveError } from '@/app/reportSaveError';
 import { useReaderStore } from '../reader/readerStore';
 
 export interface NewNoteInput {
@@ -31,6 +32,10 @@ interface NotesState {
 }
 
 const PERSIST_DELAY_MS = 300;
+
+function savePutNote(note: MarginNote): void {
+  putNote(note).catch(reportSaveError);
+}
 const pendingWrites = new Map<string, ReturnType<typeof setTimeout>>();
 
 function schedulePersist(id: string): void {
@@ -41,7 +46,7 @@ function schedulePersist(id: string): void {
     setTimeout(() => {
       pendingWrites.delete(id);
       const note = useNotesStore.getState().notes.find((n) => n.id === id);
-      if (note) void putNote(note);
+      if (note) savePutNote(note);
     }, PERSIST_DELAY_MS),
   );
 }
@@ -52,7 +57,7 @@ export function flushNotes(): void {
     clearTimeout(timer);
     pendingWrites.delete(id);
     const note = useNotesStore.getState().notes.find((n) => n.id === id);
-    if (note) void putNote(note);
+    if (note) savePutNote(note);
   }
 }
 
@@ -93,7 +98,7 @@ export const useNotesStore = create<NotesState>()((set, get) => ({
       updatedAt: now,
     };
     set((s) => ({ notes: [...s.notes, note].sort(byPosition), editingId: note.id }));
-    void putNote(note);
+    savePutNote(note);
     return note;
   },
 
@@ -115,7 +120,7 @@ export const useNotesStore = create<NotesState>()((set, get) => ({
       notes: s.notes.filter((n) => n.id !== id),
       editingId: s.editingId === id ? null : s.editingId,
     }));
-    void deleteNoteRecord(id);
+    deleteNoteRecord(id).catch(reportSaveError);
   },
 
   setEditing: (editingId) => set({ editingId }),

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { reportSaveError } from '@/app/reportSaveError';
 import { loadOutline } from '@/lib/pdf/outline';
 import { destroyPdf, loadPdf, type PDFDocumentProxy } from '@/lib/pdf/pdfjs';
 import {
@@ -91,7 +92,10 @@ export const useReaderStore = create<ReaderState>()((set, get) => ({
         return;
       }
       const outline = await loadOutline(pdf).catch(() => []);
-      if (token !== openToken) return;
+      if (token !== openToken) {
+        destroyPdf(pdf);
+        return;
+      }
       const lastOpenedAt = Date.now();
       set({
         doc: { ...doc, lastOpenedAt },
@@ -147,7 +151,7 @@ export const useReaderStore = create<ReaderState>()((set, get) => ({
 const saveProgress = debounce(() => {
   const { docId, status, location, zoom } = useReaderStore.getState();
   if (!docId || status !== 'ready') return;
-  void putReadingState({ docId, location, zoom, updatedAt: Date.now() });
+  putReadingState({ docId, location, zoom, updatedAt: Date.now() }).catch(reportSaveError);
 }, 400);
 
 /** Writes any pending reading-progress change immediately. */

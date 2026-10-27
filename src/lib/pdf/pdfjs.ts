@@ -28,11 +28,6 @@ export function loadPdf(data: ArrayBuffer | Uint8Array): Promise<PDFDocumentProx
   }).promise;
 }
 
-/** Stable identifier for a PDF: pdf.js's content fingerprint. */
-export function fingerprintOf(pdf: PDFDocumentProxy): string {
-  return pdf.fingerprints[0] ?? pdf.fingerprints[1] ?? 'unknown';
-}
-
 /** Releases the document and its worker-side resources. */
 export function destroyPdf(pdf: PDFDocumentProxy): void {
   void pdf.loadingTask.destroy();

@@ -5,24 +5,26 @@ import { importPdfFile } from './importPdf';
 const mocks = vi.hoisted(() => ({
   loadPdf: vi.fn(),
   destroyPdf: vi.fn(),
-  fingerprintOf: vi.fn(),
   readTitle: vi.fn(),
   renderThumbnailDataUrl: vi.fn(),
   getDocument: vi.fn(),
   putDocument: vi.fn(),
+  updateDocument: vi.fn(),
+  contentHash: vi.fn(),
 }));
 
 vi.mock('@/lib/pdf/pdfjs', () => ({
   loadPdf: mocks.loadPdf,
   destroyPdf: mocks.destroyPdf,
-  fingerprintOf: mocks.fingerprintOf,
   readTitle: mocks.readTitle,
 }));
 vi.mock('@/lib/pdf/thumbnail', () => ({ renderThumbnailDataUrl: mocks.renderThumbnailDataUrl }));
 vi.mock('@/lib/storage/repository', () => ({
   getDocument: mocks.getDocument,
   putDocument: mocks.putDocument,
+  updateDocument: mocks.updateDocument,
 }));
+vi.mock('@/lib/hash', () => ({ contentHash: mocks.contentHash }));
 
 const bytes = new Uint8Array([37, 80, 68, 70]).buffer;
 const file = { name: 'sample.pdf', size: 4, arrayBuffer: async () => bytes } as File;
@@ -31,7 +33,8 @@ const pdf = { numPages: 12 };
 beforeEach(() => {
   vi.resetAllMocks();
   mocks.loadPdf.mockResolvedValue(pdf);
-  mocks.fingerprintOf.mockReturnValue('fingerprint');
+  mocks.contentHash.mockResolvedValue('content-hash');
+  mocks.updateDocument.mockResolvedValue(undefined);
   mocks.readTitle.mockResolvedValue('Sample');
   mocks.renderThumbnailDataUrl.mockResolvedValue('data:image/jpeg;base64,cover');
   mocks.getDocument.mockResolvedValue(undefined);
@@ -45,7 +48,7 @@ describe('PDF import', () => {
     expect(mocks.loadPdf.mock.calls[0][0]).toEqual(bytes);
     expect(result.isNew).toBe(true);
     expect(result.doc).toMatchObject({
-      id: 'fingerprint',
+      id: 'content-hash',
       title: 'Sample',
       pageCount: 12,
       coverDataUrl: 'data:image/jpeg;base64,cover',
@@ -55,9 +58,9 @@ describe('PDF import', () => {
     expect(mocks.destroyPdf).toHaveBeenCalledWith(pdf);
   });
 
-  it('keeps existing metadata and only updates the last-opened time', async () => {
+  it('reopens an identical file without parsing or overwriting it', async () => {
     const existing: LibraryDocument = {
-      id: 'fingerprint',
+      id: 'content-hash',
       title: 'Original',
       fileName: 'original.pdf',
       fileSize: 4,
@@ -70,8 +73,11 @@ describe('PDF import', () => {
     expect(result.isNew).toBe(false);
     expect(result.doc).toEqual({ ...existing, lastOpenedAt: result.doc.lastOpenedAt });
     expect(result.doc.lastOpenedAt).toBeGreaterThan(existing.lastOpenedAt);
-    expect(mocks.renderThumbnailDataUrl).not.toHaveBeenCalled();
-    expect(mocks.destroyPdf).toHaveBeenCalledWith(pdf);
+    expect(mocks.updateDocument).toHaveBeenCalledWith('content-hash', {
+      lastOpenedAt: result.doc.lastOpenedAt,
+    });
+    expect(mocks.loadPdf).not.toHaveBeenCalled();
+    expect(mocks.putDocument).not.toHaveBeenCalled();
   });
 
   it('reports corrupt and password-protected PDFs without storing them', async () => {

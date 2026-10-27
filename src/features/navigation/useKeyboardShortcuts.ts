@@ -7,6 +7,7 @@ import { useReaderStore } from '../reader/readerStore';
 import { setZoomMode, zoomIn, zoomOut } from '../reader/zoom';
 import { useBookmarksStore } from './bookmarksStore';
 import { useHistoryStore } from './historyStore';
+import { openShortcutsDialog } from './ShortcutsDialog';
 
 export type ShortcutAction =
   | 'bookmark'
@@ -19,7 +20,8 @@ export type ShortcutAction =
   | 'zoom-in'
   | 'zoom-out'
   | 'fit-width'
-  | 'dismiss';
+  | 'dismiss'
+  | 'help';
 
 export function resolveShortcut(
   event: Pick<KeyboardEvent, 'key' | 'ctrlKey' | 'metaKey' | 'altKey' | 'shiftKey'>,
@@ -34,6 +36,7 @@ export function resolveShortcut(
   }
   if (key === 'Escape' && !shiftKey) return 'dismiss';
   if (key === '+' || (key === '=' && !shiftKey)) return 'zoom-in';
+  if (key === '?' || (key === '/' && shiftKey)) return 'help';
   if (shiftKey) return key.toLowerCase() === 'r' ? 'review' : null;
   switch (key.toLowerCase()) {
     case 'b':
@@ -101,6 +104,9 @@ export function useKeyboardShortcuts(): void {
           break;
         case 'dismiss':
           history.dismissReturn();
+          break;
+        case 'help':
+          openShortcutsDialog();
           break;
       }
     };

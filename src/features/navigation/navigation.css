@@ -154,6 +154,16 @@
 }
 .bookmark-list__action {
   flex: 0 0 28px;
+  transition:
+    var(--transition-colors),
+    opacity var(--duration-fast) var(--ease-standard);
+}
+
+/* Row actions appear on hover or keyboard focus; touch devices always see them. */
+@media (hover: hover) {
+  .bookmark-list__item:not(:hover, :focus-within) .bookmark-list__action {
+    opacity: 0;
+  }
 }
 
 .page-sheet__ribbon {
@@ -263,4 +273,113 @@
   .page-field__input.is-invalid {
     animation: none;
   }
+}
+
+.sidebar__footer {
+  flex: 0 0 auto;
+  padding: var(--space-2);
+  border-top: 1px solid var(--color-border-subtle);
+}
+.sidebar__shortcuts {
+  justify-content: flex-start;
+  width: 100%;
+}
+.sidebar__shortcuts span {
+  flex: 1;
+  text-align: left;
+}
+
+.shortcuts-dialog {
+  position: fixed;
+  inset: 0;
+  width: min(520px, calc(100vw - 2 * var(--space-4)));
+  max-width: none;
+  max-height: calc(100dvh - 2 * var(--space-4));
+  margin: auto;
+  padding: 0;
+  overflow-y: auto;
+  font-family: var(--font-ui);
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+.shortcuts-dialog::backdrop {
+  background: var(--color-scrim);
+}
+.shortcuts-dialog__header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+.shortcuts-dialog__icon {
+  display: grid;
+  flex: 0 0 40px;
+  place-items: center;
+  height: 40px;
+  color: var(--color-accent);
+  background: var(--color-accent-subtle);
+  border-radius: var(--radius-md);
+}
+.shortcuts-dialog__icon .lucide {
+  width: 20px;
+  height: 20px;
+}
+.shortcuts-dialog__heading {
+  flex: 1;
+  min-width: 0;
+}
+.shortcuts-dialog__heading h2 {
+  font-family: var(--font-ui);
+  font-size: var(--font-size-lg);
+}
+.shortcuts-dialog__heading p {
+  margin-top: var(--space-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+.shortcuts-dialog__groups {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5) var(--space-5);
+}
+.shortcuts-dialog__group h3 {
+  margin-bottom: var(--space-1);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.shortcuts-dialog__group dl {
+  margin: 0;
+}
+.shortcuts-dialog__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 32px;
+  font-size: var(--font-size-sm);
+}
+.shortcuts-dialog__row dt {
+  min-width: 0;
+}
+.shortcuts-dialog__detail {
+  display: block;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+.shortcuts-dialog__keys,
+.shortcuts-dialog__key {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.shortcuts-dialog__keys {
+  margin: 0;
+  color: var(--color-text-muted);
 }
