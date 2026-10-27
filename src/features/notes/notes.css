@@ -1,0 +1,692 @@
+/* ==========================================================================
+   Margin notes — paper slips tucked beside the text (docs/DESIGN.md §5.3)
+   ========================================================================== */
+
+.margin-column {
+  --note-gutter: 16px;
+  --note-line: calc(var(--font-size-note) * var(--leading-normal));
+  position: absolute;
+  inset: 0;
+}
+
+.margin-column.is-adding {
+  cursor: pointer;
+}
+
+/* Wraps one note's anchor, leader, tether and card. It never takes pointer
+   events itself, so :hover/:focus-within on it mean "this note is active". */
+.margin-note-slot {
+  /* Displaced notes run their tether down their own lane, so neighbours' tethers
+     stay parallel instead of overprinting each other. */
+  --lane: 7px;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.margin-note-slot:nth-child(3n + 2) {
+  --lane: 10px;
+}
+.margin-note-slot:nth-child(3n + 3) {
+  --lane: 13px;
+}
+
+/* ---- Anchor, leader, tether ------------------------------------------------ */
+.margin-note__anchor {
+  position: absolute;
+  left: 0;
+  z-index: calc(var(--z-margin-note) + 1);
+  width: 8px;
+  height: 8px;
+  background: var(--note-dot);
+  border-radius: var(--radius-full);
+  box-shadow: 0 0 0 2px var(--page-sheet-bg);
+  cursor: pointer;
+  pointer-events: auto;
+  transform: translate(-50%, -50%);
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+/* A larger invisible target keeps the dot easy to hit. */
+.margin-note__anchor::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+}
+
+.margin-note__leader,
+.margin-note__tether {
+  position: absolute;
+  background: color-mix(in srgb, var(--note-dot) 70%, transparent);
+  pointer-events: none;
+}
+
+.margin-note__leader {
+  left: 0;
+  width: var(--note-gutter);
+  height: 1px;
+  margin-top: -1px;
+}
+.margin-note-slot.is-displaced .margin-note__leader {
+  left: var(--lane);
+  width: calc(var(--note-gutter) - var(--lane));
+}
+
+.margin-note__tether {
+  left: var(--lane);
+  width: 1px;
+}
+
+.margin-note__tether::before {
+  content: '';
+  position: absolute;
+  left: calc(var(--lane) * -1);
+  width: var(--lane);
+  height: 1px;
+  background: inherit;
+}
+
+.margin-note__tether[data-direction='down']::before {
+  top: 0;
+}
+.margin-note__tether[data-direction='up']::before {
+  bottom: 0;
+}
+
+.margin-note-slot:hover .margin-note__anchor,
+.margin-note-slot:focus-within .margin-note__anchor {
+  transform: translate(-50%, -50%) scale(1.25);
+}
+
+.margin-note-slot:hover .margin-note__leader,
+.margin-note-slot:focus-within .margin-note__leader {
+  height: 2px;
+  background: var(--note-dot);
+}
+
+.margin-note-slot:hover .margin-note__tether,
+.margin-note-slot:focus-within .margin-note__tether {
+  width: 2px;
+  background: var(--note-dot);
+}
+
+/* Cards glide to a new slot when neighbours change. Transitions wait until the
+   card has been painted in place and the page is not being resized (zoom). */
+.margin-column[data-settled] .margin-note-slot[data-ready] .margin-note {
+  transition:
+    top var(--duration-base) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+.margin-column[data-settled] .margin-note-slot[data-ready] .margin-note__leader {
+  transition:
+    top var(--duration-base) var(--ease-out),
+    height var(--duration-fast) var(--ease-standard),
+    background-color var(--duration-fast) var(--ease-standard);
+}
+
+.margin-column[data-settled] .margin-note-slot[data-ready] .margin-note__tether {
+  transition:
+    top var(--duration-base) var(--ease-out),
+    height var(--duration-base) var(--ease-out),
+    width var(--duration-fast) var(--ease-standard);
+}
+
+/* ---- Card ------------------------------------------------------------------ */
+.margin-note {
+  --swatch-gap: var(--note-bg);
+  position: absolute;
+  left: var(--note-gutter);
+  z-index: var(--z-margin-note);
+  width: var(--margin-note-width);
+  font-family: var(--font-serif);
+  font-size: var(--font-size-note);
+  font-weight: var(--font-weight-note);
+  line-height: var(--leading-normal);
+  color: var(--note-text);
+  background: var(--note-bg);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  cursor: text;
+  pointer-events: auto;
+  transition: box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+/* The 1px outline with a 3px spine in the dot colour is drawn on top, so a card's
+   border box always equals its content box (which is what the layout measures). */
+.margin-note::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--note-border);
+  border-left: 3px solid var(--note-dot);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.margin-note:hover,
+.margin-note:focus-within {
+  z-index: var(--z-margin-note-active);
+  box-shadow: var(--shadow-md);
+}
+
+.margin-note.is-editing {
+  z-index: var(--z-margin-note-active);
+  box-shadow:
+    0 0 0 2px var(--color-focus-ring),
+    var(--shadow-md);
+}
+
+.margin-note.is-new {
+  animation: note-in var(--duration-base) var(--ease-out);
+}
+.margin-note.is-pulsing {
+  animation: note-pulse 1.2s var(--ease-out);
+}
+
+@keyframes note-in {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+}
+
+@keyframes note-pulse {
+  0%,
+  45% {
+    box-shadow:
+      0 0 0 3px var(--color-accent),
+      var(--shadow-md);
+  }
+  100% {
+    box-shadow:
+      0 0 0 3px transparent,
+      var(--shadow-sm);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .margin-note.is-pulsing {
+    animation: none;
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+}
+
+.margin-note__content {
+  position: relative;
+  padding: 10px 12px 12px 15px;
+}
+
+/* ---- Compact (stack overflow) ------------------------------------------------ */
+.margin-note.is-compact {
+  height: 32px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+/* Stays laid out (hidden) so the card's natural height is still measurable. */
+.margin-note.is-compact .margin-note__content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.margin-note__preview {
+  display: block;
+  padding: 0 12px 0 15px;
+  overflow: hidden;
+  line-height: 32px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- Content ------------------------------------------------------------------ */
+.margin-note__quote {
+  display: -webkit-box;
+  margin-bottom: 6px;
+  padding-left: 8px;
+  overflow: hidden;
+  font-size: 0.78125rem; /* 12.5px */
+  line-height: 1.45;
+  color: var(--note-text);
+  border-left: 2px solid var(--note-border);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+/* A note written for a highlight: its quote rule takes the highlight's colour (see
+   `[data-highlight-color]` in highlights.css), so the passage on the page and the note
+   read as one thing even if the note is another colour. */
+.margin-note__quote.is-linked {
+  padding-left: 7px;
+  border-left: 3px solid var(--link-color, var(--note-dot));
+}
+
+.margin-note__body {
+  max-height: calc(var(--note-line) * 6);
+  overflow: hidden;
+  transition: max-height var(--duration-base) var(--ease-out);
+}
+
+.margin-note__body.is-clamped {
+  mask-image: linear-gradient(to bottom, var(--note-text) calc(100% - 1.5em), transparent);
+}
+
+.margin-note__text,
+.margin-note__editor::after,
+.margin-note__input {
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.margin-note__more {
+  display: block;
+  margin-top: 4px;
+  font-family: var(--font-ui);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--note-text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.margin-note__more:hover {
+  text-decoration-thickness: 2px;
+}
+
+/* ---- Hover / focus actions ----------------------------------------------------- */
+/* A small chrome pill tucked over the card's top edge, so it never covers the text. */
+.margin-note__actions {
+  position: absolute;
+  top: -20px;
+  right: 6px;
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--color-surface-raised);
+  border-radius: var(--radius-sm);
+  box-shadow:
+    0 0 0 1px var(--color-border),
+    var(--shadow-md);
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+.margin-note:hover .margin-note__actions,
+.margin-note:focus-within .margin-note__actions,
+.margin-note.has-palette .margin-note__actions {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .margin-note__actions {
+    opacity: 1;
+  }
+}
+
+.margin-note__action {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-xs);
+  transition: var(--transition-colors);
+}
+
+.margin-note__action:hover,
+.margin-note__action[aria-expanded='true'] {
+  color: var(--color-text);
+  background: var(--color-hover);
+}
+.margin-note__action .lucide {
+  width: 16px;
+  height: 16px;
+}
+
+.margin-note__action-dot {
+  width: 16px;
+  height: 16px;
+  background: var(--note-dot);
+  border-radius: var(--radius-full);
+}
+
+.margin-note__palette {
+  --swatch-gap: var(--color-surface-raised);
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  padding: 4px;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  animation: palette-in var(--duration-base) var(--ease-out);
+}
+
+@keyframes palette-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+/* ---- Editing ---------------------------------------------------------------------- */
+/* The textarea grows with its text: a hidden mirror of the value sizes the grid cell. */
+.margin-note__editor {
+  display: grid;
+  min-height: calc(var(--note-line) * 2);
+}
+
+.margin-note__editor::after,
+.margin-note__input {
+  grid-area: 1 / 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+  border: 0;
+}
+
+.margin-note__editor::after {
+  content: attr(data-replicated);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.margin-note__input {
+  width: 100%;
+  overflow: hidden;
+  color: inherit;
+  background: transparent;
+  border-radius: 0;
+  outline: none;
+  resize: none;
+}
+
+.margin-note__input::placeholder {
+  color: color-mix(in srgb, var(--note-text) 80%, transparent);
+}
+
+.margin-note__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 4px -6px -8px;
+}
+
+.margin-note__footer .margin-note__action {
+  color: var(--note-text);
+}
+.margin-note__footer .margin-note__action:hover {
+  color: var(--note-text);
+  background: color-mix(in srgb, var(--note-text) 12%, transparent);
+}
+
+/* ---- Swatches ------------------------------------------------------------------------ */
+.swatches {
+  display: flex;
+  gap: 2px;
+}
+
+.swatch {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  color: var(--color-float-text);
+  border-radius: var(--radius-full);
+}
+
+.swatch::before {
+  content: '';
+  width: 18px;
+  height: 18px;
+  background: var(--note-dot);
+  border-radius: var(--radius-full);
+  transition:
+    box-shadow var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
+}
+
+.swatch:hover::before {
+  transform: scale(1.12);
+}
+
+.swatch[aria-pressed='true']::before {
+  box-shadow:
+    0 0 0 2px var(--swatch-gap, var(--note-bg)),
+    0 0 0 3.5px var(--note-dot);
+}
+
+.swatch .lucide {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  stroke-width: 2.5;
+}
+
+/* ---- Add-note ghost ---------------------------------------------------------------- */
+.margin-note-ghost {
+  position: absolute;
+  left: var(--note-gutter);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: var(--margin-note-width);
+  height: 32px;
+  font-family: var(--font-ui);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  color: var(--color-text-secondary);
+  border: 1px dashed var(--color-border-control);
+  border-radius: var(--radius-sm);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms var(--ease-standard);
+}
+
+.margin-note-ghost[data-visible] {
+  opacity: 1;
+}
+.margin-note-ghost .lucide {
+  width: 16px;
+  height: 16px;
+}
+
+/* Faint dot where the anchor will land on the page edge. */
+.margin-note-ghost::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: calc(-1 * var(--note-gutter));
+  width: 8px;
+  height: 8px;
+  background: var(--color-border-control);
+  border-radius: var(--radius-full);
+  box-shadow: 0 0 0 2px var(--page-sheet-bg);
+  opacity: 0.55;
+  transform: translate(-50%, -50%);
+}
+
+/* ==========================================================================
+   Selection popover
+   ========================================================================== */
+.selection-popover {
+  position: fixed;
+  z-index: var(--z-popover);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 32px;
+  padding: 0 var(--space-1) 0 var(--space-1);
+  color: var(--color-float-text);
+  background: var(--color-float-bg);
+  border: 1px solid var(--color-float-border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  animation: popover-in var(--duration-base) var(--ease-out);
+}
+
+@keyframes popover-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.97);
+  }
+}
+
+.selection-popover__action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 var(--space-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: inherit;
+  white-space: nowrap;
+  border-radius: var(--radius-xs);
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.selection-popover__action:hover {
+  background: var(--color-float-border);
+}
+.selection-popover__action .lucide {
+  width: 16px;
+  height: 16px;
+  color: var(--color-float-accent);
+}
+
+.selection-popover .kbd {
+  height: 18px;
+  min-width: 18px;
+  color: var(--color-float-text);
+  background: transparent;
+  border-color: var(--color-float-border);
+  opacity: 0.8;
+}
+
+/* ==========================================================================
+   Sidebar notes list
+   ========================================================================== */
+.notes-panel {
+  display: flex;
+  flex-direction: column;
+  padding-top: var(--space-1);
+}
+
+.notes-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 0 var(--space-2) var(--space-2);
+}
+
+.notes-panel__count {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.notes-panel__group + .notes-panel__group {
+  margin-top: var(--space-3);
+}
+
+.notes-panel__page {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-1) var(--space-2);
+  font-family: var(--font-ui);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0;
+  color: var(--color-text-secondary);
+}
+
+.notes-panel__page-number {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.notes-panel__section {
+  min-width: 0;
+  overflow: hidden;
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notes-panel__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  min-height: 32px;
+  padding: 6px var(--space-2);
+  text-align: left;
+  border-radius: var(--radius-sm);
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.notes-panel__item:hover {
+  background: var(--color-hover);
+}
+.notes-panel__item:active {
+  background: var(--color-pressed);
+}
+
+.notes-panel__dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  margin-top: 6px;
+  background: var(--note-dot);
+  border-radius: var(--radius-full);
+}
+
+/* A marker bar in the highlight's colour, in the dot's column, for passages without a note. */
+.notes-panel__bar {
+  flex: none;
+  width: 4px;
+  height: 16px;
+  margin: 2px 3px 0;
+  background: var(--note-dot);
+  border-radius: var(--radius-full);
+}
+
+.notes-panel__excerpt {
+  display: -webkit-box;
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--font-serif);
+  font-size: var(--font-size-note);
+  font-weight: var(--font-weight-note);
+  line-height: 1.45;
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.notes-panel__excerpt--quote {
+  font-style: italic;
+  color: var(--color-text-secondary);
+}
+.notes-panel__excerpt--empty {
+  color: var(--color-text-muted);
+}
