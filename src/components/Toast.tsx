@@ -39,7 +39,10 @@ export function showToast(
   const toast: Toast = { id: createId(), message, tone: options.tone ?? 'neutral', action: options.action };
   useToastStore.setState((s) => ({ toasts: [...s.toasts, toast].slice(-MAX_VISIBLE) }));
   const dismiss = () => useToastStore.getState().dismiss(toast.id);
-  setTimeout(dismiss, options.durationMs ?? (options.action ? DEFAULT_DURATION_MS * 1.6 : DEFAULT_DURATION_MS));
+  setTimeout(
+    dismiss,
+    options.durationMs ?? (options.action ? DEFAULT_DURATION_MS * 1.6 : DEFAULT_DURATION_MS),
+  );
   return dismiss;
 }
 

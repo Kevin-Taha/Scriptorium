@@ -1,8 +1,9 @@
-import { useCallback } from 'react';
-import { ArrowLeft, NotebookText, PanelLeft } from 'lucide-react';
+import { useCallback, useMemo } from 'react';
+import { LibraryBig, NotebookText, PanelLeft } from 'lucide-react';
+import { AppearanceMenu } from '@/app/AppearanceMenu';
 import { navigate } from '@/app/router';
 import { usePagesInverted } from '@/app/settingsStore';
-import { ThemeMenu } from '@/app/ThemeMenu';
+import { sectionForPage } from '@/lib/pdf/outline';
 import { BookmarkRibbon } from '../navigation/BookmarkRibbon';
 import { BookmarksPanel } from '../navigation/BookmarksPanel';
 import { BookmarkToggle } from '../navigation/BookmarkToggle';
@@ -62,6 +63,7 @@ function ReaderToolbar() {
   const docId = useReaderStore((s) => s.docId);
   const sidebarOpen = useReaderStore((s) => s.sidebarOpen);
   const toggleSidebar = useReaderStore((s) => s.toggleSidebar);
+  const section = useCurrentSection();
   const noteCount = useNotesStore((s) => s.notes.length);
 
   return (
@@ -73,45 +75,58 @@ function ReaderToolbar() {
           aria-label="Back to library"
           onClick={() => navigate({ name: 'library' })}
         >
-          <ArrowLeft />
+          <LibraryBig />
         </button>
         <button
           className="btn btn--ghost btn--icon tooltip tooltip--below"
-          data-tooltip="Sidebar  ["
+          data-tooltip="Sidebar ( [ )"
           aria-label="Toggle sidebar"
           aria-pressed={sidebarOpen}
           onClick={toggleSidebar}
         >
           <PanelLeft />
         </button>
-        <h1 className="reader__title" title={doc?.title}>
-          {doc?.title}
-        </h1>
-      </div>
-
-      <div className="reader__toolbar-group reader__toolbar-group--center">
+        <span className="divider divider--vertical" aria-hidden="true" />
         <HistoryButtons />
-        <PageIndicator />
+        <div className="reader__heading">
+          <h1 className="reader__title" title={doc?.title}>
+            {doc?.title}
+          </h1>
+          {section && (
+            <span className="reader__section" title={section}>
+              {section}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="reader__toolbar-group reader__toolbar-group--end">
+        <PageIndicator />
+        <span className="divider divider--vertical" aria-hidden="true" />
         <ZoomControls />
         <span className="divider divider--vertical" aria-hidden="true" />
         <BookmarkToggle />
+        <AppearanceMenu />
         <button
-          className="btn btn--ghost btn--sm reader__review-btn tooltip tooltip--below"
-          data-tooltip="Review all notes  Shift+R"
+          className="btn btn--sm reader__review-btn tooltip tooltip--below"
+          data-tooltip="Review all notes (Shift+R)"
           aria-label={`Review notes (${noteCount})`}
           onClick={() => docId && navigate({ name: 'review', docId })}
         >
           <NotebookText />
-          <span>Notes</span>
+          <span>Review notes</span>
           {noteCount > 0 && <span className="reader__count">{noteCount}</span>}
         </button>
-        <ThemeMenu />
       </div>
     </header>
   );
+}
+
+/** Title of the outline section containing the current page, if any. */
+function useCurrentSection(): string | null {
+  const page = useReaderStore((s) => s.location.page);
+  const outline = useReaderStore((s) => s.outline);
+  return useMemo(() => sectionForPage(outline, page), [outline, page]);
 }
 
 const TABS: { id: SidebarTab; label: string }[] = [
@@ -152,7 +167,12 @@ function ReaderSidebar() {
           </button>
         ))}
       </div>
-      <div className="sidebar__panel" id="sidebar-panel" role="tabpanel" aria-labelledby={`sidebar-tab-${tab}`}>
+      <div
+        className="sidebar__panel"
+        id="sidebar-panel"
+        role="tabpanel"
+        aria-labelledby={`sidebar-tab-${tab}`}
+      >
         {tab === 'contents' && <OutlinePanel />}
         {tab === 'bookmarks' && <BookmarksPanel />}
         {tab === 'notes' && <NotesPanel />}

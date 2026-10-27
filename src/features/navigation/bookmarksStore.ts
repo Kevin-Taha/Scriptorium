@@ -8,26 +8,31 @@ import { useReaderStore } from '../reader/readerStore';
 interface BookmarksState {
   docId: DocId | null;
   bookmarks: Bookmark[];
+  /** False until the document's saved bookmarks are in memory; mutations wait for it. */
+  loaded: boolean;
   load(docId: DocId): Promise<void>;
-  /** Adds a bookmark for `page`, or removes it if one exists. Returns the new state. */
+  /** Adds a bookmark for `page`, or removes it if one exists. Returns whether the page is now bookmarked. */
   toggle(page: number): boolean;
   rename(id: string, label: string): void;
   remove(id: string): void;
 }
 
+const byPage = (a: Bookmark, b: Bookmark) => a.page - b.page || a.createdAt - b.createdAt;
+
 export const useBookmarksStore = create<BookmarksState>()((set, get) => ({
   docId: null,
   bookmarks: [],
+  loaded: false,
 
   async load(docId) {
-    set({ docId, bookmarks: [] });
+    set({ docId, bookmarks: [], loaded: false });
     const bookmarks = await listBookmarks(docId);
-    if (get().docId === docId) set({ bookmarks });
+    if (get().docId === docId) set({ bookmarks, loaded: true });
   },
 
   toggle(page) {
-    const { docId, bookmarks } = get();
-    if (!docId) return false;
+    const { docId, bookmarks, loaded } = get();
+    if (!docId || !loaded) return bookmarks.some((b) => b.page === page);
     const existing = bookmarks.find((b) => b.page === page);
     if (existing) {
       get().remove(existing.id);
@@ -41,7 +46,7 @@ export const useBookmarksStore = create<BookmarksState>()((set, get) => ({
       label: section ?? `Page ${page}`,
       createdAt: Date.now(),
     };
-    set({ bookmarks: [...bookmarks, bookmark].sort((a, b) => a.page - b.page) });
+    set({ bookmarks: [...bookmarks, bookmark].sort(byPage) });
     void putBookmark(bookmark);
     return true;
   },
@@ -55,6 +60,7 @@ export const useBookmarksStore = create<BookmarksState>()((set, get) => ({
   },
 
   remove(id) {
+    if (!get().bookmarks.some((b) => b.id === id)) return;
     set((s) => ({ bookmarks: s.bookmarks.filter((b) => b.id !== id) }));
     void deleteBookmark(id);
   },
@@ -68,5 +74,5 @@ export function useIsBookmarked(page: number): boolean {
 useReaderStore.subscribe((state, prev) => {
   if (state.docId === prev.docId) return;
   if (state.docId) void useBookmarksStore.getState().load(state.docId);
-  else useBookmarksStore.setState({ docId: null, bookmarks: [] });
+  else useBookmarksStore.setState({ docId: null, bookmarks: [], loaded: false });
 });

@@ -58,7 +58,12 @@ describe('repository', () => {
 
   it('deletes a document with all of its attached data', async () => {
     await putDocument(makeDoc('d', 1), new Blob(['%PDF']));
-    await putReadingState({ docId: 'd', location: { page: 4, offset: 0.5 }, zoom: { mode: 'custom', scale: 1.2 }, updatedAt: 1 });
+    await putReadingState({
+      docId: 'd',
+      location: { page: 4, offset: 0.5 },
+      zoom: { mode: 'custom', scale: 1.2 },
+      updatedAt: 1,
+    });
     await putBookmark({ id: 'b1', docId: 'd', page: 3, label: 'x', createdAt: 0 });
     await putNote(makeNote('n1', 'd', 1, 0.5));
     await putNote(makeNote('keep', 'other', 1, 0.5));

@@ -56,7 +56,8 @@ export function flushNotes(): void {
   }
 }
 
-const byPosition = (a: MarginNote, b: MarginNote) => a.page - b.page || a.y - b.y || a.createdAt - b.createdAt;
+const byPosition = (a: MarginNote, b: MarginNote) =>
+  a.page - b.page || a.y - b.y || a.createdAt - b.createdAt;
 
 export const useNotesStore = create<NotesState>()((set, get) => ({
   docId: null,
@@ -67,8 +68,13 @@ export const useNotesStore = create<NotesState>()((set, get) => ({
   async load(docId) {
     flushNotes();
     set({ docId, notes: [], editingId: null });
-    const notes = await listNotes(docId);
-    if (get().docId === docId) set({ notes });
+    const saved = await listNotes(docId);
+    if (get().docId !== docId) return;
+    // Keep any note created while the saved ones were loading.
+    set((s) => {
+      const ids = new Set(saved.map((n) => n.id));
+      return { notes: [...saved, ...s.notes.filter((n) => !ids.has(n.id))].sort(byPosition) };
+    });
   },
 
   addNote({ page, y, quote, color, text = '' }) {

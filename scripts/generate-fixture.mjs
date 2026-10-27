@@ -145,7 +145,11 @@ function addOutline(doc, pages) {
   const entries = makeEntries(CONTENTS, outlinesRef);
   set(outlines, 'First', entries[0].ref);
   set(outlines, 'Last', entries[entries.length - 1].ref);
-  set(outlines, 'Count', CONTENTS.reduce((count, entry) => count + 1 + entry.sections.length, 0));
+  set(
+    outlines,
+    'Count',
+    CONTENTS.reduce((count, entry) => count + 1 + entry.sections.length, 0),
+  );
   doc.catalog.set(PDFName.of('Outlines'), outlinesRef);
   doc.catalog.set(PDFName.of('PageMode'), PDFName.of('UseOutlines'));
 }
@@ -273,11 +277,31 @@ function drawChapterPage(doc, pages, pageNumber, chapter, fonts, random) {
 
     const sentence = makeSentence(random);
     if (pageNumber === 15 && line === 10) {
-      drawInlineLink(doc, pages, page, fonts, y, 'For the trajectory, ',
-        'see Figure 1.1 on page 7', ' for a geometric illustration.', 7, FIGURE_TOP);
+      drawInlineLink(
+        doc,
+        pages,
+        page,
+        fonts,
+        y,
+        'For the trajectory, ',
+        'see Figure 1.1 on page 7',
+        ' for a geometric illustration.',
+        7,
+        FIGURE_TOP,
+      );
     } else if (pageNumber === 23 && line === 10) {
-      drawInlineLink(doc, pages, page, fonts, y, 'The reference values are tabulated ',
-        '(Table A.1, p. 35)', ' for comparison.', 35, 715);
+      drawInlineLink(
+        doc,
+        pages,
+        page,
+        fonts,
+        y,
+        'The reference values are tabulated ',
+        '(Table A.1, p. 35)',
+        ' for comparison.',
+        35,
+        715,
+      );
     } else {
       page.drawText(sentence, { x: MARGIN, y, font: fonts.regular, size: BODY_SIZE });
     }

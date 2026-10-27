@@ -47,5 +47,10 @@ export async function readTitle(pdf: PDFDocumentProxy, fileName: string): Promis
   } catch {
     // Metadata is optional; fall through to the file name.
   }
-  return fileName.replace(/\.pdf$/i, '').replace(/[_-]+/g, ' ').trim() || 'Untitled';
+  return (
+    fileName
+      .replace(/\.pdf$/i, '')
+      .replace(/[_-]+/g, ' ')
+      .trim() || 'Untitled'
+  );
 }

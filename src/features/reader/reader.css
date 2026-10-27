@@ -12,14 +12,13 @@
 .reader__toolbar {
   position: relative;
   z-index: var(--z-toolbar);
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--space-3);
   padding: 0 var(--space-3);
-  background: color-mix(in srgb, var(--color-surface) 92%, transparent);
+  background: var(--color-surface);
   border-bottom: 1px solid var(--color-border-subtle);
-  backdrop-filter: saturate(1.4) blur(10px);
 }
 
 .reader__toolbar-group {
@@ -29,21 +28,52 @@
   min-width: 0;
 }
 
-.reader__toolbar-group--center { justify-content: center; gap: var(--space-2); }
-.reader__toolbar-group--end { justify-content: flex-end; }
+.reader__toolbar-group--start {
+  flex: 1;
+}
+.reader__toolbar-group--end {
+  flex: 0 0 auto;
+  justify-content: flex-end;
+}
 
-.reader__title {
+.reader__heading {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
   min-width: 0;
   margin-left: var(--space-2);
+}
+
+.reader__title {
+  flex: 0 1 auto;
+  min-width: 0;
   overflow: hidden;
   font-family: var(--font-serif);
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.reader__review-btn { gap: var(--space-1); }
+.reader__section {
+  flex: 0 10 auto;
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reader__section::before {
+  content: '·';
+  margin-right: var(--space-2);
+}
+
+.reader__review-btn {
+  gap: var(--space-2);
+  margin-left: var(--space-1);
+}
 
 .reader__count {
   min-width: 18px;
@@ -83,7 +113,9 @@
   animation: sidebar-in var(--duration-base) var(--ease-out);
 }
 
-.sidebar__tabs { margin: var(--space-3); }
+.sidebar__tabs {
+  margin: var(--space-3);
+}
 
 .sidebar__panel {
   flex: 1;
@@ -99,8 +131,17 @@
   }
 }
 
+@media (max-width: 1100px) {
+  .reader__section,
+  .reader__review-btn > span:not(.reader__count) {
+    display: none;
+  }
+}
+
 @media (max-width: 960px) {
-  .reader__title { display: none; }
+  .reader__heading {
+    display: none;
+  }
   .sidebar {
     position: absolute;
     top: var(--toolbar-height);

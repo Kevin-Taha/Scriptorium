@@ -35,3 +35,105 @@
   align-items: center;
   gap: var(--space-1);
 }
+
+/* ---- Popover (shared look for small floating panels) --------------------- */
+.popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: var(--z-popover);
+  min-width: 240px;
+  padding: var(--space-3);
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  animation: popover-in var(--duration-base) var(--ease-out);
+}
+
+@keyframes popover-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+}
+
+/* ---- Appearance menu ---------------------------------------------------- */
+.appearance-menu {
+  position: relative;
+}
+
+.appearance-menu__panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 280px;
+}
+
+.appearance-menu__label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.appearance-menu__switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+
+.appearance-menu__switch small {
+  display: block;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-secondary);
+}
+
+.appearance-menu__switch.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* Native checkbox restyled as a switch. */
+input[type='checkbox'][role='switch'] {
+  appearance: none;
+  position: relative;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 20px;
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-full);
+  cursor: inherit;
+  transition: var(--transition-colors);
+}
+
+input[type='checkbox'][role='switch']::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  background: var(--color-text-secondary);
+  border-radius: var(--radius-full);
+  transition:
+    transform var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast);
+}
+
+input[type='checkbox'][role='switch']:checked {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+input[type='checkbox'][role='switch']:checked::after {
+  background: var(--color-on-accent);
+  transform: translateX(14px);
+}

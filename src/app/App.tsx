@@ -15,11 +15,7 @@ export function App() {
 
   return (
     <>
-      {route.name === 'library' ? (
-        <LibraryView />
-      ) : (
-        <ReaderScreen docId={route.docId} view={route.name} />
-      )}
+      {route.name === 'library' ? <LibraryView /> : <ReaderScreen docId={route.docId} view={route.name} />}
       <ToastHost />
     </>
   );

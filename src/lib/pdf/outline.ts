@@ -15,11 +15,12 @@ export async function resolveDestination(
   dest: string | unknown[] | null | undefined,
 ): Promise<ReadingLocation | null> {
   try {
-    const explicit = (typeof dest === 'string' ? await pdf.getDestination(dest) : dest) as ExplicitDest | null;
+    const explicit = (
+      typeof dest === 'string' ? await pdf.getDestination(dest) : dest
+    ) as ExplicitDest | null;
     if (!Array.isArray(explicit) || explicit.length < 2) return null;
     const [target, mode, ...args] = explicit;
-    const pageIndex =
-      typeof target === 'number' ? target : await pdf.getPageIndex(target as RefProxy);
+    const pageIndex = typeof target === 'number' ? target : await pdf.getPageIndex(target as RefProxy);
     const page = pageIndex + 1;
     if (page < 1 || page > pdf.numPages) return null;
 

@@ -1,10 +1,10 @@
-import { Contrast, Moon, Sun, Sunset } from 'lucide-react';
+import { Coffee, Contrast, Moon, Sun } from 'lucide-react';
 import type { Theme } from '@/lib/types';
 import { useSettingsStore } from './settingsStore';
 
 const THEMES: { id: Theme; label: string; Icon: typeof Sun }[] = [
   { id: 'light', label: 'Light', Icon: Sun },
-  { id: 'sepia', label: 'Sepia', Icon: Sunset },
+  { id: 'sepia', label: 'Sepia', Icon: Coffee },
   { id: 'dark', label: 'Dark', Icon: Moon },
 ];
 

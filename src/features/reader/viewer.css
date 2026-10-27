@@ -1,0 +1,251 @@
+/* Continuous page view: scroll container, page rows, sheet layers, zoom controls. */
+
+/* ---- Scroll container -------------------------------------------------------- */
+.reader__viewport {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  overflow-anchor: none; /* the viewer anchors the reading position itself */
+  overscroll-behavior: contain;
+  scroll-behavior: auto;
+  background: var(--color-bg-app);
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-text) 26%, transparent) transparent;
+  contain: strict;
+}
+
+.reader__viewport:focus-visible {
+  outline-offset: -2px;
+}
+
+.reader__pages {
+  position: relative;
+  min-width: 100%;
+}
+
+/* A row: the page sheet and its margin column, flush, positioned by the layout math. */
+.reader__page {
+  position: absolute;
+  display: flex;
+}
+
+/* ---- Page sheet ------------------------------------------------------------------ */
+.page-sheet {
+  position: relative;
+  z-index: 1; /* lets the sheet's shadow fall onto the margin column */
+  flex: none;
+}
+
+.page-sheet__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.page-sheet__canvas.is-entering {
+  animation: page-sheet-in var(--duration-base) var(--ease-out);
+}
+
+@keyframes page-sheet-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.page-sheet__links {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.page-sheet__link {
+  position: absolute;
+  pointer-events: auto;
+  border-radius: 2px;
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.page-sheet__link:hover {
+  background: color-mix(in srgb, var(--color-accent) 13%, transparent);
+}
+
+.page-sheet__link:focus-visible {
+  outline-offset: 1px;
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+}
+
+.page-sheet__overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* ---- Margin column ----------------------------------------------------------------- */
+.page-margin {
+  position: relative;
+  flex: none;
+  width: var(--margin-column-width);
+  background: var(--color-margin-bg);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+/* ---- Text layer -------------------------------------------------------------------
+   Adapted from pdf.js (web/pdf_viewer.css, Apache-2.0). Glyphs are transparent and
+   positioned over the canvas so text can be selected; base.css styles ::selection. */
+.page-sheet__text-layer {
+  --total-scale-factor: calc(var(--scale-factor) * var(--user-unit, 1));
+  --scale-round-x: 1px;
+  --scale-round-y: 1px;
+  --min-font-size: 1;
+  --text-scale-factor: calc(var(--total-scale-factor) * var(--min-font-size));
+  --min-font-size-inv: calc(1 / var(--min-font-size));
+
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-text-layer);
+  overflow: clip;
+  line-height: 1;
+  text-align: initial;
+  letter-spacing: normal;
+  word-spacing: normal;
+  text-size-adjust: none;
+  forced-color-adjust: none;
+  transform-origin: 0 0;
+  caret-color: CanvasText;
+  color-scheme: only light;
+}
+
+.page-sheet__text-layer :is(span, br) {
+  position: absolute;
+  color: transparent;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+  user-select: text;
+}
+
+.page-sheet__text-layer > :not(.markedContent),
+.page-sheet__text-layer .markedContent span:not(.markedContent) {
+  --font-height: 0;
+  --scale-x: 1;
+  --rotate: 0deg;
+  z-index: 1;
+  font-size: calc(var(--text-scale-factor) * var(--font-height));
+  transform: rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv));
+}
+
+.page-sheet__text-layer .markedContent {
+  display: contents;
+}
+
+.page-sheet__text-layer br::selection {
+  background: transparent;
+}
+
+/* Covers the layer while selecting so drags over gaps don't jump to the page end. */
+.page-sheet__text-layer > .endOfContent {
+  position: absolute;
+  inset: 100% 0 0;
+  z-index: 0;
+  display: block;
+  cursor: default;
+  user-select: none;
+  transform: none;
+}
+
+.page-sheet__text-layer.selecting > .endOfContent {
+  top: 0;
+}
+
+.page-sheet__text-layer[data-main-rotation='90'] {
+  transform: rotate(90deg) translateY(-100%);
+}
+
+.page-sheet__text-layer[data-main-rotation='180'] {
+  transform: rotate(180deg) translate(-100%, -100%);
+}
+
+.page-sheet__text-layer[data-main-rotation='270'] {
+  transform: rotate(270deg) translateX(-100%);
+}
+
+/* ---- Zoom controls ------------------------------------------------------------------ */
+.zoom-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.zoom-controls__menu {
+  position: relative;
+}
+
+.zoom-controls__level {
+  min-width: 56px;
+  padding: 0 var(--space-2);
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.zoom-controls__level[aria-expanded='true'] {
+  color: var(--color-text);
+  background: var(--color-pressed);
+}
+
+.zoom-controls__level[aria-expanded='true']::after {
+  display: none;
+}
+
+.popover.zoom-menu {
+  left: 50%;
+  right: auto;
+  min-width: 0;
+  width: 168px;
+  padding: var(--space-1);
+  translate: -50% 0;
+}
+
+.zoom-menu__group + .zoom-menu__group {
+  margin-top: var(--space-1);
+  padding-top: var(--space-1);
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.zoom-menu__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  height: 30px;
+  padding: 0 var(--space-2) 0 var(--space-3);
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+  color: var(--color-text);
+  border-radius: var(--radius-xs);
+  transition: var(--transition-colors);
+}
+
+.zoom-menu__item:hover,
+.zoom-menu__item:focus-visible {
+  background: var(--color-hover);
+}
+
+.zoom-menu__item:focus-visible {
+  outline-offset: -2px;
+}
+
+.zoom-menu__item[aria-checked='true'] {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-accent);
+}
+
+.zoom-menu__item .lucide {
+  width: 16px;
+  height: 16px;
+}

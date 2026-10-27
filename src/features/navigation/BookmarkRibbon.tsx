@@ -1,4 +1,6 @@
-/** Ribbon drawn on the corner of bookmarked pages. */
-export function BookmarkRibbon(_props: { page: number }) {
-  return null;
+import { useIsBookmarked } from './bookmarksStore';
+
+export function BookmarkRibbon({ page }: { page: number }) {
+  const bookmarked = useIsBookmarked(page);
+  return bookmarked ? <span className="page-sheet__ribbon" aria-hidden="true" /> : null;
 }
