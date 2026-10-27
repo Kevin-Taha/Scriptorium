@@ -9,7 +9,6 @@ const mocks = vi.hoisted(() => ({
   renderThumbnailDataUrl: vi.fn(),
   getDocument: vi.fn(),
   putDocument: vi.fn(),
-  updateDocument: vi.fn(),
   contentHash: vi.fn(),
 }));
 
@@ -22,7 +21,6 @@ vi.mock('@/lib/pdf/thumbnail', () => ({ renderThumbnailDataUrl: mocks.renderThum
 vi.mock('@/lib/storage/repository', () => ({
   getDocument: mocks.getDocument,
   putDocument: mocks.putDocument,
-  updateDocument: mocks.updateDocument,
 }));
 vi.mock('@/lib/hash', () => ({ contentHash: mocks.contentHash }));
 
@@ -34,7 +32,6 @@ beforeEach(() => {
   vi.resetAllMocks();
   mocks.loadPdf.mockResolvedValue(pdf);
   mocks.contentHash.mockResolvedValue('content-hash');
-  mocks.updateDocument.mockResolvedValue(undefined);
   mocks.readTitle.mockResolvedValue('Sample');
   mocks.renderThumbnailDataUrl.mockResolvedValue('data:image/jpeg;base64,cover');
   mocks.getDocument.mockResolvedValue(undefined);
@@ -54,11 +51,15 @@ describe('PDF import', () => {
       coverDataUrl: 'data:image/jpeg;base64,cover',
     });
     expect(mocks.renderThumbnailDataUrl).toHaveBeenCalledWith(pdf, 1, 240);
-    expect(mocks.putDocument).toHaveBeenCalledWith(result.doc, file);
+    expect(mocks.putDocument).toHaveBeenCalledWith(result.doc, expect.any(Blob));
+    const stored = mocks.putDocument.mock.calls[0][1] as Blob;
+    expect(stored).not.toBe(file);
+    expect(stored.type).toBe('application/pdf');
+    expect(stored.size).toBe(bytes.byteLength);
     expect(mocks.destroyPdf).toHaveBeenCalledWith(pdf);
   });
 
-  it('reopens an identical file without parsing or overwriting it', async () => {
+  it('reopens an identical file without parsing it, keeping metadata and refreshing its stored copy', async () => {
     const existing: LibraryDocument = {
       id: 'content-hash',
       title: 'Original',
@@ -73,11 +74,9 @@ describe('PDF import', () => {
     expect(result.isNew).toBe(false);
     expect(result.doc).toEqual({ ...existing, lastOpenedAt: result.doc.lastOpenedAt });
     expect(result.doc.lastOpenedAt).toBeGreaterThan(existing.lastOpenedAt);
-    expect(mocks.updateDocument).toHaveBeenCalledWith('content-hash', {
-      lastOpenedAt: result.doc.lastOpenedAt,
-    });
+    expect(mocks.putDocument).toHaveBeenCalledWith(result.doc, expect.any(Blob));
     expect(mocks.loadPdf).not.toHaveBeenCalled();
-    expect(mocks.putDocument).not.toHaveBeenCalled();
+    expect(mocks.renderThumbnailDataUrl).not.toHaveBeenCalled();
   });
 
   it('reports corrupt and password-protected PDFs without storing them', async () => {

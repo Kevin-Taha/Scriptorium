@@ -20,6 +20,9 @@ export default defineConfig({
     baseURL: `http://localhost:${PORT}`,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
+    // Each fresh context would otherwise install the offline worker and precache the whole
+    // pdf.js runtime; offline behaviour is covered by its own spec, which opts back in.
+    serviceWorkers: 'block',
   },
   projects: [
     {

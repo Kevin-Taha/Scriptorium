@@ -1,7 +1,7 @@
 import { contentHash } from '@/lib/hash';
 import { destroyPdf, loadPdf, readTitle } from '@/lib/pdf/pdfjs';
 import { renderThumbnailDataUrl } from '@/lib/pdf/thumbnail';
-import { getDocument, putDocument, updateDocument } from '@/lib/storage/repository';
+import { getDocument, putDocument } from '@/lib/storage/repository';
 import type { LibraryDocument } from '@/lib/types';
 
 const INVALID_PDF =
@@ -11,21 +11,28 @@ const STORAGE_ERROR = 'Not enough storage space to add this book. Free up space 
 /**
  * Adds a PDF to the library. Books are keyed by a hash of their bytes, so
  * re-importing the identical file reopens the existing book (keeping its notes
- * and progress), while a revised edition becomes a separate book.
+ * and progress, and refreshing its stored copy), while a revised edition
+ * becomes a separate book.
  */
 export async function importPdfFile(file: File): Promise<{ doc: LibraryDocument; isNew: boolean }> {
   const bytes = await file.arrayBuffer();
   const id = await contentHash(bytes);
   const now = Date.now();
+  // Store our own in-memory copy: a picked File can remain tied to the original file on
+  // disk, which would make the book unreadable if that file is later edited or moved.
+  const storedCopy = () => new Blob([bytes], { type: 'application/pdf' });
 
   let existing: LibraryDocument | undefined;
   try {
     existing = await getDocument(id);
-    if (existing) await updateDocument(id, { lastOpenedAt: now });
+    if (existing) {
+      existing = { ...existing, lastOpenedAt: now };
+      await putDocument(existing, storedCopy());
+    }
   } catch {
     throw new Error(STORAGE_ERROR);
   }
-  if (existing) return { doc: { ...existing, lastOpenedAt: now }, isNew: false };
+  if (existing) return { doc: existing, isNew: false };
 
   let pdf: Awaited<ReturnType<typeof loadPdf>> | undefined;
   try {
@@ -59,7 +66,7 @@ export async function importPdfFile(file: File): Promise<{ doc: LibraryDocument;
       throw new Error(INVALID_PDF);
     }
     try {
-      await putDocument(doc, file);
+      await putDocument(doc, storedCopy());
     } catch {
       throw new Error(STORAGE_ERROR);
     }

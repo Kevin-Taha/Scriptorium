@@ -89,7 +89,15 @@ export const useReaderStore = create<ReaderState>()((set, get) => ({
         getReadingState(docId),
       ]);
       if (!doc || !file) throw new Error('This book is no longer in your library.');
-      const pdf = await loadPdf(await file.arrayBuffer());
+      let bytes: ArrayBuffer;
+      try {
+        bytes = await file.arrayBuffer();
+      } catch {
+        throw new Error(
+          'This book’s saved copy couldn’t be read. Import the same PDF again to restore it — your notes, bookmarks and progress are kept.',
+        );
+      }
+      const pdf = await loadPdf(bytes);
       if (token !== openToken) {
         destroyPdf(pdf);
         return;
