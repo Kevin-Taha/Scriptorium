@@ -12,9 +12,10 @@ export interface NewNoteInput {
   quote?: string;
   color?: NoteColor;
   text?: string;
+  highlightId?: string;
 }
 
-export type NotePatch = Partial<Pick<MarginNote, 'text' | 'color' | 'y' | 'quote'>>;
+export type NotePatch = Partial<Pick<MarginNote, 'text' | 'color' | 'y' | 'quote' | 'highlightId'>>;
 
 interface NotesState {
   docId: DocId | null;
@@ -82,7 +83,7 @@ export const useNotesStore = create<NotesState>()((set, get) => ({
     });
   },
 
-  addNote({ page, y, quote, color, text = '' }) {
+  addNote({ page, y, quote, color, text = '', highlightId }) {
     const { docId, lastColor } = get();
     if (!docId) throw new Error('No document is open.');
     const now = Date.now();
@@ -94,6 +95,7 @@ export const useNotesStore = create<NotesState>()((set, get) => ({
       text,
       quote: quote?.trim() || undefined,
       color: color ?? lastColor,
+      highlightId,
       createdAt: now,
       updatedAt: now,
     };

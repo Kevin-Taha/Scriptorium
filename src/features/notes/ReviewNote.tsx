@@ -1,7 +1,6 @@
 import {
   memo,
   useLayoutEffect,
-  useMemo,
   useRef,
   type FocusEvent,
   type KeyboardEvent,
@@ -9,17 +8,20 @@ import {
   type RefObject,
 } from 'react';
 import { ArrowUpRight, Trash2 } from 'lucide-react';
-import type { MarginNote } from '@/lib/types';
+import type { Highlight, MarginNote } from '@/lib/types';
 import { deleteNoteWithUndo } from './noteActions';
 import { NOTE_COLOR_LABELS } from './noteColors';
 import { NoteSwatches } from './NoteSwatches';
 import { useNotesStore } from './notesStore';
 import { jumpToNote } from './reviewActions';
-import { highlightSegments } from './reviewFilter';
 import { focusNoteById, neighbourNoteId } from './reviewFocus';
+import { MarkedText } from './ReviewText';
+import './highlights.css';
 
 interface ReviewNoteProps {
   note: MarginNote;
+  /** The highlight the note was written for: its passage is shown as the quote, in the highlight's colour. */
+  highlight?: Highlight;
   editing: boolean;
   /** Folded search words to highlight in the note's text and quote. */
   terms: string[];
@@ -27,28 +29,17 @@ interface ReviewNoteProps {
   onActive(id: string | null): void;
 }
 
-function Highlighted({ text, terms }: { text: string; terms: string[] }) {
-  const segments = useMemo(() => highlightSegments(text, terms), [text, terms]);
-  return segments.map((segment, i) =>
-    segment.match ? (
-      <mark key={i} className="review-mark">
-        {segment.text}
-      </mark>
-    ) : (
-      segment.text
-    ),
-  );
-}
-
 /** One note in the review: click or press Enter to edit in place; edits save as you type. */
 export const ReviewNote = memo(function ReviewNote({
   note,
+  highlight,
   editing,
   terms,
   onEdit,
   onActive,
 }: ReviewNoteProps) {
   const rootRef = useRef<HTMLDivElement>(null);
+  const quote = highlight?.text ?? note.quote;
 
   const handleClick = (event: MouseEvent<HTMLDivElement>) => {
     if (editing || (event.target as Element).closest('button')) return;
@@ -73,9 +64,10 @@ export const ReviewNote = memo(function ReviewNote({
     if (editing) onEdit(null);
   };
 
-  const classes = ['review-note', editing && 'is-editing', note.quote && 'review-note--quoted']
+  const classes = ['review-note', editing && 'is-editing', quote && 'review-note--quoted']
     .filter(Boolean)
     .join(' ');
+  const label = `${NOTE_COLOR_LABELS[note.color]} note on page ${note.page}${highlight ? ' (on a highlight)' : ''}`;
 
   return (
     <div
@@ -84,7 +76,7 @@ export const ReviewNote = memo(function ReviewNote({
       data-note-id={note.id}
       data-note-color={note.color}
       role="group"
-      aria-label={`${NOTE_COLOR_LABELS[note.color]} note on page ${note.page}`}
+      aria-label={label}
       tabIndex={0}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
@@ -96,16 +88,19 @@ export const ReviewNote = memo(function ReviewNote({
     >
       <span className="review-note__dot" aria-hidden="true" />
       <div className="review-note__main">
-        {note.quote && (
-          <blockquote className="review-note__quote">
-            <Highlighted text={note.quote} terms={terms} />
+        {quote && (
+          <blockquote
+            className={`review-note__quote${highlight ? ' is-highlight' : ''}`}
+            data-highlight-color={highlight?.color}
+          >
+            <MarkedText text={quote} terms={terms} />
           </blockquote>
         )}
         {editing ? (
           <NoteEditor note={note} rootRef={rootRef} onEdit={onEdit} />
         ) : (
           <p className={`review-note__text${note.text.trim() ? '' : ' is-empty'}`}>
-            {note.text.trim() ? <Highlighted text={note.text} terms={terms} /> : 'Empty note'}
+            {note.text.trim() ? <MarkedText text={note.text} terms={terms} /> : 'Empty note'}
           </p>
         )}
       </div>

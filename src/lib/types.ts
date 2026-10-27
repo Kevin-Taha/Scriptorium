@@ -64,6 +64,29 @@ export interface MarginNote {
   /** Text excerpt the note was created from, if any. */
   quote?: string;
   color: NoteColor;
+  /** The highlight this note was written for, if any. Deleting the highlight clears the link. */
+  highlightId?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+/** A rectangle as fractions (0..1) of the page box, so it survives every zoom level. */
+export interface HighlightRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/** Coloured emphasis over a passage of text, drawn as one rectangle per line. */
+export interface Highlight {
+  id: string;
+  docId: DocId;
+  page: number;
+  rects: HighlightRect[];
+  /** The highlighted passage, whitespace-normalised. */
+  text: string;
+  color: NoteColor;
   createdAt: number;
   updatedAt: number;
 }

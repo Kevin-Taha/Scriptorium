@@ -1,4 +1,5 @@
 import { NOTE_COLORS, type MarginNote, type NoteColor } from '@/lib/types';
+import { annotationColors, type AnnotationItem } from './annotations';
 
 export interface ReviewFilters {
   query: string;
@@ -69,6 +70,53 @@ export function toggleColor(colors: NoteColor[], color: NoteColor): NoteColor[] 
 export function countByColor(notes: MarginNote[]): Record<NoteColor, number> {
   const counts = { amber: 0, sage: 0, sky: 0, rose: 0, lavender: 0 };
   for (const note of notes) counts[note.color] += 1;
+  return counts;
+}
+
+// ---- Notes and highlights together -------------------------------------------
+
+const highlightTextCache = new WeakMap<object, string>();
+
+function itemSearchableText(item: AnnotationItem): string {
+  if (item.kind === 'note') {
+    const noteText = searchableText(item.note);
+    return item.highlight ? `${noteText}\n${foldedHighlightText(item.highlight)}` : noteText;
+  }
+  return foldedHighlightText(item.highlight);
+}
+
+function foldedHighlightText(highlight: { text: string }): string {
+  let text = highlightTextCache.get(highlight);
+  if (text === undefined) {
+    text = foldText(highlight.text);
+    highlightTextCache.set(highlight, text);
+  }
+  return text;
+}
+
+/** A note or highlight satisfies the colour filter if any colour it carries is selected. */
+export function matchesItemFilters(item: AnnotationItem, terms: string[], colors: NoteColor[]): boolean {
+  if (colors.length > 0 && !annotationColors(item).some((color) => colors.includes(color))) return false;
+  if (terms.length === 0) return true;
+  const haystack = itemSearchableText(item);
+  return terms.every((term) => haystack.includes(term));
+}
+
+/** Like `filterNotes`, for the review's mixed list; `keepId` (the note being edited) always stays. */
+export function filterAnnotations(
+  items: AnnotationItem[],
+  filters: ReviewFilters,
+  keepId: string | null = null,
+): AnnotationItem[] {
+  if (!hasActiveFilters(filters)) return items;
+  const terms = searchTerms(filters.query);
+  return items.filter((item) => item.id === keepId || matchesItemFilters(item, terms, filters.colors));
+}
+
+/** Items per colour; an item counts under every colour it carries. */
+export function countAnnotationsByColor(items: AnnotationItem[]): Record<NoteColor, number> {
+  const counts = { amber: 0, sage: 0, sky: 0, rose: 0, lavender: 0 };
+  for (const item of items) for (const color of annotationColors(item)) counts[color] += 1;
   return counts;
 }
 

@@ -12,7 +12,14 @@ export function deleteNoteWithUndo(note: MarginNote): void {
       onAction() {
         // The reader may have moved on to another book (or the library) since the deletion.
         if (useNotesStore.getState().docId !== note.docId) return;
-        addNote({ page: note.page, y: note.y, quote: note.quote, color: note.color, text: note.text });
+        addNote({
+          page: note.page,
+          y: note.y,
+          quote: note.quote,
+          color: note.color,
+          text: note.text,
+          highlightId: note.highlightId,
+        });
         setEditing(null);
       },
     },

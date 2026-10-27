@@ -7,12 +7,14 @@ interface NoteSwatchesProps {
   value: NoteColor;
   onChange(color: NoteColor): void;
   className?: string;
+  /** Accessible name of the group. */
+  label?: string;
 }
 
 /** Row of colour choices; the selected one carries a check so colour is never the only signal. */
-export function NoteSwatches({ value, onChange, className }: NoteSwatchesProps) {
+export function NoteSwatches({ value, onChange, className, label = 'Note colour' }: NoteSwatchesProps) {
   return (
-    <div className={className ? `swatches ${className}` : 'swatches'} role="group" aria-label="Note colour">
+    <div className={className ? `swatches ${className}` : 'swatches'} role="group" aria-label={label}>
       {NOTE_COLORS.map((color) => (
         <button
           key={color}

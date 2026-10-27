@@ -3,14 +3,16 @@ import { ArrowLeft, NotebookText, SearchX } from 'lucide-react';
 import { navigate } from '@/app/router';
 import { usePagesInverted } from '@/app/settingsStore';
 import { useReaderStore } from '../reader/readerStore';
-import { describeNoteCount, exportableNotes } from './exportMarkdown';
-import { groupNotesByPage, useNotesStore } from './notesStore';
+import { buildAnnotations, groupAnnotationsByPage } from './annotations';
+import { describeAnnotationCount, exportableHighlights, exportableNotes } from './exportMarkdown';
+import { useHighlightsStore } from './highlightsStore';
+import { useNotesStore } from './notesStore';
 import { exportNotesAsMarkdown } from './reviewActions';
 import { useReviewDensity } from './reviewDensity';
 import {
   NO_FILTERS,
-  countByColor,
-  filterNotes,
+  countAnnotationsByColor,
+  filterAnnotations,
   hasActiveFilters,
   searchTerms,
   type ReviewFilters,
@@ -20,23 +22,30 @@ import { ReviewToolbar } from './ReviewToolbar';
 import { useReviewShortcuts } from './useReviewShortcuts';
 import './review.css';
 
-function countText(
-  total: { notes: number; pages: number },
-  shown: { notes: number; pages: number },
-  filtering: boolean,
-) {
-  if (!filtering) return describeNoteCount(total.notes, total.pages);
-  if (shown.notes === 0) return `0 of ${total.notes} ${total.notes === 1 ? 'note' : 'notes'}`;
-  return `${shown.notes} of ${describeNoteCount(total.notes, shown.pages)}`;
+interface Totals {
+  notes: number;
+  highlights: number;
+  pages: number;
 }
 
-/** Collated review of every page that has notes. */
+/** "3 notes and 2 highlights on 4 pages", or "5 of 12 notes and highlights on 2 pages" while filtering. */
+function countText(total: Totals, shown: Totals, filtering: boolean): string {
+  if (!filtering) return describeAnnotationCount(total.notes, total.highlights, total.pages);
+  const shownCount = shown.notes + shown.highlights;
+  const totalCount = total.notes + total.highlights;
+  const noun = total.highlights === 0 ? 'notes' : total.notes === 0 ? 'highlights' : 'notes and highlights';
+  if (shownCount === 0) return `0 of ${totalCount} ${noun}`;
+  return `${shownCount} of ${totalCount} ${noun} on ${shown.pages} ${shown.pages === 1 ? 'page' : 'pages'}`;
+}
+
+/** Collated review of every page that has notes or highlights. */
 export function NotesReview() {
   const docId = useReaderStore((s) => s.docId)!;
   const pdf = useReaderStore((s) => s.pdf)!;
   const outline = useReaderStore((s) => s.outline);
   const title = useReaderStore((s) => s.doc?.title) ?? 'Untitled';
   const notes = useNotesStore((s) => s.notes);
+  const highlights = useHighlightsStore((s) => s.highlights);
   const inverted = usePagesInverted();
 
   const [density, setDensity] = useReviewDensity();
@@ -47,14 +56,27 @@ export function NotesReview() {
   // The filter box stays responsive while a large list catches up with the query.
   const appliedFilters = useDeferredValue(filters);
   const terms = useMemo(() => searchTerms(appliedFilters.query), [appliedFilters.query]);
-  const visibleNotes = useMemo(
-    () => filterNotes(notes, appliedFilters, editingId),
-    [notes, appliedFilters, editingId],
+  const items = useMemo(() => buildAnnotations(notes, highlights), [notes, highlights]);
+  const visibleItems = useMemo(
+    () => filterAnnotations(items, appliedFilters, editingId),
+    [items, appliedFilters, editingId],
   );
-  const groups = useMemo(() => groupNotesByPage(visibleNotes), [visibleNotes]);
-  const totalPages = useMemo(() => new Set(notes.map((n) => n.page)).size, [notes]);
-  const colorCounts = useMemo(() => countByColor(notes), [notes]);
-  const exportCount = useMemo(() => exportableNotes(notes).length, [notes]);
+  const groups = useMemo(() => groupAnnotationsByPage(visibleItems), [visibleItems]);
+  const totalPages = useMemo(() => new Set(items.map((item) => item.page)).size, [items]);
+  const colorCounts = useMemo(() => countAnnotationsByColor(items), [items]);
+  const exportCount = useMemo(
+    () => exportableNotes(notes).length + exportableHighlights(highlights).length,
+    [notes, highlights],
+  );
+  const shownCounts = useMemo(() => {
+    let noteCount = 0;
+    let highlightCount = 0;
+    for (const item of visibleItems) {
+      if (item.kind === 'note') noteCount += 1;
+      if (item.highlight) highlightCount += 1;
+    }
+    return { notes: noteCount, highlights: highlightCount, pages: groups.length };
+  }, [visibleItems, groups.length]);
 
   const goBack = useCallback(() => navigate({ name: 'reader', docId }), [docId]);
   const focusSearch = useCallback(() => {
@@ -66,14 +88,16 @@ export function NotesReview() {
   const dense = density === 'dense';
 
   let body;
-  if (notes.length === 0) {
+  if (items.length === 0) {
     body = (
       <div className="empty-state">
         <div className="empty-state__icon">
           <NotebookText />
         </div>
         <h2 className="empty-state__title">Nothing to review yet</h2>
-        <p className="empty-state__body">Notes you add while reading are collected here, page by page.</p>
+        <p className="empty-state__body">
+          Notes and highlights you add while reading are collected here, page by page.
+        </p>
         <div className="empty-state__actions">
           <button type="button" className="btn btn--primary" onClick={goBack}>
             <ArrowLeft /> Back to book
@@ -106,9 +130,9 @@ export function NotesReview() {
             docId={docId}
             outline={outline}
             page={group.page}
-            notes={group.notes}
+            items={group.items}
             dense={dense}
-            editingId={group.notes.some((n) => n.id === editingId) ? editingId : null}
+            editingId={group.items.some((item) => item.id === editingId) ? editingId : null}
             terms={terms}
             onEdit={setEditingId}
           />
@@ -122,11 +146,11 @@ export function NotesReview() {
       <ReviewToolbar
         title={title}
         countText={countText(
-          { notes: notes.length, pages: totalPages },
-          { notes: visibleNotes.length, pages: groups.length },
+          { notes: notes.length, highlights: highlights.length, pages: totalPages },
+          shownCounts,
           hasActiveFilters(appliedFilters),
         )}
-        hasNotes={notes.length > 0}
+        hasNotes={items.length > 0}
         exportCount={exportCount}
         colorCounts={colorCounts}
         filters={filters}
@@ -135,7 +159,7 @@ export function NotesReview() {
         onFiltersChange={setFilters}
         onDensityChange={setDensity}
         onBack={goBack}
-        onExport={() => exportNotesAsMarkdown(title, notes, outline)}
+        onExport={() => exportNotesAsMarkdown(title, notes, highlights, outline)}
       />
       <main className="review__scroll" aria-label="Notes by page">
         <div className="review__column">{body}</div>

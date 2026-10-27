@@ -1,6 +1,10 @@
+import type { HighlightRect } from '@/lib/types';
+import { highlightRectsFor, textLineRects } from './highlightRects';
 import { useNotesStore } from './notesStore';
 
 export const MAX_QUOTE_LENGTH = 600;
+/** Highlights keep more of the passage than a note's quote does. */
+export const MAX_HIGHLIGHT_TEXT_LENGTH = 2000;
 
 /** Collapses whitespace and caps the length of text captured from the page. */
 export function normalizeQuote(raw: string, maxLength = MAX_QUOTE_LENGTH): string {
@@ -14,6 +18,10 @@ export interface PageSelection {
   /** Vertical anchor as a fraction (0..1) of the page height: the middle of the first selected line. */
   y: number;
   quote: string;
+  /** The selected passage, for a highlight (longer than `quote` allows). */
+  text: string;
+  /** One rectangle per run of selected text, as fractions of the page box. */
+  rects: HighlightRect[];
   /** Viewport rectangle of the last selected line. */
   endRect: DOMRect;
   /** True when the selection spans more than one line of text. */
@@ -36,21 +44,22 @@ export function readPageSelection(selection: Selection | null = window.getSelect
   if (!sheet || sheet !== sheetOf(range.endContainer)) return null;
 
   const page = Number(sheet.dataset.page);
-  const quote = normalizeQuote(selection.toString());
+  const text = normalizeQuote(selection.toString(), MAX_HIGHLIGHT_TEXT_LENGTH);
   const sheetRect = sheet.getBoundingClientRect();
-  if (!Number.isInteger(page) || !quote || sheetRect.height <= 0) return null;
+  if (!Number.isInteger(page) || !text || sheetRect.height <= 0) return null;
 
-  // Ignore container-sized rects (e.g. pdf.js's end-of-content sentinel) so only text lines count.
-  const lines = Array.from(range.getClientRects()).filter(
-    (rect) => rect.width > 1 && rect.height > 1 && rect.height < sheetRect.height * 0.25,
-  );
+  const clientRects = Array.from(range.getClientRects());
+  // Only text lines count: container-sized rects (e.g. pdf.js's end-of-content sentinel) are ignored.
+  const lines = textLineRects(clientRects, sheetRect);
   const first = lines[0] ?? range.getBoundingClientRect();
   const last = lines.at(-1) ?? first;
 
   return {
     page,
     y: (first.top + first.height / 2 - sheetRect.top) / sheetRect.height,
-    quote,
+    quote: normalizeQuote(text),
+    text,
+    rects: highlightRectsFor(clientRects, sheetRect),
     endRect: last,
     multiline: last.top - first.top > first.height / 2,
   };

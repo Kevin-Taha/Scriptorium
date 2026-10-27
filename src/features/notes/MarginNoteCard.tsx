@@ -11,12 +11,15 @@ import {
 } from 'react';
 import { Trash2 } from 'lucide-react';
 import type { MarginNote, NoteColor } from '@/lib/types';
+import { useHighlightUiStore } from './highlightUi';
+import { useHighlight } from './highlightsStore';
 import { NOTE_ATTACH_OFFSET, type NotePlacement } from './layoutNotes';
 import { NOTE_COLOR_LABELS } from './noteColors';
 import { deleteNoteWithUndo, isEmptyNote } from './noteActions';
 import { useIsNotePulsing } from './noteFocus';
 import { NoteSwatches } from './NoteSwatches';
 import { useNotesStore } from './notesStore';
+import './highlights.css';
 
 const COLLAPSED_LINES = 6;
 const FALLBACK_LINE_HEIGHT = 20.25;
@@ -46,6 +49,7 @@ export const MarginNoteCard = memo(function MarginNoteCard({
 }: MarginNoteCardProps) {
   const editing = useNotesStore((s) => s.editingId === note.id);
   const pulsing = useIsNotePulsing(note.id);
+  const highlight = useHighlight(note.highlightId);
   const [startedEditing] = useState(editing);
   const [ready, setReady] = useState(false);
   const [bodyExpanded, setBodyExpanded] = useState(false);
@@ -238,12 +242,14 @@ export const MarginNoteCard = memo(function MarginNoteCard({
         data-note-id={note.id}
         role="group"
         tabIndex={0}
-        aria-label={`Note on page ${note.page}`}
+        aria-label={`Note on page ${note.page}${highlight ? `, on a ${NOTE_COLOR_LABELS[highlight.color].toLowerCase()} highlight` : ''}`}
         style={{ top }}
         onBlur={onBlur}
         onKeyDown={onCardKeyDown}
         onClick={onCardClick}
         onMouseDown={onCardMouseDown}
+        onPointerEnter={() => highlight && useHighlightUiStore.getState().setLinkedHover(highlight.id)}
+        onPointerLeave={() => highlight && useHighlightUiStore.getState().setLinkedHover(null)}
       >
         {compact && <span className="margin-note__preview">{note.text || note.quote}</span>}
 
@@ -277,7 +283,14 @@ export const MarginNoteCard = memo(function MarginNoteCard({
             </div>
           )}
 
-          {note.quote && <blockquote className="margin-note__quote">{note.quote}</blockquote>}
+          {note.quote && (
+            <blockquote
+              className={`margin-note__quote${highlight ? ' is-linked' : ''}`}
+              data-highlight-color={highlight?.color}
+            >
+              {note.quote}
+            </blockquote>
+          )}
 
           {editing ? (
             <>

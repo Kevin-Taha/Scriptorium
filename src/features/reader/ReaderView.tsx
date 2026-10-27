@@ -17,6 +17,8 @@ import { useKeyboardShortcuts } from '../navigation/useKeyboardShortcuts';
 import { MarginColumn } from '../notes/MarginColumn';
 import { NotesPanel } from '../notes/NotesPanel';
 import { useNotesStore } from '../notes/notesStore';
+import { useHighlightsStore } from '../notes/highlightsStore';
+import { PageHighlights } from '../notes/PageHighlights';
 import { PageNoteMarkers } from '../notes/PageNoteMarkers';
 import { SelectionNotePopover } from '../notes/SelectionNotePopover';
 import { SearchHighlights } from '../search/SearchHighlights';
@@ -30,6 +32,7 @@ import './reader.css';
 const renderMargin = (page: number, size: PageSize) => <MarginColumn page={page} size={size} />;
 const renderPageOverlay = (page: number, size: PageSize) => (
   <>
+    <PageHighlights page={page} size={size} />
     <SearchHighlights page={page} size={size} />
     <PageNoteMarkers page={page} size={size} />
     <BookmarkRibbon page={page} />
@@ -71,7 +74,7 @@ function ReaderToolbar() {
   const sidebarOpen = useReaderStore((s) => s.sidebarOpen);
   const toggleSidebar = useReaderStore((s) => s.toggleSidebar);
   const section = useCurrentSection();
-  const noteCount = useNotesStore((s) => s.notes.length);
+  const noteCount = useAnnotationCount();
 
   return (
     <header className="reader__toolbar" role="toolbar" aria-label="Reader">
@@ -134,6 +137,16 @@ function useCurrentSection(): string | null {
   const page = useReaderStore((s) => s.location.page);
   const outline = useReaderStore((s) => s.outline);
   return useMemo(() => sectionForPage(outline, page), [outline, page]);
+}
+
+/** Notes plus highlights that have no note of their own: everything the review lists. */
+function useAnnotationCount(): number {
+  const notes = useNotesStore((s) => s.notes);
+  const highlights = useHighlightsStore((s) => s.highlights);
+  return useMemo(() => {
+    const linked = new Set(notes.map((n) => n.highlightId).filter(Boolean));
+    return notes.length + highlights.filter((h) => !linked.has(h.id)).length;
+  }, [notes, highlights]);
 }
 
 const TABS: { id: SidebarTab; label: string; Icon?: typeof SearchIcon }[] = [

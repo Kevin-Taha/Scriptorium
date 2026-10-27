@@ -257,6 +257,14 @@
   -webkit-line-clamp: 3;
 }
 
+/* A note written for a highlight: its quote rule takes the highlight's colour (see
+   `[data-highlight-color]` in highlights.css), so the passage on the page and the note
+   read as one thing even if the note is another colour. */
+.margin-note__quote.is-linked {
+  padding-left: 7px;
+  border-left: 3px solid var(--link-color, var(--note-dot));
+}
+
 .margin-note__body {
   max-height: calc(var(--note-line) * 6);
   overflow: hidden;
@@ -647,6 +655,16 @@
   width: 10px;
   height: 10px;
   margin-top: 6px;
+  background: var(--note-dot);
+  border-radius: var(--radius-full);
+}
+
+/* A marker bar in the highlight's colour, in the dot's column, for passages without a note. */
+.notes-panel__bar {
+  flex: none;
+  width: 4px;
+  height: 16px;
+  margin: 2px 3px 0;
   background: var(--note-dot);
   border-radius: var(--radius-full);
 }

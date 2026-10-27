@@ -153,7 +153,7 @@ builds on the dependable local reading and note-taking loop.
 - ✅ **Full-text search:** search the book with a results list, page context, in-page highlights, and history-aware jumps.
 - ✅ **Page labels:** show and navigate printed page labels, including Roman numerals and offsets, alongside PDF page numbers.
 - ✅ **Link peek:** preview a figure, equation, or reference in a popover without leaving the current page.
-- **Highlights:** add colored text highlights and link them to margin notes.
+- ✅ **Highlights:** add colored text highlights and link them to margin notes.
 - **Pinned reference pane:** keep a page, figure, or appendix visible beside the current reading location.
 - **Narrow layouts:** collapse the margin column to a rail of note markers on small windows and tablets.
 - **Accessibility:** strengthen screen-reader semantics, focus management, contrast, and keyboard navigation throughout.

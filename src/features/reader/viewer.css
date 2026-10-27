@@ -79,10 +79,12 @@
   background: color-mix(in srgb, var(--color-accent) 10%, transparent);
 }
 
+/* Deliberately no z-index: the overlay then paints with the canvas (beneath the text layer, so
+   selections show over highlights) and does not isolate its children, which lets highlights
+   multiply with the page. Its content never takes pointer events. */
 .page-sheet__overlay {
   position: absolute;
   inset: 0;
-  z-index: 3;
   pointer-events: none;
 }
 

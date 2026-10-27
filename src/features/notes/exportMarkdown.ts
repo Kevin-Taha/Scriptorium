@@ -1,11 +1,13 @@
 import { sectionForPage } from '@/lib/pdf/outline';
-import type { MarginNote, OutlineItem } from '@/lib/types';
+import type { Highlight, MarginNote, OutlineItem } from '@/lib/types';
 import { pageLabelFor } from '../navigation/pageLabels';
-import { groupNotesByPage } from './notesStore';
+import { buildAnnotations, groupAnnotationsByPage, type AnnotationItem } from './annotations';
+import { NOTE_COLOR_LABELS } from './noteColors';
 
 export interface MarkdownExportInput {
   title: string;
   notes: MarginNote[];
+  highlights?: Highlight[];
   outline?: OutlineItem[];
   /** Printed page labels (index = page - 1); page numbers are used when absent. */
   pageLabels?: readonly string[] | null;
@@ -23,9 +25,31 @@ export function exportableNotes(notes: MarginNote[]): MarginNote[] {
   return notes.filter(isExportable);
 }
 
+export function exportableHighlights(highlights: Highlight[]): Highlight[] {
+  return highlights.filter((highlight) => highlight.text.trim() !== '');
+}
+
+/** "1 note", "3 notes and 1 highlight", "2 highlights". */
+export function describeAnnotations(noteCount: number, highlightCount: number): string {
+  const parts: string[] = [];
+  if (noteCount > 0 || highlightCount === 0) parts.push(`${noteCount} ${noteCount === 1 ? 'note' : 'notes'}`);
+  if (highlightCount > 0)
+    parts.push(`${highlightCount} ${highlightCount === 1 ? 'highlight' : 'highlights'}`);
+  return parts.join(' and ');
+}
+
+/** "1 note on 1 page", "3 notes and 2 highlights on 4 pages", "2 highlights on 1 page". */
+export function describeAnnotationCount(
+  noteCount: number,
+  highlightCount: number,
+  pageCount: number,
+): string {
+  return `${describeAnnotations(noteCount, highlightCount)} on ${pageCount} ${pageCount === 1 ? 'page' : 'pages'}`;
+}
+
 /** "1 note on 1 page", "42 notes on 17 pages". */
 export function describeNoteCount(noteCount: number, pageCount: number): string {
-  return `${noteCount} ${noteCount === 1 ? 'note' : 'notes'} on ${pageCount} ${pageCount === 1 ? 'page' : 'pages'}`;
+  return describeAnnotationCount(noteCount, 0, pageCount);
 }
 
 /** Escapes characters that would change how a one-line title renders as Markdown. */
@@ -74,32 +98,53 @@ function renderNote(note: MarginNote): string {
   return parts.join('\n\n');
 }
 
+/** The passage as a blockquote, then its colour (Markdown has no standard highlight syntax). */
+function renderHighlight(highlight: Highlight): string {
+  const label = `_(highlight, ${NOTE_COLOR_LABELS[highlight.color].toLowerCase()})_`;
+  return [toBlockquote(highlight.text), label].join('\n\n');
+}
+
+function renderItem(item: AnnotationItem): string {
+  if (item.kind === 'highlight') return renderHighlight(item.highlight);
+  if (!item.highlight) return renderNote(item.note);
+  // The note's own quote is the highlight's text: show the passage once, then the note under it.
+  const text = normalizeLineEndings(item.note.text).trim();
+  return [renderHighlight(item.highlight), text ? neutralizeBlockMarkers(text) : '']
+    .filter(Boolean)
+    .join('\n\n');
+}
+
 /**
- * Renders notes as a Markdown document: one section per page (ascending), with
- * each note's quote as a blockquote followed by its text. Notes with neither
- * text nor quote are skipped.
+ * Renders notes and highlights as a Markdown document: one section per page
+ * (ascending), top to bottom. A note's quote becomes a blockquote followed by
+ * its text; a highlight is a blockquote followed by `_(highlight, colour)_`,
+ * with the note written for it underneath. Notes with neither text nor quote
+ * are skipped.
  */
 export function notesToMarkdown({
   title,
   notes,
+  highlights = [],
   outline = [],
   pageLabels = null,
   exportedAt,
 }: MarkdownExportInput): string {
-  const groups = groupNotesByPage(exportableNotes(notes));
-  const noteCount = groups.reduce((sum, group) => sum + group.notes.length, 0);
+  const keptNotes = exportableNotes(notes);
+  const keptHighlights = exportableHighlights(highlights);
+  const groups = groupAnnotationsByPage(buildAnnotations(keptNotes, keptHighlights));
   const heading = escapeMarkdownInline(title) || 'Untitled';
 
-  const sections = groups.map(({ page, notes: pageNotes }) => {
+  const sections = groups.map(({ page, items }) => {
     const section = sectionForPage(outline, page);
     const pageLabel = `Page ${escapeMarkdownInline(pageLabelFor(pageLabels, page))}`;
     const label = section ? `${pageLabel} · ${escapeMarkdownInline(section)}` : pageLabel;
-    return [`## ${label}`, ...pageNotes.map(renderNote)].join('\n\n');
+    return [`## ${label}`, ...items.map(renderItem)].join('\n\n');
   });
 
+  const counts = describeAnnotationCount(keptNotes.length, keptHighlights.length, groups.length);
   const intro = [
     `# Notes — ${heading}`,
-    `_Exported from Scriptorium on ${formatExportDate(exportedAt)} · ${describeNoteCount(noteCount, groups.length)}_`,
+    `_Exported from Scriptorium on ${formatExportDate(exportedAt)} · ${counts}_`,
   ].join('\n\n');
 
   const body = sections.join('\n\n---\n\n');

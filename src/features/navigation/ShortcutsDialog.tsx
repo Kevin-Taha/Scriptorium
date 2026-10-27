@@ -44,6 +44,7 @@ const groups = [
     shortcuts: [
       { label: 'Toggle bookmark', keys: ['B'] },
       { label: 'New margin note', detail: 'Select text to include a quote', keys: ['N'] },
+      { label: 'Highlight selected text', detail: 'In the colour used last', keys: ['H'] },
       { label: 'Review notes', keys: ['Shift', 'R'] },
     ],
   },

@@ -2,10 +2,11 @@ import { memo, useMemo, useState } from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import type { PDFDocumentProxy } from '@/lib/pdf/pdfjs';
 import { sectionForPage } from '@/lib/pdf/outline';
-import type { DocId, MarginNote, OutlineItem } from '@/lib/types';
+import type { DocId, OutlineItem } from '@/lib/types';
 import { usePageLabel } from '../navigation/pageLabels';
+import { sameAnnotations, type AnnotationItem } from './annotations';
 import { jumpToPage } from './reviewActions';
-import { sameNotes } from './reviewFilter';
+import { ReviewHighlight } from './ReviewHighlight';
 import { ReviewNote } from './ReviewNote';
 import { ReviewThumbnail } from './ReviewThumbnail';
 
@@ -14,7 +15,7 @@ interface ReviewRowProps {
   docId: DocId;
   outline: OutlineItem[];
   page: number;
-  notes: MarginNote[];
+  items: AnnotationItem[];
   dense: boolean;
   /** The note being edited, when it is on this page. */
   editingId: string | null;
@@ -32,17 +33,17 @@ function areEqual(prev: ReviewRowProps, next: ReviewRowProps): boolean {
     prev.editingId === next.editingId &&
     prev.terms === next.terms &&
     prev.onEdit === next.onEdit &&
-    sameNotes(prev.notes, next.notes)
+    sameAnnotations(prev.items, next.items)
   );
 }
 
-/** A page with notes: thumbnail (comfortable only), page heading and the page's notes. */
+/** A page with notes or highlights: thumbnail (comfortable only), page heading and the page's items. */
 export const ReviewRow = memo(function ReviewRow({
   pdf,
   docId,
   outline,
   page,
-  notes,
+  items,
   dense,
   editingId,
   terms,
@@ -55,7 +56,7 @@ export const ReviewRow = memo(function ReviewRow({
 
   return (
     <section className="review-row" aria-labelledby={headingId}>
-      {!dense && <ReviewThumbnail pdf={pdf} docId={docId} page={page} notes={notes} activeId={activeId} />}
+      {!dense && <ReviewThumbnail pdf={pdf} docId={docId} page={page} items={items} activeId={activeId} />}
       <div className="review-row__body">
         <header className="review-row__header">
           <h2 className="review-row__title" id={headingId}>
@@ -81,15 +82,20 @@ export const ReviewRow = memo(function ReviewRow({
           </button>
         </header>
         <ul className="review-row__notes">
-          {notes.map((note) => (
-            <li key={note.id}>
-              <ReviewNote
-                note={note}
-                editing={note.id === editingId}
-                terms={terms}
-                onEdit={onEdit}
-                onActive={setActiveId}
-              />
+          {items.map((item) => (
+            <li key={`${item.kind}:${item.id}`}>
+              {item.kind === 'note' ? (
+                <ReviewNote
+                  note={item.note}
+                  highlight={item.highlight}
+                  editing={item.id === editingId}
+                  terms={terms}
+                  onEdit={onEdit}
+                  onActive={setActiveId}
+                />
+              ) : (
+                <ReviewHighlight highlight={item.highlight} terms={terms} onActive={setActiveId} />
+              )}
             </li>
           ))}
         </ul>

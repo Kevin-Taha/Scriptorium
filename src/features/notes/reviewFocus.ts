@@ -4,7 +4,12 @@ function visibleNotes(): HTMLElement[] {
   return [...document.querySelectorAll<HTMLElement>(NOTE_SELECTOR)];
 }
 
-/** Moves focus to the next (or previous) visible note; the first press lands on the first note. */
+/** Rows are notes and highlights; each carries one of the two id attributes. */
+function rowId(element: HTMLElement): string | undefined {
+  return element.dataset.noteId ?? element.dataset.highlightId;
+}
+
+/** Moves focus to the next (or previous) visible note or highlight; the first press lands on the first row. */
 export function focusAdjacentNote(direction: 1 | -1): void {
   const notes = visibleNotes();
   if (notes.length === 0) return;
@@ -15,14 +20,21 @@ export function focusAdjacentNote(direction: 1 | -1): void {
   target.scrollIntoView({ block: 'nearest' });
 }
 
-export function focusNoteById(noteId: string | undefined): void {
-  if (!noteId) return;
-  document.querySelector<HTMLElement>(`${NOTE_SELECTOR}[data-note-id="${CSS.escape(noteId)}"]`)?.focus();
+/** Focuses the note or highlight row with this id. */
+export function focusNoteById(id: string | undefined): void {
+  if (!id) return;
+  const escaped = CSS.escape(id);
+  document
+    .querySelector<HTMLElement>(
+      `${NOTE_SELECTOR}[data-note-id="${escaped}"], ${NOTE_SELECTOR}[data-highlight-id="${escaped}"]`,
+    )
+    ?.focus();
 }
 
-/** The id of the note after (or, failing that, before) `noteId` in the current list. */
-export function neighbourNoteId(noteId: string): string | undefined {
+/** The id of the row after (or, failing that, before) `id` in the current list. */
+export function neighbourNoteId(id: string): string | undefined {
   const notes = visibleNotes();
-  const index = notes.findIndex((element) => element.dataset.noteId === noteId);
-  return (notes[index + 1] ?? notes[index - 1])?.dataset.noteId;
+  const index = notes.findIndex((element) => rowId(element) === id);
+  const neighbour = notes[index + 1] ?? notes[index - 1];
+  return neighbour && rowId(neighbour);
 }

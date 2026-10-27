@@ -1,13 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import type { MarginNote } from '@/lib/types';
+import type { Highlight, MarginNote } from '@/lib/types';
+import { buildAnnotations } from './annotations';
 import {
   NO_FILTERS,
+  countAnnotationsByColor,
   countByColor,
+  filterAnnotations,
   filterNotes,
   foldText,
   hasActiveFilters,
   highlightSegments,
   matchesFilters,
+  matchesItemFilters,
   sameNotes,
   searchTerms,
   toggleColor,
@@ -166,5 +170,66 @@ describe('sameNotes', () => {
     expect(sameNotes([a, b], [b, a])).toBe(false);
     expect(sameNotes([a], [a, b])).toBe(false);
     expect(sameNotes([a], [{ ...a, text: 'edited' }])).toBe(false);
+  });
+});
+
+function highlight(overrides: Partial<Highlight> = {}): Highlight {
+  sequence += 1;
+  return {
+    id: `h${sequence}`,
+    docId: 'doc',
+    page: 1,
+    rects: [{ x: 0.1, y: 0.3, w: 0.5, h: 0.02 }],
+    text: 'highlighted passage',
+    color: 'sky',
+    createdAt: sequence,
+    updatedAt: sequence,
+    ...overrides,
+  };
+}
+
+describe('filtering notes and highlights together', () => {
+  const plain = note({ id: 'plain', text: 'Entropy never decreases', color: 'amber' });
+  const standalone = highlight({ id: 'standalone', text: 'Second law of thermodynamics', color: 'sage' });
+  const linkedHighlight = highlight({ id: 'lh', text: 'Heat flows from hot to cold', color: 'sky' });
+  const linkedNote = note({ id: 'linked', text: 'Why?', color: 'rose', highlightId: 'lh', y: 0.31 });
+  const items = buildAnnotations([plain, linkedNote], [standalone, linkedHighlight]);
+
+  it('returns the same array when no filter is active', () => {
+    expect(filterAnnotations(items, NO_FILTERS)).toBe(items);
+  });
+
+  it('matches the text of highlights, and a linked note matches through its highlight', () => {
+    const ids = (query: string) => filterAnnotations(items, { query, colors: [] }).map((i) => i.id);
+    expect(ids('thermodynamics')).toEqual(['standalone']);
+    expect(ids('hot cold')).toEqual(['linked']);
+    expect(ids('hot entropy')).toEqual([]);
+    expect(ids('hot')).toEqual(['linked']);
+    expect(ids('why hot')).toEqual(['linked']);
+    expect(ids('entropy')).toEqual(['plain']);
+  });
+
+  it('filters by the colour of a highlight or of a note, including a linked pair’s two colours', () => {
+    const ids = (colors: MarginNote['color'][]) =>
+      filterAnnotations(items, { query: '', colors }).map((i) => i.id);
+    expect(ids(['sage'])).toEqual(['standalone']);
+    expect(ids(['rose'])).toEqual(['linked']);
+    expect(ids(['sky'])).toEqual(['linked']);
+    expect(ids(['amber', 'sage'])).toEqual(['standalone', 'plain']);
+  });
+
+  it('keeps the item being edited visible', () => {
+    expect(filterAnnotations(items, { query: 'zzz', colors: [] }, 'plain').map((i) => i.id)).toEqual([
+      'plain',
+    ]);
+  });
+
+  it('matchesItemFilters combines text and colour', () => {
+    const [first] = items;
+    expect(matchesItemFilters(first, searchTerms('thermo'), ['sage'])).toBe(first.id === 'standalone');
+  });
+
+  it('counts an item under every colour it carries', () => {
+    expect(countAnnotationsByColor(items)).toEqual({ amber: 1, sage: 1, sky: 1, rose: 1, lavender: 0 });
   });
 });

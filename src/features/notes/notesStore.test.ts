@@ -218,4 +218,35 @@ describe('noteActions', () => {
     expect(useNotesStore.getState().editingId).toBeNull();
     await vi.waitFor(async () => expect(await listNotes(DOC)).toHaveLength(1));
   });
+
+  it('Undo keeps a note linked to its highlight', async () => {
+    await openDocument();
+    const original = useNotesStore
+      .getState()
+      .addNote({ page: 5, y: 0.42, quote: 'q', text: 'on a highlight', highlightId: 'h1' });
+    useNotesStore.getState().setEditing(null);
+
+    deleteNoteWithUndo(original);
+    useToastStore.getState().toasts.at(-1)!.action!.onAction();
+
+    expect(useNotesStore.getState().notes[0]).toMatchObject({ highlightId: 'h1', text: 'on a highlight' });
+  });
+});
+
+describe('note highlight links', () => {
+  it('stores the highlight a note was written for and persists it', async () => {
+    await openDocument();
+    const created = useNotesStore.getState().addNote({ page: 2, y: 0.3, quote: 'q', highlightId: 'h1' });
+    expect(created.highlightId).toBe('h1');
+    await vi.waitFor(async () => expect((await listNotes(DOC))[0].highlightId).toBe('h1'));
+  });
+
+  it('unlinks a note with an update and persists the change', async () => {
+    await openDocument();
+    const created = useNotesStore.getState().addNote({ page: 2, y: 0.3, quote: 'q', highlightId: 'h1' });
+    useNotesStore.getState().updateNote(created.id, { highlightId: undefined });
+    flushNotes();
+    expect(useNotesStore.getState().notes[0].highlightId).toBeUndefined();
+    await vi.waitFor(async () => expect((await listNotes(DOC))[0].highlightId).toBeUndefined());
+  });
 });

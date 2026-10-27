@@ -98,6 +98,35 @@ describe('readPageSelection', () => {
     expect(readPageSelection()!.multiline).toBe(false);
   });
 
+  it('returns merged highlight rectangles as fractions of the page, without container rects', () => {
+    const { text } = buildPages();
+    mockRangeRects([
+      rect(300, 70, 100, 20),
+      rect(301, 172, 100, 19),
+      rect(322, 70, 90, 20),
+      rect(100, 50, 600, 800), // end-of-content sentinel
+    ]);
+    select(text('a'), 0, text('b'), 5);
+
+    expect(readPageSelection()!.rects).toEqual([
+      { x: 0.03333, y: 0.25, w: 0.33667, h: 0.025 },
+      { x: 0.03333, y: 0.2775, w: 0.15, h: 0.025 },
+    ]);
+  });
+
+  it('keeps more of a long passage for a highlight than for a quote', () => {
+    const { text } = buildPages();
+    text('a').textContent = 'word '.repeat(300);
+    mockRangeRects([rect(300, 70, 120, 20)]);
+    const node = document.getElementById('a')!.firstChild!;
+    select(node, 0, node, node.textContent!.length);
+
+    const selection = readPageSelection()!;
+    expect(selection.quote.length).toBeLessThanOrEqual(600);
+    expect(selection.text.length).toBeGreaterThan(600);
+    expect(selection.text.length).toBeLessThanOrEqual(2000);
+  });
+
   it('ignores container-sized rectangles such as the pdf.js end-of-content sentinel', () => {
     const { text } = buildPages();
     mockRangeRects([rect(300, 70, 120, 20), rect(100, 50, 600, 800)]);

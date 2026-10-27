@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import type { MarginNote, OutlineItem } from '@/lib/types';
+import type { Highlight, MarginNote, OutlineItem } from '@/lib/types';
 import {
+  describeAnnotationCount,
   describeNoteCount,
   escapeMarkdownInline,
   exportFileName,
+  exportableHighlights,
   exportableNotes,
   notesToMarkdown,
   sanitizeFileName,
@@ -203,10 +205,161 @@ describe('notesToMarkdown', () => {
   });
 });
 
+describe('notesToMarkdown with highlights', () => {
+  let counter = 0;
+  function highlight(overrides: Partial<Highlight> & { top?: number } = {}): Highlight {
+    counter += 1;
+    const { top = 0.4, ...rest } = overrides;
+    return {
+      id: `h${counter}`,
+      docId: 'doc',
+      page: 1,
+      rects: [{ x: 0.1, y: top, w: 0.5, h: 0.02 }],
+      text: 'A highlighted passage',
+      color: 'amber',
+      createdAt: counter,
+      updatedAt: counter,
+      ...rest,
+    };
+  }
+
+  it('renders a highlight as a blockquote followed by its colour', () => {
+    const markdown = notesToMarkdown({
+      title: 'Book',
+      exportedAt,
+      notes: [],
+      highlights: [highlight({ page: 5, color: 'sage', text: 'Energy is conserved' })],
+    });
+
+    expect(markdown).toBe(
+      [
+        '# Notes — Book',
+        '',
+        '_Exported from Scriptorium on October 26, 2026 · 1 highlight on 1 page_',
+        '',
+        '## Page 5',
+        '',
+        '> Energy is conserved',
+        '',
+        '_(highlight, sage)_',
+        '',
+      ].join('\n'),
+    );
+  });
+
+  it('interleaves notes and highlights by vertical position and counts both', () => {
+    const markdown = notesToMarkdown({
+      title: 'Book',
+      exportedAt,
+      notes: [note({ y: 0.7, text: 'late note' }), note({ y: 0.1, text: 'early note' })],
+      highlights: [highlight({ top: 0.4, text: 'middle passage' })],
+    });
+
+    const order = ['early note', 'middle passage', 'late note'].map((text) => markdown.indexOf(text));
+    expect(order.every((p) => p > 0)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+    expect(markdown).toContain('· 2 notes and 1 highlight on 1 page_');
+  });
+
+  it('puts the note written for a highlight under it, quoting the passage once', () => {
+    const h = highlight({ id: 'linked', text: 'Force equals mass times acceleration', color: 'sky' });
+    const markdown = notesToMarkdown({
+      title: 'Book',
+      exportedAt,
+      notes: [
+        note({
+          text: 'Remember the units',
+          quote: 'Force equals mass times acceleration',
+          highlightId: 'linked',
+          y: 0.41,
+        }),
+      ],
+      highlights: [h],
+    });
+
+    expect(markdown).toContain(
+      '## Page 1\n\n> Force equals mass times acceleration\n\n_(highlight, sky)_\n\nRemember the units\n',
+    );
+    expect(markdown.match(/Force equals mass/g)).toHaveLength(1);
+    expect(markdown).toContain('· 1 note and 1 highlight on 1 page_');
+  });
+
+  it('keeps a quote-only linked note from adding anything beyond the highlight', () => {
+    const markdown = notesToMarkdown({
+      title: 'Book',
+      exportedAt,
+      notes: [note({ text: '', quote: 'Passage', highlightId: 'h' })],
+      highlights: [highlight({ id: 'h', text: 'Passage' })],
+    });
+    expect(markdown).toContain('## Page 1\n\n> Passage\n\n_(highlight, amber)_\n');
+  });
+
+  it('shows a highlight on its own once its note is gone or unlinked', () => {
+    const markdown = notesToMarkdown({
+      title: 'Book',
+      exportedAt,
+      notes: [note({ text: 'Separate thought' })],
+      highlights: [highlight({ text: 'Orphan passage' })],
+    });
+    expect(markdown).toContain('> Orphan passage\n\n_(highlight, amber)_');
+    expect(markdown).toContain('Separate thought');
+  });
+
+  it('puts pages that only have highlights in the document, with their section and label', () => {
+    const markdown = notesToMarkdown({
+      title: 'Book',
+      outline,
+      pageLabels: ['i', 'ii', '1'],
+      exportedAt,
+      notes: [],
+      highlights: [highlight({ page: 3 }), highlight({ page: 37 })],
+    });
+    expect(markdown).toContain('## Page 1\n');
+    expect(markdown).toContain('## Page 37 · 3.2 Velocity\n');
+  });
+
+  it('skips highlights without text', () => {
+    const markdown = notesToMarkdown({
+      title: 'Book',
+      exportedAt,
+      notes: [],
+      highlights: [highlight({ text: '   ' })],
+    });
+    expect(markdown).toContain('0 notes on 0 pages');
+    expect(markdown).not.toContain('highlight,');
+  });
+
+  it('quotes every line of a multi-line passage', () => {
+    const markdown = notesToMarkdown({
+      title: 'Book',
+      exportedAt,
+      notes: [],
+      highlights: [highlight({ text: 'Line one\nLine two' })],
+    });
+    expect(markdown).toContain('> Line one\n> Line two\n\n_(highlight, amber)_');
+  });
+});
+
 describe('exportableNotes', () => {
   it('keeps notes with text or a quote', () => {
     const notes = [note({ text: '' }), note({ text: 'x' }), note({ text: ' ', quote: 'q' })];
     expect(exportableNotes(notes).map((n) => n.id)).toEqual([notes[1].id, notes[2].id]);
+  });
+});
+
+describe('describeAnnotationCount', () => {
+  it('names notes, highlights, or both, with the page count', () => {
+    expect(describeAnnotationCount(1, 0, 1)).toBe('1 note on 1 page');
+    expect(describeAnnotationCount(0, 2, 1)).toBe('2 highlights on 1 page');
+    expect(describeAnnotationCount(3, 1, 4)).toBe('3 notes and 1 highlight on 4 pages');
+    expect(describeAnnotationCount(0, 0, 0)).toBe('0 notes on 0 pages');
+  });
+});
+
+describe('exportableHighlights', () => {
+  it('drops highlights with no text', () => {
+    const kept = { id: 'a', text: 'x' } as Highlight;
+    expect(exportableHighlights([kept, { id: 'b', text: ' ' } as Highlight])).toEqual([kept]);
   });
 });
 

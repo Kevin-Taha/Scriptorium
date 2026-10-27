@@ -8,9 +8,9 @@ import { toggleColor, type ReviewFilters } from './reviewFilter';
 
 interface ReviewToolbarProps {
   title: string;
-  /** e.g. "42 notes on 17 pages", or "7 of 42 notes on 4 pages" while filtering. */
+  /** e.g. "3 notes and 2 highlights on 4 pages", or "5 of 12 notes and highlights on 2 pages" while filtering. */
   countText: string;
-  /** Whether the book has any notes; filters and export only make sense when it does. */
+  /** Whether the book has any notes or highlights; filters and export only make sense when it does. */
   hasNotes: boolean;
   exportCount: number;
   colorCounts: Record<NoteColor, number>;
@@ -104,7 +104,7 @@ export function ReviewToolbar(props: ReviewToolbarProps) {
                   className={`chip review-chip tooltip tooltip--below${active ? ' is-active' : ''}`}
                   data-note-color={color}
                   data-tooltip={`${NOTE_COLOR_LABELS[color]} · ${count}`}
-                  aria-label={`${NOTE_COLOR_LABELS[color]} notes (${count})`}
+                  aria-label={`${NOTE_COLOR_LABELS[color]} notes and highlights (${count})`}
                   aria-pressed={active}
                   onClick={() => onFiltersChange({ ...filters, colors: toggleColor(filters.colors, color) })}
                 >
@@ -138,7 +138,7 @@ export function ReviewToolbar(props: ReviewToolbarProps) {
           type="button"
           className="btn review__export review-tooltip-end tooltip tooltip--below"
           aria-label="Export Markdown"
-          data-tooltip={`Exports all ${exportCount} ${exportCount === 1 ? 'note' : 'notes'}, ignoring filters`}
+          data-tooltip="Exports all notes and highlights, ignoring filters"
           disabled={exportCount === 0}
           onClick={onExport}
         >

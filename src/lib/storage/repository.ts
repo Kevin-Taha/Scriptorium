@@ -3,6 +3,7 @@ import {
   type AppSettings,
   type Bookmark,
   type DocId,
+  type Highlight,
   type LibraryDocument,
   type MarginNote,
   type ReadingState,
@@ -47,16 +48,19 @@ export async function getDocumentFile(id: DocId): Promise<Blob | undefined> {
   return (await getDB()).get('files', id);
 }
 
-/** Removes a document and everything attached to it (file, progress, bookmarks, notes). */
+/** Removes a document and everything attached to it (file, progress, bookmarks, notes, highlights). */
 export async function deleteDocument(id: DocId): Promise<void> {
   const db = await getDB();
-  const tx = db.transaction(['documents', 'files', 'readingState', 'bookmarks', 'notes'], 'readwrite');
+  const tx = db.transaction(
+    ['documents', 'files', 'readingState', 'bookmarks', 'notes', 'highlights'],
+    'readwrite',
+  );
   await Promise.all([
     tx.objectStore('documents').delete(id),
     tx.objectStore('files').delete(id),
     tx.objectStore('readingState').delete(id),
   ]);
-  for (const storeName of ['bookmarks', 'notes'] as const) {
+  for (const storeName of ['bookmarks', 'notes', 'highlights'] as const) {
     const store = tx.objectStore(storeName);
     for (const key of await store.index('docId').getAllKeys(id)) await store.delete(key);
   }
@@ -101,6 +105,23 @@ export async function putNote(note: MarginNote): Promise<void> {
 
 export async function deleteNote(id: string): Promise<void> {
   await (await getDB()).delete('notes', id);
+}
+
+// --------------------------------------------------------------- highlights
+
+/** Reading order: by page, then top to bottom, then oldest first. */
+export async function listHighlights(docId: DocId): Promise<Highlight[]> {
+  const items = await (await getDB()).getAllFromIndex('highlights', 'docId', docId);
+  const top = (h: Highlight) => h.rects[0]?.y ?? 0;
+  return items.sort((a, b) => a.page - b.page || top(a) - top(b) || a.createdAt - b.createdAt);
+}
+
+export async function putHighlight(highlight: Highlight): Promise<void> {
+  await (await getDB()).put('highlights', highlight);
+}
+
+export async function deleteHighlight(id: string): Promise<void> {
+  await (await getDB()).delete('highlights', id);
 }
 
 // ----------------------------------------------------------------- settings

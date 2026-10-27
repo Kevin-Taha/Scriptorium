@@ -11,6 +11,9 @@ where you left off — days later.
 - **Margin notes, per page.** Every page has a margin column. Click beside a passage to jot a
   note anchored at that spot, or select text and choose *Add margin note* to keep the quote.
   Notes never overlap, come in five colours, and save as you type.
+- **Highlights linked to notes.** Select text and pick a colour (or press <kbd>H</kbd>) to
+  highlight it like a marker. Click a highlight to recolour it, delete it, or write a note
+  that stays attached to the passage. Highlights appear in the review and the Markdown export.
 - **Collated notes review.** A dense, page-by-page view of every page you've annotated — with
   page thumbnails, filters, inline editing, and Markdown export — for fast review before an exam.
 - **Never lose your place.** Reading position (page, position on the page, and zoom) is saved
@@ -36,6 +39,7 @@ where you left off — days later.
 | --- | --- |
 | <kbd>B</kbd> | Toggle bookmark on the current page |
 | <kbd>N</kbd> | New margin note on the current page (uses the selected text as a quote) |
+| <kbd>H</kbd> | Highlight the selected text in the colour used last |
 | <kbd>G</kbd> | Go to page (printed labels work; `#N` for a PDF page number) |
 | <kbd>Ctrl</kbd>+<kbd>F</kbd> or <kbd>/</kbd> | Search the book; <kbd>Enter</kbd> / <kbd>Shift</kbd>+<kbd>Enter</kbd> step through results |
 | <kbd>[</kbd> | Toggle the sidebar |

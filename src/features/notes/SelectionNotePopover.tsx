@@ -1,25 +1,37 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { MessageSquarePlus } from 'lucide-react';
-import { addNoteFromSelection, readPageSelection } from './selectionNote';
+import { useEffect, useRef, useState } from 'react';
+import { Highlighter, MessageSquarePlus } from 'lucide-react';
+import { NOTE_COLORS } from '@/lib/types';
+import { useFloatingPosition, type FloatingAnchor } from './floatingPosition';
+import { highlightSelection } from './highlightActions';
+import { HighlightPopover } from './HighlightPopover';
+import { useHighlightsStore } from './highlightsStore';
+import { NOTE_COLOR_LABELS } from './noteColors';
 import { useNotesStore } from './notesStore';
+import { addNoteFromSelection, readPageSelection } from './selectionNote';
+import { useHighlightShortcut } from './useHighlightShortcut';
+import './highlights.css';
 import './notes.css';
 
-const OFFSET = 8;
-const EDGE = 8;
-
-interface SelectionAnchor {
-  /** Horizontal centre of the selection end, in viewport px. */
-  x: number;
-  top: number;
-  bottom: number;
-  /** Multi-line selections put the popover below the last line so it never covers selected text. */
-  preferBelow: boolean;
+/**
+ * Everything that appears over the page for annotating: the toolbar for a text
+ * selection (highlight in a colour, or add a margin note), the popover for an
+ * existing highlight, and the `H` shortcut. Mount once in the reader.
+ */
+export function SelectionNotePopover() {
+  useHighlightShortcut();
+  return (
+    <>
+      <SelectionToolbar />
+      <HighlightPopover />
+    </>
+  );
 }
 
-/** Floating "Add margin note" button shown while text on a page is selected. */
-export function SelectionNotePopover() {
-  const [anchor, setAnchor] = useState<SelectionAnchor | null>(null);
+/** Floating toolbar shown while text on a page is selected. */
+function SelectionToolbar() {
+  const [anchor, setAnchor] = useState<FloatingAnchor | null>(null);
   const editing = useNotesStore((s) => s.editingId !== null);
+  const lastColor = useHighlightsStore((s) => s.lastColor);
   const popoverRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -34,6 +46,7 @@ export function SelectionNotePopover() {
               x: selection.endRect.right,
               top: selection.endRect.top,
               bottom: selection.endRect.bottom,
+              // Multi-line selections put the toolbar below the last line so it never covers selected text.
               preferBelow: selection.multiline,
             }
           : null,
@@ -76,33 +89,39 @@ export function SelectionNotePopover() {
   }, []);
 
   const visible = anchor !== null && !editing;
-
-  // Sit 8px above the selection end, or below it when there is no room (or the
-  // selection runs over several lines), and keep the popover on screen.
-  useLayoutEffect(() => {
-    const popover = popoverRef.current;
-    if (!popover || !anchor) return;
-    const { offsetWidth: width, offsetHeight: height } = popover;
-    const bounds = document.querySelector('.reader__viewport')?.getBoundingClientRect();
-    const minTop = Math.max(bounds?.top ?? 0, 0) + EDGE;
-    const maxTop = window.innerHeight - height - EDGE;
-    const above = anchor.top - OFFSET - height;
-    const below = anchor.bottom + OFFSET;
-    const fitsAbove = above >= minTop;
-    const fitsBelow = below <= maxTop;
-    const top = (anchor.preferBelow && fitsBelow) || !fitsAbove ? below : above;
-    popover.style.top = `${Math.round(Math.min(top, maxTop))}px`;
-    popover.style.left = `${Math.round(Math.max(EDGE, Math.min(anchor.x - width / 2, window.innerWidth - width - EDGE)))}px`;
-  }, [anchor, visible]);
+  useFloatingPosition(popoverRef, anchor, visible);
 
   if (!visible) return null;
 
   return (
     <div ref={popoverRef} className="selection-popover" role="toolbar" aria-label="Selection actions">
+      <div className="selection-popover__highlight" role="group" aria-label="Highlight selection">
+        <Highlighter className="selection-popover__icon" aria-hidden="true" />
+        {NOTE_COLORS.map((color) => (
+          <button
+            key={color}
+            type="button"
+            className={`selection-popover__swatch tooltip${color === lastColor ? ' is-last' : ''}`}
+            data-note-color={color}
+            data-tooltip={`Highlight ${NOTE_COLOR_LABELS[color].toLowerCase()}`}
+            aria-label={`Highlight ${NOTE_COLOR_LABELS[color]}`}
+            aria-keyshortcuts={color === lastColor ? 'H' : undefined}
+            // Pressing a button must not clear the text selection it is about to use.
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => {
+              highlightSelection(color);
+              setAnchor(null);
+            }}
+          />
+        ))}
+        <kbd className="kbd" aria-hidden="true">
+          H
+        </kbd>
+      </div>
+      <span className="selection-popover__divider" aria-hidden="true" />
       <button
         type="button"
         className="selection-popover__action"
-        // Pressing the button must not clear the text selection it is about to quote.
         onMouseDown={(e) => e.preventDefault()}
         onClick={() => {
           addNoteFromSelection();
