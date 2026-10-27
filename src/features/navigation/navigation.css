@@ -10,6 +10,9 @@
   width: 52px;
   padding: 0 var(--space-1);
 }
+.page-field__input--labeled {
+  width: 80px;
+}
 .page-field__input.is-invalid {
   border-color: var(--color-danger);
   animation: page-field-shake var(--duration-base) var(--ease-standard);

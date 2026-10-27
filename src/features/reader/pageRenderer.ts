@@ -1,4 +1,5 @@
 import { TextLayer, type PageViewport, type RenderTask } from 'pdfjs-dist';
+import { pageCanvasContext } from '@/lib/pdf/canvas';
 import { resolveDestination } from '@/lib/pdf/outline';
 import type { PDFDocumentProxy, PDFPageProxy } from '@/lib/pdf/pdfjs';
 import type { ReadingLocation } from '@/lib/types';
@@ -48,6 +49,14 @@ interface LinkAnnotation {
   url?: string;
   dest?: string | unknown[] | null;
   action?: string;
+}
+
+/** Destination resolvers of the internal links currently on screen. */
+const internalLinkTargets = new WeakMap<Element, () => Promise<ReadingLocation | null>>();
+
+/** Destination of an internal link rendered by the viewer; null for any other element. */
+export function internalLinkTarget(element: Element): Promise<ReadingLocation | null> | null {
+  return internalLinkTargets.get(element)?.() ?? null;
 }
 
 /**
@@ -244,7 +253,8 @@ export class PageRenderer {
     canvas.width = Math.max(1, Math.floor(cssWidth * ratio));
     canvas.height = Math.max(1, Math.floor(cssHeight * ratio));
     const task = page.render({
-      canvas,
+      canvas: null,
+      canvasContext: pageCanvasContext(canvas),
       viewport,
       transform: [canvas.width / viewport.width, 0, 0, canvas.height / viewport.height, 0, 0],
     });
@@ -344,13 +354,16 @@ export class PageRenderer {
       link.target = '_blank';
       link.rel = 'noopener noreferrer';
       link.title = external;
+      link.dataset.link = 'external';
       return link;
     }
 
     link.href = '#';
-    link.title = 'Go to linked page';
+    link.dataset.link = 'internal';
+    link.setAttribute('aria-label', 'Go to linked page');
     let target: Promise<ReadingLocation | null> | null = null;
     const resolveOnce = () => (target ??= resolve!());
+    internalLinkTargets.set(link, resolveOnce);
     link.addEventListener('click', (event) => {
       event.preventDefault();
       void resolveOnce().then((location) => {
@@ -359,7 +372,7 @@ export class PageRenderer {
     });
     // Resolve eagerly (it's cheap) so the link can name its destination.
     void resolveOnce().then((location) => {
-      if (location) link.title = `Go to page ${location.page}`;
+      if (location) link.setAttribute('aria-label', `Go to page ${location.page}`);
     });
     return link;
   }

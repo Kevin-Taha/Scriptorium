@@ -106,6 +106,18 @@ describe('locate / yOf', () => {
 describe('scroll positions', () => {
   const layout = computeLayout(uniform(20), 1.2);
 
+  it('leaves room to scroll the last lines clear of the Return pill', () => {
+    const viewportHeight = 852;
+    const maxScrollTop = layout.totalHeight - viewportHeight;
+    const lastPageBottom = layout.tops[19] + layout.heights[19];
+    // Return pill: 40px tall, 24px above the bottom edge, plus breathing room.
+    expect(paddingBottom).toBeGreaterThanOrEqual(24 + 40 + 24);
+    expect(maxScrollTop + viewportHeight - lastPageBottom).toBe(paddingBottom);
+    const atEnd = anchorAtScrollTop(layout, maxScrollTop);
+    expect(atEnd.page).toBe(20);
+    expect(scrollTopFor(layout, atEnd)).toBeCloseTo(maxScrollTop, 6);
+  });
+
   it('keeps the anchor inset above a location at the top of the viewport', () => {
     const scrollTop = scrollTopFor(layout, { page: 7, offset: 0.25 });
     expect(scrollTop).toBeCloseTo(layout.tops[6] + 0.25 * layout.heights[6] - anchorInset);

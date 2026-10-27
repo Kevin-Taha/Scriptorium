@@ -3,6 +3,7 @@ import { ArrowUpRight } from 'lucide-react';
 import type { PDFDocumentProxy } from '@/lib/pdf/pdfjs';
 import { sectionForPage } from '@/lib/pdf/outline';
 import type { DocId, MarginNote, OutlineItem } from '@/lib/types';
+import { usePageLabel } from '../navigation/pageLabels';
 import { jumpToPage } from './reviewActions';
 import { sameNotes } from './reviewFilter';
 import { ReviewNote } from './ReviewNote';
@@ -49,6 +50,7 @@ export const ReviewRow = memo(function ReviewRow({
 }: ReviewRowProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const section = useMemo(() => sectionForPage(outline, page), [outline, page]);
+  const pageLabel = usePageLabel(page);
   const headingId = `review-page-${page}`;
 
   return (
@@ -57,7 +59,7 @@ export const ReviewRow = memo(function ReviewRow({
       <div className="review-row__body">
         <header className="review-row__header">
           <h2 className="review-row__title" id={headingId}>
-            <span className="review-row__page">Page {page}</span>
+            <span className="review-row__page">Page {pageLabel}</span>
             {section && (
               <>
                 <span className="review-row__separator" aria-hidden="true">

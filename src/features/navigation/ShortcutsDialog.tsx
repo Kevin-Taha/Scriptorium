@@ -16,10 +16,18 @@ const groups = [
   {
     title: 'Navigate',
     shortcuts: [
-      { label: 'Go to page', keys: ['G'] },
+      { label: 'Go to page', detail: 'Enter a printed label, or # for a PDF page number', keys: ['G'] },
       { label: 'Go back', keys: ['Alt', '←'] },
       { label: 'Go forward', keys: ['Alt', '→'] },
       { label: 'Dismiss a control', keys: ['Esc'] },
+    ],
+  },
+  {
+    title: 'Search',
+    shortcuts: [
+      { label: 'Search the book', detail: 'Or press / · ⌘F on macOS', keys: ['Ctrl', 'F'] },
+      { label: 'Next result', detail: 'Also F3', keys: ['Enter'] },
+      { label: 'Previous result', detail: 'Also Shift+F3', keys: ['Shift', 'Enter'] },
     ],
   },
   {

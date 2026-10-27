@@ -5,6 +5,7 @@ import { deleteBookmark, listBookmarks, putBookmark } from '@/lib/storage/reposi
 import type { Bookmark, DocId } from '@/lib/types';
 import { createId } from '@/lib/util';
 import { useReaderStore } from '../reader/readerStore';
+import { pageLabelFor } from './pageLabels';
 
 interface BookmarksState {
   docId: DocId | null;
@@ -39,12 +40,13 @@ export const useBookmarksStore = create<BookmarksState>()((set, get) => ({
       get().remove(existing.id);
       return false;
     }
-    const section = sectionForPage(useReaderStore.getState().outline, page);
+    const reader = useReaderStore.getState();
+    const section = sectionForPage(reader.outline, page);
     const bookmark: Bookmark = {
       id: createId(),
       docId,
       page,
-      label: section ?? `Page ${page}`,
+      label: section ?? `Page ${pageLabelFor(reader.pageLabels, page)}`,
       createdAt: Date.now(),
     };
     set({ bookmarks: [...bookmarks, bookmark].sort(byPage) });
@@ -55,7 +57,10 @@ export const useBookmarksStore = create<BookmarksState>()((set, get) => ({
   rename(id, label) {
     const bookmark = get().bookmarks.find((b) => b.id === id);
     if (!bookmark) return;
-    const updated = { ...bookmark, label: label.trim() || `Page ${bookmark.page}` };
+    const updated = {
+      ...bookmark,
+      label: label.trim() || `Page ${pageLabelFor(useReaderStore.getState().pageLabels, bookmark.page)}`,
+    };
     set((s) => ({ bookmarks: s.bookmarks.map((b) => (b.id === id ? updated : b)) }));
     putBookmark(updated).catch(reportSaveError);
   },

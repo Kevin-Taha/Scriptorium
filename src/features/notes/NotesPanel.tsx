@@ -4,6 +4,7 @@ import { navigate } from '@/app/router';
 import { sectionForPage } from '@/lib/pdf/outline';
 import type { MarginNote } from '@/lib/types';
 import { useHistoryStore } from '../navigation/historyStore';
+import { pageLabelFor } from '../navigation/pageLabels';
 import { useReaderStore } from '../reader/readerStore';
 import { NOTE_COLOR_LABELS } from './noteColors';
 import { useNoteFocusStore } from './noteFocus';
@@ -23,6 +24,7 @@ export function NotesPanel() {
   const notes = useNotesStore((s) => s.notes);
   const docId = useReaderStore((s) => s.docId);
   const outline = useReaderStore((s) => s.outline);
+  const pageLabels = useReaderStore((s) => s.pageLabels);
 
   const groups = useMemo(() => groupNotesByPage(notes), [notes]);
   // Only the set of pages matters for section titles, not the note text being typed.
@@ -68,7 +70,7 @@ export function NotesPanel() {
       {groups.map(({ page, notes: pageNotes }) => (
         <section key={page} className="notes-panel__group" aria-label={`Notes on page ${page}`}>
           <h3 className="notes-panel__page">
-            <span className="notes-panel__page-number">Page {page}</span>
+            <span className="notes-panel__page-number">Page {pageLabelFor(pageLabels, page)}</span>
             {sections.get(page) && <span className="notes-panel__section">{sections.get(page)}</span>}
           </h3>
           <ul>

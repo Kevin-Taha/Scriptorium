@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import { Keyboard, LibraryBig, NotebookText, PanelLeft } from 'lucide-react';
+import { Keyboard, LibraryBig, NotebookText, PanelLeft, Search as SearchIcon } from 'lucide-react';
 import { AppearanceMenu } from '@/app/AppearanceMenu';
 import { navigate } from '@/app/router';
 import { usePagesInverted } from '@/app/settingsStore';
@@ -19,6 +19,9 @@ import { NotesPanel } from '../notes/NotesPanel';
 import { useNotesStore } from '../notes/notesStore';
 import { PageNoteMarkers } from '../notes/PageNoteMarkers';
 import { SelectionNotePopover } from '../notes/SelectionNotePopover';
+import { SearchHighlights } from '../search/SearchHighlights';
+import { SearchPanel } from '../search/SearchPanel';
+import { useSearchShortcut } from '../search/useSearchShortcut';
 import { useReaderStore, type SidebarTab } from './readerStore';
 import { Viewer, type PageSize } from './Viewer';
 import { ZoomControls } from './ZoomControls';
@@ -27,6 +30,7 @@ import './reader.css';
 const renderMargin = (page: number, size: PageSize) => <MarginColumn page={page} size={size} />;
 const renderPageOverlay = (page: number, size: PageSize) => (
   <>
+    <SearchHighlights page={page} size={size} />
     <PageNoteMarkers page={page} size={size} />
     <BookmarkRibbon page={page} />
   </>
@@ -38,6 +42,7 @@ export function ReaderView() {
   const jumpTo = useHistoryStore((s) => s.jumpTo);
   const inverted = usePagesInverted();
   useKeyboardShortcuts();
+  useSearchShortcut();
 
   return (
     <div className={`reader${inverted ? ' invert-pages' : ''}`} data-sidebar-open={sidebarOpen}>
@@ -131,10 +136,11 @@ function useCurrentSection(): string | null {
   return useMemo(() => sectionForPage(outline, page), [outline, page]);
 }
 
-const TABS: { id: SidebarTab; label: string }[] = [
+const TABS: { id: SidebarTab; label: string; Icon?: typeof SearchIcon }[] = [
   { id: 'contents', label: 'Contents' },
   { id: 'bookmarks', label: 'Bookmarks' },
   { id: 'notes', label: 'Notes' },
+  { id: 'search', label: 'Search', Icon: SearchIcon },
 ];
 
 function ReaderSidebar() {
@@ -159,13 +165,15 @@ function ReaderSidebar() {
             key={t.id}
             id={`sidebar-tab-${t.id}`}
             role="tab"
-            className="segmented__item"
+            className={`segmented__item${t.Icon ? ' sidebar__tab--icon' : ''}`}
             aria-selected={tab === t.id}
             aria-controls="sidebar-panel"
+            aria-label={t.Icon ? `${t.label} (Ctrl+F)` : undefined}
+            title={t.Icon ? `${t.label} (Ctrl+F)` : undefined}
             tabIndex={tab === t.id ? 0 : -1}
             onClick={() => setTab(t.id)}
           >
-            {t.label}
+            {t.Icon ? <t.Icon aria-hidden="true" /> : t.label}
           </button>
         ))}
       </div>
@@ -178,6 +186,7 @@ function ReaderSidebar() {
         {tab === 'contents' && <OutlinePanel />}
         {tab === 'bookmarks' && <BookmarksPanel />}
         {tab === 'notes' && <NotesPanel />}
+        {tab === 'search' && <SearchPanel />}
       </div>
       <div className="sidebar__footer">
         <button

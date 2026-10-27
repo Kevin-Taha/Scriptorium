@@ -3,7 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useReaderStore } from '../reader/readerStore';
 import { BookmarkRibbon } from './BookmarkRibbon';
 import { BookmarkToggle } from './BookmarkToggle';
+import { BookmarksPanel } from './BookmarksPanel';
 import { useBookmarksStore } from './bookmarksStore';
+import { HistoryButtons } from './HistoryButtons';
 import { useHistoryStore } from './historyStore';
 import { OutlinePanel } from './OutlinePanel';
 import { PageIndicator } from './PageIndicator';
@@ -26,6 +28,7 @@ beforeEach(() => {
       lastOpenedAt: 0,
     },
     outline: [],
+    pageLabels: null,
     sidebarOpen: true,
   });
   useHistoryStore.getState().reset();
@@ -60,6 +63,56 @@ describe('page field', () => {
     fireEvent.change(field, { target: { value: '4' } });
     fireEvent.keyDown(field, { key: 'Escape' });
     expect(field.value).toBe('12');
+  });
+
+  it('displays and resolves printed labels, raw indices and invalid input', () => {
+    useReaderStore.setState({
+      pageLabels: ['i', 'ii', 'iii', 'iv', '1', '2', ...Array.from({ length: 14 }, (_, i) => String(i + 3))],
+    });
+    render(
+      <>
+        <PageIndicator />
+        <ReturnPill />
+        <HistoryButtons />
+        <div className="reader__viewport" />
+      </>,
+    );
+    const field = screen.getByRole('textbox', { name: 'Page number' }) as HTMLInputElement;
+    expect(field.value).toBe('i');
+    expect(field.inputMode).toBe('text');
+    expect(screen.getByText('(1 of 20)')).toBeTruthy();
+    fireEvent.focus(field);
+    fireEvent.change(field, { target: { value: '2' } });
+    fireEvent.keyDown(field, { key: 'Enter' });
+    expect(useReaderStore.getState().location.page).toBe(6);
+    expect(field.value).toBe('2');
+    expect(screen.getByText('(6 of 20)')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Return to p. i' })).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Back to page i (Alt+Left)' }).getAttribute('data-tooltip'),
+    ).toBe('Back to p. i (Alt+←)');
+    fireEvent.focus(field);
+    fireEvent.change(field, { target: { value: '#2' } });
+    fireEvent.keyDown(field, { key: 'Enter' });
+    expect(useReaderStore.getState().location.page).toBe(2);
+    expect(field.value).toBe('ii');
+    fireEvent.focus(field);
+    fireEvent.change(field, { target: { value: 'not a page' } });
+    fireEvent.keyDown(field, { key: 'Enter' });
+    expect(field.value).toBe('ii');
+    expect(useReaderStore.getState().location.page).toBe(2);
+    act(() => useHistoryStore.getState().goBack());
+    expect(
+      screen.getByRole('button', { name: 'Forward to page ii (Alt+Right)' }).getAttribute('data-tooltip'),
+    ).toBe('Forward to p. ii (Alt+→)');
+  });
+
+  it('keeps the normal total when the printed label equals the PDF page index', () => {
+    useReaderStore.setState({ pageLabels: ['1', '2'] });
+    render(<PageIndicator />);
+    const field = screen.getByRole('textbox', { name: 'Page number' }) as HTMLInputElement;
+    expect(field.value).toBe('1');
+    expect(screen.getByText('/ 20')).toBeTruthy();
   });
 });
 
@@ -129,6 +182,30 @@ describe('outline tree', () => {
     expect(screen.getByText('Unresolved').closest('[role=treeitem]')?.getAttribute('aria-disabled')).toBe(
       'true',
     );
+  });
+});
+
+describe('printed labels in navigation', () => {
+  it('shows printed labels in outline and bookmark pages and actions', () => {
+    useReaderStore.setState({
+      pageLabels: ['i', 'ii', '1'],
+      outline: [{ title: 'Preface', location: { page: 2, offset: 0 }, children: [] }],
+    });
+    useBookmarksStore.setState({
+      docId: 'd',
+      loaded: true,
+      bookmarks: [{ id: 'b', docId: 'd', page: 2, label: 'Preface', createdAt: 0 }],
+    });
+    const { container } = render(
+      <>
+        <OutlinePanel />
+        <BookmarksPanel />
+      </>,
+    );
+    expect(container.querySelector('.outline__page')?.textContent).toBe('ii');
+    expect(container.querySelector('.bookmark-list__page')?.textContent).toBe('ii');
+    expect(screen.getByRole('button', { name: 'Rename bookmark on page ii' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Delete bookmark on page ii' })).toBeTruthy();
   });
 });
 

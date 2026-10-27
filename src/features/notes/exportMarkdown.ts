@@ -1,11 +1,14 @@
 import { sectionForPage } from '@/lib/pdf/outline';
 import type { MarginNote, OutlineItem } from '@/lib/types';
+import { pageLabelFor } from '../navigation/pageLabels';
 import { groupNotesByPage } from './notesStore';
 
 export interface MarkdownExportInput {
   title: string;
   notes: MarginNote[];
   outline?: OutlineItem[];
+  /** Printed page labels (index = page - 1); page numbers are used when absent. */
+  pageLabels?: readonly string[] | null;
   exportedAt: Date | number;
 }
 
@@ -76,14 +79,21 @@ function renderNote(note: MarginNote): string {
  * each note's quote as a blockquote followed by its text. Notes with neither
  * text nor quote are skipped.
  */
-export function notesToMarkdown({ title, notes, outline = [], exportedAt }: MarkdownExportInput): string {
+export function notesToMarkdown({
+  title,
+  notes,
+  outline = [],
+  pageLabels = null,
+  exportedAt,
+}: MarkdownExportInput): string {
   const groups = groupNotesByPage(exportableNotes(notes));
   const noteCount = groups.reduce((sum, group) => sum + group.notes.length, 0);
   const heading = escapeMarkdownInline(title) || 'Untitled';
 
   const sections = groups.map(({ page, notes: pageNotes }) => {
     const section = sectionForPage(outline, page);
-    const label = section ? `Page ${page} · ${escapeMarkdownInline(section)}` : `Page ${page}`;
+    const pageLabel = `Page ${escapeMarkdownInline(pageLabelFor(pageLabels, page))}`;
+    const label = section ? `${pageLabel} · ${escapeMarkdownInline(section)}` : pageLabel;
     return [`## ${label}`, ...pageNotes.map(renderNote)].join('\n\n');
   });
 

@@ -1,4 +1,5 @@
 import type { PDFDocumentProxy } from 'pdfjs-dist';
+import { pageCanvasContext } from './canvas';
 
 /**
  * Renders a page to an offscreen canvas at the given CSS width.
@@ -16,7 +17,7 @@ export async function renderPageToCanvas(
   const canvas = document.createElement('canvas');
   canvas.width = Math.floor(viewport.width);
   canvas.height = Math.floor(viewport.height);
-  await page.render({ canvas, viewport }).promise;
+  await page.render({ canvas: null, canvasContext: pageCanvasContext(canvas), viewport }).promise;
   return canvas;
 }
 

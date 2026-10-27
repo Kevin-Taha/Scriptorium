@@ -10,6 +10,7 @@ import {
 import { PDF_TO_CSS_UNITS, type PDFDocumentProxy } from '@/lib/pdf/pdfjs';
 import type { ReadingLocation } from '@/lib/types';
 import { clamp } from '@/lib/util';
+import { LinkPeek } from './LinkPeek';
 import { PageRenderer } from './pageRenderer';
 import { pageSizeIndex } from './pageSizes';
 import { PageView } from './PageView';
@@ -183,33 +184,36 @@ function DocumentViewer({ pdf, onLinkClick, renderMargin, renderPageOverlay }: V
   if (rows) for (let page = rows.first; page <= rows.last; page++) pages.push(page);
 
   return (
-    <div
-      ref={viewportRef}
-      className="reader__viewport"
-      tabIndex={0}
-      role="region"
-      aria-label="Pages"
-      aria-busy={!layout}
-    >
-      {layout && (
-        <div className="reader__pages" style={{ width, height: layout.totalHeight }}>
-          {pages.map((page) => (
-            <PageView
-              key={page}
-              page={page}
-              top={layout.tops[page - 1]}
-              left={rowLeft(layout, page, width)}
-              width={layout.widths[page - 1]}
-              height={layout.heights[page - 1]}
-              scale={layout.scale}
-              renderer={renderer}
-              renderMargin={renderMargin}
-              renderPageOverlay={renderPageOverlay}
-            />
-          ))}
-        </div>
-      )}
-    </div>
+    <>
+      <div
+        ref={viewportRef}
+        className="reader__viewport"
+        tabIndex={0}
+        role="region"
+        aria-label="Pages"
+        aria-busy={!layout}
+      >
+        {layout && (
+          <div className="reader__pages" style={{ width, height: layout.totalHeight }}>
+            {pages.map((page) => (
+              <PageView
+                key={page}
+                page={page}
+                top={layout.tops[page - 1]}
+                left={rowLeft(layout, page, width)}
+                width={layout.widths[page - 1]}
+                height={layout.heights[page - 1]}
+                scale={layout.scale}
+                renderer={renderer}
+                renderMargin={renderMargin}
+                renderPageOverlay={renderPageOverlay}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+      <LinkPeek pdf={pdf} viewportRef={viewportRef} onNavigate={onLinkClick} />
+    </>
   );
 }
 

@@ -18,8 +18,14 @@ where you left off — days later.
 - **Flip to a reference and come back.** Following a link, an outline entry, a bookmark, or
   jumping to a page records where you were. A *Return to p. N* pill and Back/Forward
   (<kbd>Alt</kbd>+<kbd>←</kbd>/<kbd>→</kbd>) take you straight back.
+- **Peek at references.** Hover a link like *"see Figure 3.2"* to preview the figure in a card
+  without leaving the page; jump there only if you want to.
+- **Search the whole book.** <kbd>Ctrl</kbd>+<kbd>F</kbd> searches every page with results grouped
+  by section, highlights on the page, and a single *Return* back to where you started.
 - **Bookmarks and contents.** Bookmark pages with <kbd>B</kbd>; labels default to the chapter
   they're in. The table of contents tracks the section you're reading.
+- **Real page numbers.** Printed page labels (roman-numeral front matter, offset numbering) are
+  shown and accepted everywhere, so "p. 142" means the book's page 142.
 - **Built for long books.** Virtualized rendering keeps 1,000-page textbooks fast and smooth.
 - **Easy on the eyes.** Light, sepia, and dark themes, with optional page inversion for night reading.
 - **Private by default.** Books and notes stay on your device (IndexedDB). No account, no upload.
@@ -30,11 +36,13 @@ where you left off — days later.
 | --- | --- |
 | <kbd>B</kbd> | Toggle bookmark on the current page |
 | <kbd>N</kbd> | New margin note on the current page (uses the selected text as a quote) |
-| <kbd>G</kbd> | Go to page |
+| <kbd>G</kbd> | Go to page (printed labels work; `#N` for a PDF page number) |
+| <kbd>Ctrl</kbd>+<kbd>F</kbd> or <kbd>/</kbd> | Search the book; <kbd>Enter</kbd> / <kbd>Shift</kbd>+<kbd>Enter</kbd> step through results |
 | <kbd>[</kbd> | Toggle the sidebar |
 | <kbd>Shift</kbd>+<kbd>R</kbd> | Open or close the notes review |
 | <kbd>Alt</kbd>+<kbd>←</kbd> / <kbd>Alt</kbd>+<kbd>→</kbd> | Back / forward through jumps |
 | <kbd>+</kbd> / <kbd>-</kbd> / <kbd>0</kbd> | Zoom in / zoom out / fit width |
+| <kbd>?</kbd> | Show all keyboard shortcuts |
 | <kbd>Esc</kbd> | Dismiss the return pill or close a menu |
 
 ## Getting started
@@ -74,9 +82,10 @@ src/
   components/   Shared UI primitives (toasts)
   features/
     library/    Library screen and PDF import
-    reader/     Reader shell, viewer engine, zoom
-    navigation/ Jump history, return pill, bookmarks, outline, keyboard shortcuts
+    reader/     Reader shell, viewer engine, zoom, link peek
+    navigation/ Jump history, return pill, bookmarks, outline, page labels, shortcuts
     notes/      Margin notes, collated review, Markdown export
+    search/     Full-text index, search panel and in-page highlights
   lib/
     pdf/        pdf.js loading, destinations and outline, thumbnails
     storage/    IndexedDB schema and repository

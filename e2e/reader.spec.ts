@@ -61,7 +61,7 @@ test('selectable PDF text and an internal XYZ link', async ({ page }) => {
     return selection.toString();
   });
   expect(selected.length).toBeGreaterThan(0);
-  await page.getByTitle('Go to page 7').click();
+  await page.getByRole('link', { name: 'Go to page 7', exact: true }).click();
   await expect(page.locator('#page-field')).toHaveValue('7');
   await expect(page.locator('.page-sheet[data-page="7"] canvas')).toBeVisible();
   await expect

@@ -96,6 +96,19 @@ describe('notesToMarkdown', () => {
     expect(markdown).toContain('## Page 37 · 3.2 Velocity\n');
   });
 
+  it('uses printed page labels when the book defines them', () => {
+    const markdown = notesToMarkdown({
+      title: 'Physics',
+      pageLabels: ['i', 'ii', '1', '2'],
+      exportedAt,
+      notes: [note({ page: 2 }), note({ page: 4 })],
+    });
+
+    expect(markdown).toContain('## Page ii\n');
+    expect(markdown).toContain('## Page 2\n');
+    expect(markdown).not.toContain('## Page 4');
+  });
+
   it('prefixes every line of a quote, including blank ones, with a blockquote marker', () => {
     const markdown = notesToMarkdown({
       title: 'Book',

@@ -2,6 +2,7 @@ import { navigate } from '@/app/router';
 import { showToast } from '@/components/Toast';
 import type { DocId, MarginNote, OutlineItem } from '@/lib/types';
 import { useHistoryStore } from '../navigation/historyStore';
+import { useReaderStore } from '../reader/readerStore';
 import { exportFileName, exportableNotes, notesToMarkdown } from './exportMarkdown';
 import { useNoteFocusStore } from './noteFocus';
 
@@ -39,7 +40,8 @@ export function exportNotesAsMarkdown(title: string, notes: MarginNote[], outlin
     showToast('There are no notes to export');
     return;
   }
-  const markdown = notesToMarkdown({ title, notes, outline, exportedAt: new Date() });
+  const pageLabels = useReaderStore.getState().pageLabels;
+  const markdown = notesToMarkdown({ title, notes, outline, pageLabels, exportedAt: new Date() });
   downloadTextFile(exportFileName(title), markdown, 'text/markdown');
   showToast(`Exported ${count} ${count === 1 ? 'note' : 'notes'}`);
 }

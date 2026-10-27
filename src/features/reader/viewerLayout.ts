@@ -32,7 +32,8 @@ export interface LayoutMetrics {
 
 export const DEFAULT_METRICS: LayoutMetrics = {
   paddingTop: 32,
-  paddingBottom: 32,
+  // Room to scroll the last lines of the book clear of the Return pill (40px tall, 24px from the bottom).
+  paddingBottom: 96,
   pageGap: 24,
   marginWidth: 280,
   sidePadding: 24,

@@ -2,12 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { Undo2, X } from 'lucide-react';
 import { useReaderStore } from '../reader/readerStore';
 import { useHistoryStore } from './historyStore';
+import { usePageLabel } from './pageLabels';
 
 export function ReturnPill() {
   const target = useHistoryStore((s) => s.returnTarget);
   const goBack = useHistoryStore((s) => s.goBack);
   const dismiss = useHistoryStore((s) => s.dismissReturn);
   const page = useReaderStore((s) => s.location.page);
+  const targetLabel = usePageLabel(target?.page ?? page);
   const previousPage = useRef(page);
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
@@ -40,7 +42,7 @@ export function ReturnPill() {
           <button className="return-pill__action tooltip" data-tooltip="Alt+←" onClick={goBack}>
             <Undo2 aria-hidden="true" />
             <span key={target.page} className="return-pill__label">
-              Return to p. <strong>{target.page}</strong>
+              Return to p. <strong>{targetLabel}</strong>
             </span>
           </button>
           <button className="return-pill__close" aria-label="Dismiss" onClick={dismiss}>

@@ -4,9 +4,11 @@ import type { OutlineItem } from '@/lib/types';
 import { useReaderStore } from '../reader/readerStore';
 import { useHistoryStore } from './historyStore';
 import { ancestorKeys, currentOutlineEntry, outlineEntries } from './outlineCurrent';
+import { pageLabelFor } from './pageLabels';
 
 export function OutlinePanel() {
   const outline = useReaderStore((s) => s.outline);
+  const labels = useReaderStore((s) => s.pageLabels);
   const jumpTo = useHistoryStore((s) => s.jumpTo);
   const entries = useMemo(() => outlineEntries(outline), [outline]);
   const entryByKey = useMemo(() => new Map(entries.map((entry) => [entry.key, entry])), [entries]);
@@ -140,7 +142,9 @@ export function OutlinePanel() {
               <span className="outline__chevron" aria-hidden="true" />
             )}
             <span className="outline__title">{item.title}</span>
-            {item.location && <span className="outline__page">{item.location.page}</span>}
+            {item.location && (
+              <span className="outline__page">{pageLabelFor(labels, item.location.page)}</span>
+            )}
           </div>
           {expanded && <div role="group">{renderItems(item.children, key, depth + 1)}</div>}
         </div>

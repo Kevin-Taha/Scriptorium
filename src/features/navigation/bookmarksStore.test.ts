@@ -5,7 +5,7 @@ import { useReaderStore } from '../reader/readerStore';
 import { useBookmarksStore } from './bookmarksStore';
 
 beforeEach(async () => {
-  useReaderStore.setState({ docId: null, status: 'idle' });
+  useReaderStore.setState({ docId: null, status: 'idle', pageLabels: null });
   await resetDBForTests();
   await new Promise<void>((resolve) => {
     const request = indexedDB.deleteDatabase(DB_NAME);
@@ -58,6 +58,25 @@ describe('bookmarks', () => {
     useBookmarksStore.getState().rename(bookmark.id, '   ');
     expect(useBookmarksStore.getState().bookmarks[0].label).toBe('Page 4');
     await vi.waitFor(async () => expect(await listBookmarks('d')).toHaveLength(1));
+  });
+
+  it('uses printed labels for default and empty bookmark names, preserving outline names first', async () => {
+    useReaderStore.setState({
+      docId: 'd',
+      status: 'ready',
+      pageLabels: ['i', 'ii', '1'],
+      outline: [{ title: 'Chapter', location: { page: 3, offset: 0 }, children: [] }],
+    });
+    await useBookmarksStore.getState().load('d');
+    const store = useBookmarksStore.getState();
+    store.toggle(2);
+    store.toggle(3);
+    const [front, chapter] = useBookmarksStore.getState().bookmarks;
+    expect(front.label).toBe('Page ii');
+    expect(chapter.label).toBe('Chapter');
+    store.rename(chapter.id, ' ');
+    expect(useBookmarksStore.getState().bookmarks[1].label).toBe('Page 1');
+    await vi.waitFor(async () => expect(await listBookmarks('d')).toHaveLength(2));
   });
 
   it('ignores mutations until saved bookmarks have loaded', async () => {

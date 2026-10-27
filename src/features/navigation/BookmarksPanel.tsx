@@ -5,6 +5,7 @@ import type { Bookmark as BookmarkRecord } from '@/lib/types';
 import { useReaderStore } from '../reader/readerStore';
 import { useBookmarksStore, useIsBookmarked } from './bookmarksStore';
 import { useHistoryStore } from './historyStore';
+import { usePageLabel } from './pageLabels';
 
 export function BookmarksPanel() {
   const page = useReaderStore((s) => s.location.page);
@@ -41,6 +42,7 @@ export function BookmarksPanel() {
 }
 
 function BookmarkItem({ bookmark, current }: { bookmark: BookmarkRecord; current: boolean }) {
+  const pageLabel = usePageLabel(bookmark.page);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(bookmark.label);
   const cancelled = useRef(false);
@@ -78,7 +80,7 @@ function BookmarkItem({ bookmark, current }: { bookmark: BookmarkRecord; current
       {editing ? (
         <input
           className="input bookmark-list__input"
-          aria-label={`Rename bookmark on page ${bookmark.page}`}
+          aria-label={`Rename bookmark on page ${pageLabel}`}
           value={draft}
           autoFocus
           onChange={(event) => setDraft(event.currentTarget.value)}
@@ -98,19 +100,19 @@ function BookmarkItem({ bookmark, current }: { bookmark: BookmarkRecord; current
       ) : (
         <button className="bookmark-list__link" onClick={() => jumpTo({ page: bookmark.page, offset: 0 })}>
           <span className="bookmark-list__label">{bookmark.label}</span>
-          <span className="bookmark-list__page">{bookmark.page}</span>
+          <span className="bookmark-list__page">{pageLabel}</span>
         </button>
       )}
       <button
         className="btn btn--ghost btn--icon btn--sm bookmark-list__action"
-        aria-label={`Rename bookmark on page ${bookmark.page}`}
+        aria-label={`Rename bookmark on page ${pageLabel}`}
         onClick={startEditing}
       >
         <Pencil />
       </button>
       <button
         className="btn btn--ghost btn--icon btn--sm bookmark-list__action"
-        aria-label={`Delete bookmark on page ${bookmark.page}`}
+        aria-label={`Delete bookmark on page ${pageLabel}`}
         onClick={deleteWithUndo}
       >
         <Trash2 />

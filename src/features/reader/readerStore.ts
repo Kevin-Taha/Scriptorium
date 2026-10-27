@@ -12,7 +12,7 @@ import {
 import type { DocId, LibraryDocument, OutlineItem, ReadingLocation, ZoomState } from '@/lib/types';
 import { debounce } from '@/lib/util';
 
-export type SidebarTab = 'contents' | 'bookmarks' | 'notes';
+export type SidebarTab = 'contents' | 'bookmarks' | 'notes' | 'search';
 export type LoadStatus = 'idle' | 'loading' | 'ready' | 'error';
 
 /** Imperative handle the viewer registers while it is mounted. */
@@ -38,6 +38,8 @@ interface ReaderState {
   status: LoadStatus;
   error: string | null;
   outline: OutlineItem[];
+  /** Printed page labels (e.g. "xii", "142") indexed by page - 1, or null when the PDF defines none. */
+  pageLabels: string[] | null;
   /**
    * Current top-of-viewport location. The viewer reports it while scrolling and
    * restores it when it mounts, so it doubles as the "restore here" location.
@@ -68,6 +70,7 @@ export const useReaderStore = create<ReaderState>()((set, get) => ({
   status: 'idle',
   error: null,
   outline: [],
+  pageLabels: null,
   location: START,
   zoom: DEFAULT_ZOOM,
   controller: null,
@@ -91,7 +94,10 @@ export const useReaderStore = create<ReaderState>()((set, get) => ({
         destroyPdf(pdf);
         return;
       }
-      const outline = await loadOutline(pdf).catch(() => []);
+      const [outline, pageLabels] = await Promise.all([
+        loadOutline(pdf).catch(() => []),
+        pdf.getPageLabels().catch(() => null),
+      ]);
       if (token !== openToken) {
         destroyPdf(pdf);
         return;
@@ -101,6 +107,7 @@ export const useReaderStore = create<ReaderState>()((set, get) => ({
         doc: { ...doc, lastOpenedAt },
         pdf,
         outline,
+        pageLabels,
         status: 'ready',
         location: saved?.location ?? START,
         zoom: saved?.zoom ?? DEFAULT_ZOOM,
@@ -124,6 +131,7 @@ export const useReaderStore = create<ReaderState>()((set, get) => ({
       status: 'idle',
       error: null,
       outline: [],
+      pageLabels: null,
       location: START,
       zoom: DEFAULT_ZOOM,
       controller: null,

@@ -3,10 +3,10 @@ import { FIXTURE_PDF } from './paths';
 
 export const TITLE = 'Principles of Classical Mechanics';
 
-export async function importFixture(page: Page): Promise<void> {
+export async function importFixture(page: Page, fixture = FIXTURE_PDF): Promise<void> {
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Begin your library' })).toBeVisible();
-  await page.locator('input[type=file]').setInputFiles(FIXTURE_PDF);
+  await page.locator('input[type=file]').setInputFiles(fixture);
   await expect(page.getByRole('toolbar', { name: 'Reader' })).toBeVisible();
   await expect(page.locator('.page-sheet[data-page="1"] canvas')).toBeVisible();
 }
