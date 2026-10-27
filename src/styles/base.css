@@ -391,10 +391,12 @@ textarea.input {
   background: var(--color-border-subtle);
   border: 0;
 }
+/* Toolbar divider: a short hairline, centred, rather than a full-height rule. */
 .divider--vertical {
-  align-self: stretch;
+  flex: none;
+  align-self: center;
   width: 1px;
-  height: auto;
+  height: 20px;
   margin: 0 var(--space-2);
 }
 
@@ -442,6 +444,12 @@ textarea.input {
     transform: translate(-50%, 0);
     transition-delay: 450ms;
   }
+}
+
+/* An open menu supersedes its trigger's tooltip. */
+.tooltip[aria-expanded='true']::after {
+  opacity: 0;
+  transition-delay: 0ms;
 }
 
 /* ---- Segmented control (theme switcher, sidebar tabs) ------------------------ */

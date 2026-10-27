@@ -6,6 +6,12 @@
   pointer-events: none;
 }
 
+/* In the reader, toasts rise above the sidebar's footer instead of covering it, and
+   stay left of the Return pill, which is centred over the document. */
+body:has(.sidebar) .toast-host {
+  bottom: calc(var(--space-5) + 56px);
+}
+
 .toast-host__list {
   display: flex;
   flex-direction: column;

@@ -137,3 +137,13 @@ input[type='checkbox'][role='switch']:checked::after {
   background: var(--color-on-accent);
   transform: translateX(14px);
 }
+
+/* A remembered-but-unavailable setting (e.g. page inversion outside dark) stays neutral. */
+input[type='checkbox'][role='switch']:disabled:checked {
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border-control);
+}
+
+input[type='checkbox'][role='switch']:disabled:checked::after {
+  background: var(--color-text-secondary);
+}

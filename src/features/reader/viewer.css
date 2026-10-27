@@ -14,8 +14,10 @@
   contain: strict;
 }
 
+/* A full-viewport ring around the document is heavy; a keyboard-focused viewport shows a
+   focus-coloured line along its top edge instead (see .reader__main in reader.css). */
 .reader__viewport:focus-visible {
-  outline-offset: -2px;
+  outline: none;
 }
 
 .reader__pages {

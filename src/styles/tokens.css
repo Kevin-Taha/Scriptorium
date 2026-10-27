@@ -140,6 +140,7 @@
   --font-weight-regular: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
+  --font-weight-note: 400; /* serif note body; dark eases both weights (light-on-dark looks heavier) */
 
   --leading-tight: 1.2;
   --leading-snug: 1.35;
@@ -266,7 +267,7 @@
   --color-surface-sunken: #171615;
   --color-hover: rgb(255 244 228 / 0.06);
   --color-pressed: rgb(255 244 228 / 0.11);
-  --color-margin-bg: #211f1d;
+  --color-margin-bg: #262421;
 
   --color-text: #ece6db;
   --color-text-secondary: #bdb5a7;
@@ -317,6 +318,8 @@
 
   --shadow-rgb: 0 0 0;
   --shadow-k: 3.2;
+  --font-weight-regular: 380;
+  --font-weight-note: 340;
 }
 
 [data-theme='dark'] .invert-pages,

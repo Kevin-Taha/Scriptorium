@@ -94,7 +94,7 @@
   position: relative;
   display: flex;
   align-items: center;
-  width: 184px;
+  width: 176px;
 }
 
 .review-search .review-search__input {
@@ -159,8 +159,8 @@
 
 .review-chip {
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   padding: 0;
   background: transparent;
 }
@@ -194,10 +194,54 @@
   gap: var(--space-2);
 }
 
-@media (max-width: 1120px) {
-  .review-search {
-    width: 160px;
+/* Group the right-hand controls: filters | density | appearance | export. The theme switcher
+   is quiet here (no tray, a short divider) because it is rarely used on this screen. */
+.review-colors {
+  margin-left: calc(var(--space-1) * -1);
+}
+.review-colors + .segmented {
+  margin-left: var(--space-2);
+}
+
+.review__toolbar .theme-menu {
+  margin-left: var(--space-2);
+}
+.review__toolbar .theme-menu::before {
+  content: '';
+  width: 1px;
+  height: 20px;
+  margin-right: var(--space-2);
+  background: var(--color-border-subtle);
+}
+.review__toolbar .theme-menu .segmented {
+  gap: 0;
+  padding: 0;
+  background: transparent;
+}
+.review__toolbar .theme-menu .segmented__item {
+  width: 28px;
+  padding: 0;
+  border-radius: var(--radius-xs);
+}
+.review__toolbar .theme-menu .segmented__item[aria-checked='true'] {
+  background: var(--color-pressed);
+  box-shadow: none;
+}
+
+/* Medium windows: give the title room by trimming the controls rather than the labels. */
+@media (max-width: 1360px) {
+  .review__title {
+    font-size: var(--font-size-md);
   }
+  .review-search {
+    width: 148px;
+  }
+  .review-colors {
+    gap: 0;
+  }
+}
+
+@media (max-width: 1120px) {
   .review__export {
     width: var(--btn-height);
     padding: 0;
@@ -434,6 +478,7 @@
 .review-note__input {
   font-family: var(--font-serif);
   font-size: var(--review-note-size);
+  font-weight: var(--font-weight-note);
   line-height: var(--review-note-leading);
   color: var(--color-text);
   white-space: pre-wrap;

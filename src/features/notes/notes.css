@@ -16,9 +16,18 @@
 /* Wraps one note's anchor, leader, tether and card. It never takes pointer
    events itself, so :hover/:focus-within on it mean "this note is active". */
 .margin-note-slot {
+  /* Displaced notes run their tether down their own lane, so neighbours' tethers
+     stay parallel instead of overprinting each other. */
+  --lane: 7px;
   position: absolute;
   inset: 0;
   pointer-events: none;
+}
+.margin-note-slot:nth-child(3n + 2) {
+  --lane: 10px;
+}
+.margin-note-slot:nth-child(3n + 3) {
+  --lane: 13px;
 }
 
 /* ---- Anchor, leader, tether ------------------------------------------------ */
@@ -58,20 +67,20 @@
   margin-top: -1px;
 }
 .margin-note-slot.is-displaced .margin-note__leader {
-  left: 8px;
-  width: 8px;
+  left: var(--lane);
+  width: calc(var(--note-gutter) - var(--lane));
 }
 
 .margin-note__tether {
-  left: 8px;
+  left: var(--lane);
   width: 1px;
 }
 
 .margin-note__tether::before {
   content: '';
   position: absolute;
-  left: -8px;
-  width: 8px;
+  left: calc(var(--lane) * -1);
+  width: var(--lane);
   height: 1px;
   background: inherit;
 }
@@ -131,6 +140,7 @@
   width: var(--margin-note-width);
   font-family: var(--font-serif);
   font-size: var(--font-size-note);
+  font-weight: var(--font-weight-note);
   line-height: var(--leading-normal);
   color: var(--note-text);
   background: var(--note-bg);
@@ -284,7 +294,7 @@
 /* A small chrome pill tucked over the card's top edge, so it never covers the text. */
 .margin-note__actions {
   position: absolute;
-  top: -22px;
+  top: -20px;
   right: 6px;
   display: flex;
   gap: 2px;
@@ -647,6 +657,7 @@
   overflow: hidden;
   font-family: var(--font-serif);
   font-size: var(--font-size-note);
+  font-weight: var(--font-weight-note);
   line-height: 1.45;
   color: var(--color-text);
   overflow-wrap: anywhere;

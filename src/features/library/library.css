@@ -251,10 +251,16 @@
   transform: translateY(-3px);
   box-shadow: var(--shadow-lg);
 }
+
+/* White pages glare on a dark shelf; dim them a touch, as the reader does for pages. */
+[data-theme='dark'] .book-card__cover img {
+  filter: brightness(0.9);
+}
 .book-card__title {
   display: -webkit-box;
   overflow: hidden;
   width: 100%;
+  min-height: 2.6em; /* two lines, so progress rows align across a grid row */
   margin: 12px 0 10px;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
