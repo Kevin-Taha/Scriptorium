@@ -1,0 +1,137 @@
+import { useEffect, useRef, useState } from 'react';
+import { Highlighter, MessageSquarePlus } from 'lucide-react';
+import { NOTE_COLORS } from '@/lib/types';
+import { useFloatingPosition, type FloatingAnchor } from './floatingPosition';
+import { highlightSelection } from './highlightActions';
+import { HighlightPopover } from './HighlightPopover';
+import { useHighlightsStore } from './highlightsStore';
+import { NOTE_COLOR_LABELS } from './noteColors';
+import { useNotesStore } from './notesStore';
+import { addNoteFromSelection, readPageSelection } from './selectionNote';
+import { useHighlightShortcut } from './useHighlightShortcut';
+import './highlights.css';
+import './notes.css';
+
+/**
+ * Everything that appears over the page for annotating: the toolbar for a text
+ * selection (highlight in a colour, or add a margin note), the popover for an
+ * existing highlight, and the `H` shortcut. Mount once in the reader.
+ */
+export function SelectionNotePopover() {
+  useHighlightShortcut();
+  return (
+    <>
+      <SelectionToolbar />
+      <HighlightPopover />
+    </>
+  );
+}
+
+/** Floating toolbar shown while text on a page is selected. */
+function SelectionToolbar() {
+  const [anchor, setAnchor] = useState<FloatingAnchor | null>(null);
+  const editing = useNotesStore((s) => s.editingId !== null);
+  const lastColor = useHighlightsStore((s) => s.lastColor);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let pointerDown = false;
+    let frame = 0;
+
+    const evaluate = () => {
+      const selection = useNotesStore.getState().editingId === null ? readPageSelection() : null;
+      setAnchor(
+        selection
+          ? {
+              x: selection.endRect.right,
+              top: selection.endRect.top,
+              bottom: selection.endRect.bottom,
+              // Multi-line selections put the toolbar below the last line so it never covers selected text.
+              preferBelow: selection.multiline,
+            }
+          : null,
+      );
+    };
+    // Wait for a drag to finish, and coalesce bursts of selectionchange.
+    const schedule = () => {
+      if (pointerDown) return;
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(evaluate);
+    };
+    const hide = () => setAnchor(null);
+
+    const onPointerDown = (e: PointerEvent) => {
+      if (popoverRef.current?.contains(e.target as Node)) return;
+      pointerDown = true;
+      hide();
+    };
+    const onPointerUp = () => {
+      pointerDown = false;
+      schedule();
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') hide();
+    };
+
+    document.addEventListener('selectionchange', schedule);
+    document.addEventListener('pointerdown', onPointerDown, true);
+    document.addEventListener('pointerup', onPointerUp, true);
+    document.addEventListener('keydown', onKeyDown, true);
+    document.addEventListener('scroll', hide, { capture: true, passive: true });
+    return () => {
+      cancelAnimationFrame(frame);
+      document.removeEventListener('selectionchange', schedule);
+      document.removeEventListener('pointerdown', onPointerDown, true);
+      document.removeEventListener('pointerup', onPointerUp, true);
+      document.removeEventListener('keydown', onKeyDown, true);
+      document.removeEventListener('scroll', hide, true);
+    };
+  }, []);
+
+  const visible = anchor !== null && !editing;
+  useFloatingPosition(popoverRef, anchor, visible);
+
+  if (!visible) return null;
+
+  return (
+    <div ref={popoverRef} className="selection-popover" role="toolbar" aria-label="Selection actions">
+      <div className="selection-popover__highlight" role="group" aria-label="Highlight selection">
+        <Highlighter className="selection-popover__icon" aria-hidden="true" />
+        {NOTE_COLORS.map((color) => (
+          <button
+            key={color}
+            type="button"
+            className={`selection-popover__swatch tooltip${color === lastColor ? ' is-last' : ''}`}
+            data-note-color={color}
+            data-tooltip={`Highlight ${NOTE_COLOR_LABELS[color].toLowerCase()}`}
+            aria-label={`Highlight ${NOTE_COLOR_LABELS[color]}`}
+            aria-keyshortcuts={color === lastColor ? 'H' : undefined}
+            // Pressing a button must not clear the text selection it is about to use.
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => {
+              highlightSelection(color);
+              setAnchor(null);
+            }}
+          />
+        ))}
+        <kbd className="kbd" aria-hidden="true">
+          H
+        </kbd>
+      </div>
+      <span className="selection-popover__divider" aria-hidden="true" />
+      <button
+        type="button"
+        className="selection-popover__action"
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => {
+          addNoteFromSelection();
+          setAnchor(null);
+        }}
+      >
+        <MessageSquarePlus aria-hidden="true" />
+        Add margin note
+        <kbd className="kbd">N</kbd>
+      </button>
+    </div>
+  );
+}

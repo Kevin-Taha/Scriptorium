@@ -1,0 +1,559 @@
+/* ==========================================================================
+   Scriptorium — base styles
+   Reset, document defaults and a small set of reusable primitives.
+   Requires tokens.css. Import order: fonts -> tokens.css -> base.css.
+   ========================================================================== */
+
+/* ---- Reset ---------------------------------------------------------------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+* {
+  margin: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  accent-color: var(--color-accent);
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-text) 26%, transparent) transparent;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+img,
+svg,
+video {
+  display: block;
+  max-width: 100%;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+}
+button {
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+ul,
+ol {
+  padding: 0;
+  list-style: none;
+}
+table {
+  border-collapse: collapse;
+}
+[hidden] {
+  display: none !important;
+}
+
+/* ---- Document ------------------------------------------------------------- */
+body {
+  font-family: var(--font-ui);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--leading-normal);
+  color: var(--color-text);
+  background: var(--color-bg-app);
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+  text-wrap: balance;
+}
+
+h1,
+h2 {
+  font-family: var(--font-serif);
+}
+h1 {
+  font-size: var(--font-size-2xl);
+}
+h2 {
+  font-size: var(--font-size-xl);
+}
+h3 {
+  font-size: var(--font-size-lg);
+}
+h4 {
+  font-size: var(--font-size-md);
+}
+p {
+  text-wrap: pretty;
+}
+strong,
+b {
+  font-weight: var(--font-weight-semibold);
+}
+blockquote {
+  font-family: var(--font-serif);
+  font-style: italic;
+  color: var(--color-text-secondary);
+}
+code,
+pre {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+}
+::placeholder {
+  color: var(--color-text-muted);
+  opacity: 1;
+}
+::selection {
+  background: var(--color-selection);
+  color: var(--color-text);
+}
+
+a {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+  transition: var(--transition-colors);
+}
+
+a:hover {
+  color: var(--color-accent-hover);
+  text-decoration-color: currentColor;
+}
+
+/* Focus: always visible for keyboard users, quiet for pointer users. */
+:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ---- Reading surfaces (pdf.js canvases) ------------------------------------ */
+.page-sheet,
+.page-thumb {
+  background: var(--page-sheet-bg);
+  isolation: isolate; /* contains the canvas blend mode */
+}
+
+.page-sheet {
+  border-radius: 2px;
+  box-shadow:
+    0 0 0 1px var(--page-sheet-border),
+    var(--shadow-sheet);
+}
+.page-thumb {
+  border-radius: 3px;
+  box-shadow:
+    0 0 0 1px var(--page-sheet-border),
+    var(--shadow-sm);
+}
+
+.page-sheet canvas,
+.page-thumb canvas {
+  display: block;
+  mix-blend-mode: var(--page-canvas-blend);
+  filter: var(--page-canvas-filter); /* invert(...) only under dark + .invert-pages */
+}
+
+/* Text-layer glyphs are transparent; only the highlight should show. */
+.page-sheet ::selection {
+  background: var(--color-selection-page);
+  color: transparent;
+}
+
+/* ---- Utilities ------------------------------------------------------------- */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.lucide {
+  flex-shrink: 0;
+  stroke-width: 1.75;
+}
+
+/* ---- Button ---------------------------------------------------------------- */
+.btn {
+  --btn-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: var(--btn-height);
+  padding: 0 var(--space-4);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  user-select: none;
+  transition:
+    var(--transition-colors),
+    transform var(--duration-instant) var(--ease-standard);
+}
+
+.btn .lucide {
+  width: 18px;
+  height: 18px;
+}
+.btn:hover {
+  background: color-mix(in srgb, var(--color-surface-raised), var(--color-text) 6%);
+}
+.btn:active {
+  background: color-mix(in srgb, var(--color-surface-raised), var(--color-text) 11%);
+  transform: translateY(0.5px);
+}
+.btn:disabled,
+.btn[aria-disabled='true'] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.btn--primary {
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+  border-color: transparent;
+}
+.btn--primary:hover,
+.btn--primary:active {
+  background: var(--color-accent-hover);
+}
+
+.btn--ghost {
+  color: var(--color-text-secondary);
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+.btn--ghost:hover {
+  color: var(--color-text);
+  background: var(--color-hover);
+}
+.btn--ghost:active {
+  background: var(--color-pressed);
+}
+
+.btn--icon {
+  width: var(--btn-height);
+  padding: 0;
+}
+.btn--sm {
+  --btn-height: 28px;
+  padding: 0 var(--space-3);
+  font-size: var(--font-size-xs);
+  border-radius: var(--radius-xs);
+}
+.btn--sm .lucide {
+  width: 16px;
+  height: 16px;
+}
+.btn--sm.btn--icon {
+  padding: 0;
+}
+
+.btn.is-active,
+.btn[aria-pressed='true'] {
+  color: var(--color-accent);
+  background: var(--color-accent-subtle);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+/* ---- Input ------------------------------------------------------------------ */
+.input {
+  width: 100%;
+  height: 34px;
+  padding: 0 var(--space-3);
+  font-size: var(--font-size-base);
+  line-height: var(--leading-normal);
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-sm);
+  transition: var(--transition-colors);
+}
+
+.input:hover {
+  border-color: var(--color-text-muted);
+}
+.input:focus-visible {
+  border-color: var(--color-focus-ring);
+  outline-offset: 1px;
+}
+.input--sm {
+  width: auto;
+  height: 28px;
+  font-size: var(--font-size-sm);
+  text-align: center;
+}
+textarea.input {
+  height: auto;
+  min-height: 72px;
+  padding: var(--space-2) var(--space-3);
+  resize: vertical;
+}
+
+/* ---- Keycap, chip, card, divider -------------------------------------------- */
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 var(--space-1);
+  font-family: var(--font-ui);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  color: var(--color-text-secondary);
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-xs);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: 24px;
+  padding: 0 var(--space-3);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--color-text-secondary);
+  background: var(--color-surface-sunken);
+  border-radius: var(--radius-full);
+  transition: var(--transition-colors);
+}
+
+.chip.is-active {
+  color: var(--color-accent);
+  background: var(--color-accent-subtle);
+}
+
+.card {
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  transition:
+    box-shadow var(--duration-base) var(--ease-out),
+    transform var(--duration-base) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-standard);
+}
+
+.card--interactive {
+  cursor: pointer;
+}
+.card--interactive:hover {
+  border-color: var(--color-border);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.divider {
+  height: 1px;
+  margin: var(--space-4) 0;
+  background: var(--color-border-subtle);
+  border: 0;
+}
+/* Toolbar divider: a short hairline, centred, rather than a full-height rule. */
+.divider--vertical {
+  flex: none;
+  align-self: center;
+  width: 1px;
+  height: 20px;
+  margin: 0 var(--space-2);
+}
+
+/* ---- Tooltip: <button class="btn tooltip" data-tooltip="Bookmark" aria-label="Bookmark"> */
+.tooltip {
+  position: relative;
+}
+
+.tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  z-index: var(--z-tooltip);
+  padding: 5px var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.2;
+  white-space: nowrap;
+  color: var(--color-float-text);
+  background: var(--color-float-bg);
+  border-radius: var(--radius-xs);
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 3px);
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+
+.tooltip--below::after {
+  top: calc(100% + 8px);
+  bottom: auto;
+  transform: translate(-50%, -3px);
+}
+.tooltip:focus-visible::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+@media (hover: hover) {
+  .tooltip:hover::after {
+    opacity: 1;
+    transform: translate(-50%, 0);
+    transition-delay: 450ms;
+  }
+}
+
+/* An open menu supersedes its trigger's tooltip. */
+.tooltip[aria-expanded='true']::after {
+  opacity: 0;
+  transition-delay: 0ms;
+}
+
+/* ---- Segmented control (theme switcher, sidebar tabs) ------------------------ */
+.segmented {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--color-surface-sunken);
+  border-radius: var(--radius-md);
+}
+.segmented--full {
+  display: flex;
+}
+.segmented--full .segmented__item {
+  flex: 1;
+}
+
+.segmented__item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  height: 28px;
+  padding: 0 var(--space-3);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--color-text-secondary);
+  border-radius: calc(var(--radius-md) - 2px);
+  transition: var(--transition-colors);
+}
+
+.segmented__item .lucide {
+  width: 16px;
+  height: 16px;
+}
+.segmented__item:hover {
+  color: var(--color-text);
+}
+
+.segmented__item.is-active,
+.segmented__item[aria-selected='true'],
+.segmented__item[aria-checked='true'],
+.segmented__item[aria-pressed='true'] {
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ---- Empty state --------------------------------------------------------------- */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  max-width: 420px;
+  margin: 0 auto;
+  padding: var(--space-7) var(--space-5);
+  text-align: center;
+}
+
+.empty-state__icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: var(--space-2);
+  color: var(--color-text-muted);
+  background: var(--color-surface-sunken);
+  border-radius: var(--radius-full);
+}
+
+.empty-state__icon .lucide {
+  width: 24px;
+  height: 24px;
+}
+.empty-state__title {
+  font-family: var(--font-serif);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--tracking-tight);
+}
+.empty-state__body {
+  color: var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
+}
+.empty-state__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+/* ---- Reduced motion: keep state changes, drop travel and easing -------------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+}

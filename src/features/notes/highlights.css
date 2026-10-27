@@ -1,0 +1,179 @@
+/* ==========================================================================
+   Highlights — marker-style emphasis over text, linked to margin notes
+   ========================================================================== */
+
+/* The colour of the highlight a note belongs to, independent of the note's own colour. */
+[data-highlight-color='amber'] {
+  --link-color: var(--note-amber-dot);
+}
+[data-highlight-color='sage'] {
+  --link-color: var(--note-sage-dot);
+}
+[data-highlight-color='sky'] {
+  --link-color: var(--note-sky-dot);
+}
+[data-highlight-color='rose'] {
+  --link-color: var(--note-rose-dot);
+}
+[data-highlight-color='lavender'] {
+  --link-color: var(--note-lavender-dot);
+}
+
+/* ---- On the page --------------------------------------------------------------
+   The bars multiply with the page, like a real highlighter: ink stays dark and
+   the paper takes the colour. They sit in the page overlay, which paints beneath
+   the text layer, so a text selection is always drawn over a highlight. */
+.page-highlights {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.page-highlight {
+  --highlight-fill: var(--note-border);
+  position: absolute;
+  background: var(--highlight-fill);
+  border-radius: 2px;
+  mix-blend-mode: multiply;
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+.page-highlight.is-emphasised {
+  --highlight-fill: color-mix(in srgb, var(--note-border) 72%, var(--note-dot));
+  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--note-dot) 55%, transparent);
+}
+
+.page-highlight.is-pulsing {
+  animation: highlight-pulse 1.2s var(--ease-out);
+}
+
+@keyframes highlight-pulse {
+  0%,
+  45% {
+    box-shadow: 0 0 0 3px var(--color-accent);
+  }
+  100% {
+    box-shadow: 0 0 0 3px transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-highlight.is-pulsing {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--color-accent);
+  }
+}
+
+/* Dimmed paper: the sheet is still light, so the same pastel logic holds with the dot tones. */
+[data-theme='dark'] .page-highlight {
+  --highlight-fill: color-mix(in srgb, var(--note-dot) 52%, var(--page-sheet-bg));
+}
+
+[data-theme='dark'] .page-highlight.is-emphasised {
+  --highlight-fill: color-mix(in srgb, var(--note-dot) 68%, var(--page-sheet-bg));
+}
+
+/* Night pages are truly dark: lighten instead of multiplying. */
+[data-theme='dark'] .invert-pages .page-highlight {
+  --highlight-fill: color-mix(in srgb, var(--note-dot) 50%, transparent);
+  mix-blend-mode: screen;
+}
+
+[data-theme='dark'] .invert-pages .page-highlight.is-emphasised {
+  --highlight-fill: color-mix(in srgb, var(--note-dot) 68%, transparent);
+}
+
+/* ---- Selection popover: highlight colours -------------------------------------- */
+.selection-popover__highlight {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-left: var(--space-1);
+}
+
+.selection-popover__icon {
+  width: 16px;
+  height: 16px;
+  margin-right: var(--space-1);
+  color: var(--color-float-accent);
+}
+
+.selection-popover__swatch {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 26px;
+  border-radius: var(--radius-xs);
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.selection-popover__swatch:hover {
+  background: var(--color-float-border);
+}
+
+.selection-popover__swatch::before {
+  content: '';
+  width: 14px;
+  height: 14px;
+  background: var(--note-dot);
+  border-radius: var(--radius-full);
+  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--color-float-text) 55%, transparent);
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+.selection-popover__swatch:hover::before {
+  transform: scale(1.12);
+}
+
+/* The colour `H` will use. */
+.selection-popover__swatch.is-last::before {
+  box-shadow:
+    0 0 0 2px var(--color-float-bg),
+    0 0 0 3.5px var(--color-float-text);
+}
+
+.selection-popover__divider {
+  align-self: stretch;
+  width: 1px;
+  margin: 6px 2px;
+  background: var(--color-float-border);
+}
+
+.selection-popover__highlight .kbd {
+  margin-left: var(--space-1);
+}
+
+/* ---- Highlight popover (click a highlight) ------------------------------------- */
+.highlight-popover {
+  --swatch-gap: var(--color-float-bg);
+  padding: 0 var(--space-1);
+}
+
+.highlight-popover .swatches {
+  padding-left: 0;
+}
+
+.highlight-popover .swatch:hover::before {
+  transform: scale(1.12);
+}
+
+.selection-popover__icon-button {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  color: inherit;
+  border-radius: var(--radius-xs);
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.selection-popover__icon-button:hover {
+  background: var(--color-float-border);
+}
+
+.selection-popover__icon-button .lucide {
+  width: 16px;
+  height: 16px;
+}

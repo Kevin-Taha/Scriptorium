@@ -1,0 +1,376 @@
+/* ==========================================================================
+   Scriptorium — design tokens
+
+   Themes are selected with a data attribute on <html>:
+     (none) / data-theme="light"  warm paper (default)
+     data-theme="sepia"           aged-parchment reading theme
+     data-theme="dark"            rich charcoal; add .invert-pages for night pages
+
+   Every text/background pairing documented in docs/DESIGN.md meets WCAG AA
+   (4.5:1 for text, 3:1 for UI boundaries and focus rings) in all three themes.
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* ---- Surfaces (light: warm paper) -------------------------------------- */
+  --color-bg-app: #f4efe6;
+  --color-surface: #faf7f1;
+  --color-surface-raised: #fffdf9;
+  --color-surface-sunken: #ebe4d6;
+  --color-hover: rgb(60 44 22 / 0.06);
+  --color-pressed: rgb(60 44 22 / 0.11);
+  --color-margin-bg: #efe9dd;
+
+  /* ---- Text -------------------------------------------------------------- */
+  --color-text: #2a2622;
+  --color-text-secondary: #575046;
+  --color-text-muted: #6a6155;
+  --color-text-inverse: #fbf8f2;
+
+  /* ---- Borders ----------------------------------------------------------- */
+  --color-border-subtle: #e8e1d2;
+  --color-border: #dcd3c1;
+  --color-border-control: #877d6d; /* ≥3:1: inputs, checkboxes, other boundaries */
+
+  /* ---- Accent: rubric oxblood -------------------------------------------- */
+  --color-accent: #962d22;
+  --color-accent-hover: #7a2219;
+  --color-accent-subtle: #f3e0d9;
+  --color-on-accent: #fffaf4;
+  --color-bookmark: #962d22;
+  --color-focus-ring: #2a5f99;
+  --color-selection: #f0cdc2;
+  --color-selection-page: rgb(154 52 38 / 0.28);
+
+  /* ---- Danger ------------------------------------------------------------ */
+  --color-danger: #b3261e;
+  --color-danger-subtle: #fbe6e2;
+  --color-on-danger: #fffaf9;
+
+  /* ---- Floating chrome (return pill, tooltips, toasts) ------------------- */
+  --color-float-bg: #2a2622;
+  --color-float-text: #fbf8f2;
+  --color-float-accent: #f0a898;
+  --color-float-border: rgb(255 255 255 / 0.08);
+  --color-scrim: rgb(42 34 24 / 0.38);
+
+  /* ---- Page sheet -------------------------------------------------------- */
+  --page-sheet-bg: #fffdf8;
+  --page-sheet-border: rgb(52 40 24 / 0.07);
+  --page-canvas-blend: multiply; /* canvas white becomes the sheet colour */
+  --page-canvas-filter: none;
+
+  /* ---- Margin note colours (surface / outline / text on surface) ---------- */
+  --note-amber-bg: #fbefc8;
+  --note-amber-border: #e6cd85;
+  --note-amber-text: #5b4207;
+  --note-sage-bg: #e5eedb;
+  --note-sage-border: #bcd1aa;
+  --note-sage-text: #2f4a27;
+  --note-sky-bg: #e0edf8;
+  --note-sky-border: #abcbe6;
+  --note-sky-text: #1f4566;
+  --note-rose-bg: #f9e2e5;
+  --note-rose-border: #e6b5bd;
+  --note-rose-text: #6c2335;
+  --note-lavender-bg: #ebe5f7;
+  --note-lavender-border: #cbbfe6;
+  --note-lavender-text: #43326f;
+
+  /* Anchor dots/leaders: one mid-tone per hue, ≥3:1 on every page and margin
+     background in every theme, so they are not overridden per theme. */
+  --note-amber-dot: #9f6806;
+  --note-sage-dot: #4f8453;
+  --note-sky-dot: #3a7bb8;
+  --note-rose-dot: #c24668;
+  --note-lavender-dot: #7b65c2;
+
+  /* ---- Shadows ----------------------------------------------------------- */
+  --shadow-rgb: 52 40 24;
+  --shadow-k: 1;
+  --shadow-sm:
+    0 1px 2px rgb(var(--shadow-rgb) / calc(0.08 * var(--shadow-k))),
+    0 1px 1px rgb(var(--shadow-rgb) / calc(0.04 * var(--shadow-k)));
+  --shadow-md:
+    0 2px 4px rgb(var(--shadow-rgb) / calc(0.06 * var(--shadow-k))),
+    0 6px 16px rgb(var(--shadow-rgb) / calc(0.09 * var(--shadow-k)));
+  --shadow-lg:
+    0 4px 8px rgb(var(--shadow-rgb) / calc(0.06 * var(--shadow-k))),
+    0 16px 40px rgb(var(--shadow-rgb) / calc(0.16 * var(--shadow-k)));
+  --shadow-sheet:
+    0 1px 2px rgb(var(--shadow-rgb) / calc(0.07 * var(--shadow-k))),
+    0 6px 14px rgb(var(--shadow-rgb) / calc(0.07 * var(--shadow-k))),
+    0 18px 40px rgb(var(--shadow-rgb) / calc(0.1 * var(--shadow-k)));
+
+  /* ---- Spacing (4px base) ------------------------------------------------ */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* ---- Radius ------------------------------------------------------------ */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+
+  /* ---- Typography -------------------------------------------------------- */
+  --font-ui: 'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-serif:
+    'Source Serif 4 Variable', 'Source Serif 4', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
+
+  --font-size-xs: 0.75rem; /* 12px  captions, kbd, chips */
+  --font-size-sm: 0.8125rem; /* 13px  toolbar labels, metadata */
+  --font-size-note: 0.84375rem; /* 13.5px margin notes (serif) */
+  --font-size-base: 0.9375rem; /* 15px  UI body */
+  --font-size-md: 1rem; /* 16px  card titles, serif body */
+  --font-size-lg: 1.125rem; /* 18px  section headings */
+  --font-size-xl: 1.375rem; /* 22px  page titles */
+  --font-size-2xl: 1.75rem; /* 28px  library heading */
+  --font-size-3xl: 2.25rem; /* 36px  empty-state display */
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-note: 400; /* serif note body; dark eases both weights (light-on-dark looks heavier) */
+
+  --leading-tight: 1.2;
+  --leading-snug: 1.35;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+
+  --tracking-tight: -0.011em;
+  --tracking-caps: 0.06em;
+
+  /* ---- Z-index ----------------------------------------------------------- */
+  --z-base: 0;
+  --z-text-layer: 1;
+  --z-margin-note: 10;
+  --z-margin-note-active: 15;
+  --z-sticky: 20;
+  --z-sidebar: 30;
+  --z-toolbar: 40;
+  --z-popover: 50;
+  --z-return-pill: 60;
+  --z-modal: 70;
+  --z-toast: 80;
+  --z-tooltip: 90;
+
+  /* ---- Motion ------------------------------------------------------------ */
+  --duration-instant: 80ms;
+  --duration-fast: 140ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+  --duration-slower: 480ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --transition-colors:
+    color var(--duration-fast) var(--ease-standard),
+    background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
+  --scroll-behavior: smooth;
+
+  /* ---- Layout ------------------------------------------------------------ */
+  --toolbar-height: 48px;
+  --sidebar-width: 300px;
+  --margin-column-width: 280px;
+  --margin-note-width: 256px;
+  --margin-note-gap: 8px;
+  --page-gap: 24px;
+  --book-card-width: 176px;
+  --review-thumb-width: 160px;
+}
+
+/* Sepia ===================================================================== */
+[data-theme='sepia'] {
+  color-scheme: light;
+
+  --color-bg-app: #e9dcc1;
+  --color-surface: #f1e6cd;
+  --color-surface-raised: #f7eed9;
+  --color-surface-sunken: #dfd0b1;
+  --color-hover: rgb(70 48 20 / 0.07);
+  --color-pressed: rgb(70 48 20 / 0.13);
+  --color-margin-bg: #e4d6b9;
+
+  --color-text: #33281b;
+  --color-text-secondary: #58472f;
+  --color-text-muted: #665539;
+  --color-text-inverse: #f7eed9;
+
+  --color-border-subtle: #dccdab;
+  --color-border: #d0bf9b;
+  --color-border-control: #7d694a;
+
+  --color-accent: #8a2a1c;
+  --color-accent-hover: #701f13;
+  --color-accent-subtle: #ecd2bf;
+  --color-on-accent: #fbf3e3;
+  --color-bookmark: #8a2a1c;
+  --color-focus-ring: #285a8f;
+  --color-selection: #e8c3ad;
+  --color-selection-page: rgb(138 42 28 / 0.3);
+
+  --color-danger: #a8231a;
+  --color-danger-subtle: #f1d4c4;
+  --color-on-danger: #fbf3e3;
+
+  --color-float-bg: #33281b;
+  --color-float-text: #f7eed9;
+  --color-float-accent: #eea08a;
+  --color-float-border: rgb(255 240 210 / 0.1);
+  --color-scrim: rgb(51 40 27 / 0.42);
+
+  --page-sheet-bg: #f8efd9;
+  --page-sheet-border: rgb(70 48 20 / 0.1);
+
+  --note-amber-bg: #f5e1a6;
+  --note-amber-border: #d9bd6c;
+  --note-amber-text: #533c06;
+  --note-sage-bg: #dde5c3;
+  --note-sage-border: #b3c38f;
+  --note-sage-text: #2e4624;
+  --note-sky-bg: #d6e4e4;
+  --note-sky-border: #a1bfc4;
+  --note-sky-text: #1f4452;
+  --note-rose-bg: #f2d6c9;
+  --note-rose-border: #dcae9c;
+  --note-rose-text: #64261f;
+  --note-lavender-bg: #e4dae3;
+  --note-lavender-border: #c3b0c4;
+  --note-lavender-text: #46305f;
+
+  --shadow-rgb: 70 48 20;
+  --shadow-k: 1.1;
+}
+
+/* Dark ======================================================================
+   Warm charcoal, never pure black. Pages are dimmed paper by default;
+   .invert-pages (on <html> or .reader) switches page canvases to a night look. */
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --color-bg-app: #1d1c1a;
+  --color-surface: #252321;
+  --color-surface-raised: #2e2c29;
+  --color-surface-sunken: #171615;
+  --color-hover: rgb(255 244 228 / 0.06);
+  --color-pressed: rgb(255 244 228 / 0.11);
+  --color-margin-bg: #262421;
+
+  --color-text: #ece6db;
+  --color-text-secondary: #bdb5a7;
+  --color-text-muted: #a1998c;
+  --color-text-inverse: #1d1c1a;
+
+  --color-border-subtle: #2b2926;
+  --color-border: #373430;
+  --color-border-control: #7f776a;
+
+  --color-accent: #ee9884;
+  --color-accent-hover: #f7b3a2;
+  --color-accent-subtle: #3d2621;
+  --color-on-accent: #1d1410;
+  --color-bookmark: #c24a38;
+  --color-focus-ring: #7db0e8;
+  --color-selection: #5a3a33;
+  --color-selection-page: rgb(229 139 118 / 0.35);
+
+  --color-danger: #f0807a;
+  --color-danger-subtle: #43231f;
+  --color-on-danger: #1d1410;
+
+  --color-float-bg: #423e38;
+  --color-float-text: #f4eee3;
+  --color-float-accent: #f2a894;
+  --color-float-border: rgb(255 244 228 / 0.14);
+  --color-scrim: rgb(0 0 0 / 0.55);
+
+  --page-sheet-bg: #e3ddd0;
+  --page-sheet-border: rgb(255 244 228 / 0.06);
+
+  --note-amber-bg: #3b3216;
+  --note-amber-border: #665428;
+  --note-amber-text: #f2dfa4;
+  --note-sage-bg: #273428;
+  --note-sage-border: #43604a;
+  --note-sage-text: #cde3c4;
+  --note-sky-bg: #1f3142;
+  --note-sky-border: #3a5c7b;
+  --note-sky-text: #c3dcf2;
+  --note-rose-bg: #402530;
+  --note-rose-border: #704050;
+  --note-rose-text: #f6cdd6;
+  --note-lavender-bg: #2d2a43;
+  --note-lavender-border: #54497e;
+  --note-lavender-text: #dcd3f5;
+
+  --shadow-rgb: 0 0 0;
+  --shadow-k: 3.2;
+  --font-weight-regular: 380;
+  --font-weight-note: 340;
+}
+
+[data-theme='dark'] .invert-pages,
+[data-theme='dark'].invert-pages {
+  --page-sheet-bg: #242321;
+  --page-sheet-border: rgb(255 244 228 / 0.1);
+  --page-canvas-blend: normal;
+  --page-canvas-filter: invert(0.86) hue-rotate(180deg) sepia(0.12);
+}
+
+/* Note colour helper: put data-note-color="amber|sage|sky|rose|lavender" on a
+   note (or its dot, leader, swatch) and read --note-bg/-border/-text/-dot. */
+[data-note-color='amber'] {
+  --note-bg: var(--note-amber-bg);
+  --note-border: var(--note-amber-border);
+  --note-text: var(--note-amber-text);
+  --note-dot: var(--note-amber-dot);
+}
+[data-note-color='sage'] {
+  --note-bg: var(--note-sage-bg);
+  --note-border: var(--note-sage-border);
+  --note-text: var(--note-sage-text);
+  --note-dot: var(--note-sage-dot);
+}
+[data-note-color='sky'] {
+  --note-bg: var(--note-sky-bg);
+  --note-border: var(--note-sky-border);
+  --note-text: var(--note-sky-text);
+  --note-dot: var(--note-sky-dot);
+}
+[data-note-color='rose'] {
+  --note-bg: var(--note-rose-bg);
+  --note-border: var(--note-rose-border);
+  --note-text: var(--note-rose-text);
+  --note-dot: var(--note-rose-dot);
+}
+[data-note-color='lavender'] {
+  --note-bg: var(--note-lavender-bg);
+  --note-border: var(--note-lavender-border);
+  --note-text: var(--note-lavender-text);
+  --note-dot: var(--note-lavender-dot);
+}
+
+/* Reduced motion: keep state changes, drop travel and easing. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-instant: 0.01ms;
+    --duration-fast: 0.01ms;
+    --duration-base: 0.01ms;
+    --duration-slow: 0.01ms;
+    --duration-slower: 0.01ms;
+    --scroll-behavior: auto;
+  }
+}
