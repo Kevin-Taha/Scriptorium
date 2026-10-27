@@ -70,6 +70,13 @@ Then open the printed local URL and drop a PDF onto the library.
 
 The first end-to-end run needs a browser: `npx playwright install chromium`.
 
+## Install
+
+Install Scriptorium from your browser's address bar or the **Install app** button in the
+library when available. Once installed and loaded, your library and previously imported books
+work offline. On supported desktop browsers, you can also open PDFs with Scriptorium from your
+operating system.
+
 ## Architecture
 
 Scriptorium is a single-page React application built with Vite and TypeScript. PDFs are rendered

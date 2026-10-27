@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BookOpen, FilePlus, LibraryBig, LoaderCircle, UploadCloud } from 'lucide-react';
 import { navigate } from '@/app/router';
+import { InstallButton } from '@/app/pwa/InstallButton';
 import { ThemeMenu } from '@/app/ThemeMenu';
 import { showToast } from '@/components/Toast';
 import { deleteDocument, getReadingState, listDocuments } from '@/lib/storage/repository';
@@ -188,7 +189,10 @@ export function LibraryView() {
           <BookOpen aria-hidden="true" />
           <span>Scriptorium</span>
         </div>
-        <ThemeMenu />
+        <div className="library__topline-actions">
+          <InstallButton />
+          <ThemeMenu />
+        </div>
       </div>
       <header className="library__header">
         <div>

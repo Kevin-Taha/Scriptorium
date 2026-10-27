@@ -1,4 +1,5 @@
-import { createReadStream, readdirSync, readFileSync, statSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { createReadStream, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -45,9 +46,51 @@ function pdfjsAssets(): Plugin {
   };
 }
 
+function offlineApp(): Plugin {
+  let outDir: string;
+  return {
+    name: 'scriptorium:offline-app',
+    apply: 'build',
+    configResolved(config) {
+      outDir = path.resolve(config.root, config.build.outDir);
+    },
+    writeBundle: {
+      order: 'post',
+      handler() {
+        const files = (directory: string): string[] =>
+          readdirSync(path.join(outDir, directory), { withFileTypes: true }).flatMap((entry) => {
+            const name = path.posix.join(directory, entry.name);
+            return entry.isDirectory() ? files(name) : [name];
+          });
+        const urls = files('')
+          .filter(
+            (name) =>
+              name === 'index.html' ||
+              name === 'manifest.webmanifest' ||
+              name === 'favicon.svg' ||
+              name.startsWith('icons/') ||
+              name.startsWith('assets/') ||
+              name.startsWith('pdfjs/'),
+          )
+          .sort();
+        const template = readFileSync(
+          fileURLToPath(new URL('./src/app/pwa/service-worker.js', import.meta.url)),
+          'utf8',
+        );
+        const hash = createHash('sha256').update(template);
+        for (const name of urls) hash.update(name).update(readFileSync(path.join(outDir, name)));
+        const source = template
+          .replace('__PRECACHE_URLS__', JSON.stringify(urls.map((name) => `./${name}`)))
+          .replace('__CACHE_VERSION__', hash.digest('hex').slice(0, 16));
+        writeFileSync(path.join(outDir, 'sw.js'), source);
+      },
+    },
+  };
+}
+
 export default defineConfig({
   base: './',
-  plugins: [react(), pdfjsAssets()],
+  plugins: [react(), pdfjsAssets(), offlineApp()],
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },

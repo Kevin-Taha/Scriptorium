@@ -7,6 +7,12 @@ import './styles/tokens.css';
 import './styles/base.css';
 import './app/app.css';
 import { App } from './app/App';
+import { startLaunchQueue } from './app/pwa/launchQueue';
+import { registerServiceWorker } from './app/pwa/registerServiceWorker';
+import './app/pwa/installPrompt';
+
+startLaunchQueue();
+registerServiceWorker();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

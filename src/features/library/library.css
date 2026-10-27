@@ -19,6 +19,12 @@
   border-bottom: 1px solid var(--color-border);
 }
 
+.library__topline-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 .library__brand {
   display: flex;
   align-items: center;
@@ -448,6 +454,10 @@
   }
   .library__topline {
     padding-bottom: 18px;
+    flex-wrap: wrap;
+  }
+  .library__topline-actions {
+    margin-left: auto;
   }
   .library__header {
     margin: 28px 0 30px;
