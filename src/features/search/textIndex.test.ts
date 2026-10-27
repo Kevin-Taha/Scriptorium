@@ -87,10 +87,11 @@ describe('TextIndex', () => {
 
   it('can be cancelled and then resumed where it left off', async () => {
     const pages = Array.from({ length: 12 }, (_, i) => [`page ${i + 1}`]);
-    const { pdf, requested } = fakePdf(pages, { delayMs: 5 });
+    const { pdf, requested } = fakePdf(pages, { delayMs: 40 });
     const index = new TextIndex('doc', 12);
     index.start(pdf);
-    await vi.waitFor(() => expect(index.indexed).toBeGreaterThan(1));
+    // Poll faster than a page takes to index so cancellation always lands mid-run.
+    await vi.waitFor(() => expect(index.indexed).toBeGreaterThan(1), { interval: 2, timeout: 5000 });
     index.cancel();
     expect(index.running).toBe(false);
     await new Promise((resolve) => setTimeout(resolve, 30));
