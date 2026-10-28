@@ -1,7 +1,9 @@
 import { useSyncExternalStore } from 'react';
 
 export type Route =
-  { name: 'library' } | { name: 'reader'; docId: string } | { name: 'review'; docId: string };
+  | { name: 'library' }
+  | { name: 'reader'; docId: string }
+  | { name: 'review'; docId: string };
 
 export function parseHash(hash: string): Route {
   const parts = hash.replace(/^#\/?/, '').split('/').filter(Boolean).map(decodeURIComponent);

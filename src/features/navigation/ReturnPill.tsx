@@ -39,13 +39,13 @@ export function ReturnPill() {
     >
       {target && (
         <div className="return-pill">
-          <button className="return-pill__action tooltip" data-tooltip="Alt+←" onClick={goBack}>
+          <button type="button" className="return-pill__action tooltip" data-tooltip="Alt+←" onClick={goBack}>
             <Undo2 aria-hidden="true" />
             <span key={target.page} className="return-pill__label">
               Return to p. <strong>{targetLabel}</strong>
             </span>
           </button>
-          <button className="return-pill__close" aria-label="Dismiss" onClick={dismiss}>
+          <button type="button" className="return-pill__close" aria-label="Dismiss" onClick={dismiss}>
             <X aria-hidden="true" />
           </button>
         </div>

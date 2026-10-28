@@ -37,7 +37,9 @@ function DialogHost() {
   useKeyboardShortcuts();
   return (
     <>
-      <button onClick={openShortcutsDialog}>Open help</button>
+      <button type="button" onClick={openShortcutsDialog}>
+        Open help
+      </button>
       <input aria-label="Editing" />
       <ShortcutsDialog />
     </>

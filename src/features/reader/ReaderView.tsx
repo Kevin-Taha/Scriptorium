@@ -80,6 +80,7 @@ function ReaderToolbar() {
     <header className="reader__toolbar" role="toolbar" aria-label="Reader">
       <div className="reader__toolbar-group reader__toolbar-group--start">
         <button
+          type="button"
           className="btn btn--ghost btn--icon tooltip tooltip--below"
           data-tooltip="Library"
           aria-label="Back to library"
@@ -88,6 +89,7 @@ function ReaderToolbar() {
           <LibraryBig />
         </button>
         <button
+          type="button"
           className="btn btn--ghost btn--icon tooltip tooltip--below"
           data-tooltip="Sidebar ( [ )"
           aria-label="Toggle sidebar"
@@ -118,6 +120,7 @@ function ReaderToolbar() {
         <BookmarkToggle />
         <AppearanceMenu />
         <button
+          type="button"
           className="btn btn--sm reader__review-btn tooltip tooltip--below"
           data-tooltip="Review all notes (Shift+R)"
           aria-label={`Review notes (${noteCount})`}
@@ -175,6 +178,7 @@ function ReaderSidebar() {
       <div className="sidebar__tabs segmented segmented--full" role="tablist" onKeyDown={onKeyDown}>
         {TABS.map((t) => (
           <button
+            type="button"
             key={t.id}
             id={`sidebar-tab-${t.id}`}
             role="tab"
@@ -203,6 +207,7 @@ function ReaderSidebar() {
       </div>
       <div className="sidebar__footer">
         <button
+          type="button"
           className="btn btn--ghost sidebar__shortcuts tooltip"
           data-tooltip="Keyboard shortcuts (?)"
           aria-label="Keyboard shortcuts"
@@ -210,6 +215,7 @@ function ReaderSidebar() {
         >
           <Keyboard aria-hidden="true" />
           <span>Keyboard shortcuts</span>
+          {/* biome-ignore lint/a11y/noAriaHiddenOnFocusable: <kbd> is not focusable; the hint is redundant for screen readers */}
           <kbd className="kbd" aria-hidden="true">
             ?
           </kbd>

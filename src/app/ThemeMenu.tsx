@@ -20,6 +20,7 @@ export function ThemeMenu() {
       <div className="segmented" role="radiogroup" aria-label="Theme">
         {THEMES.map(({ id, label, Icon }) => (
           <button
+            type="button"
             key={id}
             role="radio"
             className="segmented__item tooltip tooltip--below"
@@ -34,6 +35,7 @@ export function ThemeMenu() {
       </div>
       {theme === 'dark' && (
         <button
+          type="button"
           className="btn btn--ghost btn--icon btn--sm tooltip tooltip--below"
           data-tooltip="Invert page colours"
           aria-label="Invert page colours"

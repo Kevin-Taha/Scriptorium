@@ -153,7 +153,7 @@ export function notesToMarkdown({
 
 /** Strips characters that are invalid in file names on common platforms. */
 export function sanitizeFileName(name: string): string {
-  // eslint-disable-next-line no-control-regex
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: control characters are invalid in file names
   const invalid = /[<>:"/\\|?*\u0000-\u001f]/g;
   const cleaned = name.replace(invalid, ' ').replace(/\s+/g, ' ').trim();
   return Array.from(cleaned)

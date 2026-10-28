@@ -51,29 +51,39 @@ where you left off — days later.
 
 ## Getting started
 
-Requires [Node.js](https://nodejs.org/) 22.13 or later.
+Scriptorium uses [Bun](https://bun.sh) — a single install that provides the runtime, package
+manager and script runner. Install it once:
 
 ```sh
-npm install
-npm run dev
+# Windows (PowerShell)
+powershell -c "irm bun.sh/install.ps1 | iex"
+# macOS / Linux
+curl -fsSL https://bun.sh/install | bash
 ```
 
-Then open the printed local URL and drop a PDF onto the library.
+Then, from the repository:
+
+```sh
+bun install
+bun run dev
+```
+
+Open the printed local URL and drop a PDF onto the library.
 
 ### Scripts
 
 | Command | Description |
 | --- | --- |
-| `npm run dev` | Start the development server |
-| `npm run build` | Type-check and build for production into `dist/` |
-| `npm run preview` | Serve the production build locally |
-| `npm run check` | Type-check, lint, unit test, and build |
-| `npm test` | Run unit tests (Vitest) |
-| `npm run e2e` | Run end-to-end tests (Playwright) against the production build |
-| `npm run fixture` | Generate the synthetic textbook used by the end-to-end tests |
+| `bun run dev` | Start the development server |
+| `bun run build` | Type-check and build for production into `dist/` |
+| `bun run preview` | Serve the production build locally |
+| `bun run check` | Type-check, lint, check formatting, unit test, and build |
+| `bun run lint` / `bun run format` | Lint / format the code (Biome) |
+| `bun run test` | Run unit tests (Vitest) |
+| `bun run e2e` | Run end-to-end tests (Playwright) against the production build |
+| `bun run fixture` | Generate the synthetic textbook used by the end-to-end tests |
 
-The first end-to-end run needs a browser: `npx playwright install chromium`.
-
+The first end-to-end run needs a browser: `bunx playwright install chromium`.
 ## Install
 
 Install Scriptorium from your browser's address bar or the **Install app** button in the

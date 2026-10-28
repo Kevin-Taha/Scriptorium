@@ -114,6 +114,7 @@ function SelectionToolbar() {
             }}
           />
         ))}
+        {/* biome-ignore lint/a11y/noAriaHiddenOnFocusable: <kbd> is not focusable; the hint is redundant for screen readers */}
         <kbd className="kbd" aria-hidden="true">
           H
         </kbd>

@@ -99,7 +99,7 @@ export default defineConfig({
     chunkSizeWarningLimit: 1500,
   },
   test: {
-    environment: 'jsdom',
+    environment: 'happy-dom',
     include: ['src/**/*.test.{ts,tsx}'],
     setupFiles: ['src/test/setup.ts'],
   },

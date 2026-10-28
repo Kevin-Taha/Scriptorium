@@ -16,7 +16,9 @@ const search = () => useSearchStore.getState();
 function openBook(pages: string[][]) {
   useReaderStore.setState({ docId: 'book', doc: { pageCount: pages.length } as never });
   const index = getTextIndex('book', pages.length);
-  pages.forEach((lines, i) => index.add(makePage(i + 1, ...lines)));
+  pages.forEach((lines, i) => {
+    index.add(makePage(i + 1, ...lines));
+  });
 }
 
 function typeQuery(value: string) {
