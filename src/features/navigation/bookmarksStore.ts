@@ -60,6 +60,7 @@ export const useBookmarksStore = create<BookmarksState>()((set, get) => ({
     const updated = {
       ...bookmark,
       label: label.trim() || `Page ${pageLabelFor(useReaderStore.getState().pageLabels, bookmark.page)}`,
+      updatedAt: Date.now(),
     };
     set((s) => ({ bookmarks: s.bookmarks.map((b) => (b.id === id ? updated : b)) }));
     putBookmark(updated).catch(reportSaveError);

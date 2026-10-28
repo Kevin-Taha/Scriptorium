@@ -128,10 +128,12 @@ export const useHighlightsStore = create<HighlightsState>()((set, get) => ({
 
   restoreHighlight(highlight) {
     if (get().docId !== highlight.docId) return;
+    // A fresh edit time makes the restore outrank the deletion on every synced device.
+    const restored = { ...highlight, updatedAt: Date.now() };
     set((s) => ({
-      highlights: [...s.highlights.filter((h) => h.id !== highlight.id), highlight].sort(byPosition),
+      highlights: [...s.highlights.filter((h) => h.id !== restored.id), restored].sort(byPosition),
     }));
-    savePut(highlight);
+    savePut(restored);
   },
 }));
 
