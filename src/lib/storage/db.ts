@@ -7,10 +7,11 @@ import type {
   LibraryDocument,
   MarginNote,
   ReadingState,
+  Tombstone,
 } from '../types';
 
 export const DB_NAME = 'scriptorium';
-export const DB_VERSION = 2;
+export const DB_VERSION = 3;
 
 export interface ScriptoriumDB extends DBSchema {
   documents: {
@@ -47,6 +48,30 @@ export interface ScriptoriumDB extends DBSchema {
     key: 'app';
     value: AppSettings;
   };
+  /** Added in schema version 3: deleted annotations, so deletions sync. */
+  tombstones: {
+    key: string;
+    value: Tombstone;
+    indexes: { docId: DocId };
+  };
+  /** Added in schema version 3: small records such as device identity and the linked folder. */
+  meta: {
+    key: string;
+    value: unknown;
+  };
+  /** Added in schema version 3: content hashes of PDFs in the linked folder, so rescans stay cheap. */
+  folderFiles: {
+    key: string;
+    value: FolderFileRecord;
+  };
+}
+
+/** Cached identity of a PDF in the linked folder; rehashed only when size or mtime change. */
+export interface FolderFileRecord {
+  path: string;
+  size: number;
+  lastModified: number;
+  hash: DocId;
 }
 
 let dbPromise: Promise<IDBPDatabase<ScriptoriumDB>> | null = null;
@@ -70,6 +95,12 @@ export function upgradeSchema(db: IDBPDatabase<ScriptoriumDB>, oldVersion: numbe
   if (oldVersion < 2) {
     const highlights = db.createObjectStore('highlights', { keyPath: 'id' });
     highlights.createIndex('docId', 'docId');
+  }
+  if (oldVersion < 3) {
+    const tombstones = db.createObjectStore('tombstones', { keyPath: 'id' });
+    tombstones.createIndex('docId', 'docId');
+    db.createObjectStore('meta');
+    db.createObjectStore('folderFiles', { keyPath: 'path' });
   }
 }
 

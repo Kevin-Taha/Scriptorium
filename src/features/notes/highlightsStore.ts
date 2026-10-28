@@ -1,14 +1,17 @@
 import { useMemo } from 'react';
 import { create } from 'zustand';
+import { nextStamp } from '@/lib/sync/clock';
 import { reportSaveError } from '@/app/reportSaveError';
 import {
   deleteHighlight as deleteHighlightRecord,
   listHighlights,
   putHighlight,
 } from '@/lib/storage/repository';
+import { onBookDataMerged } from '@/lib/sync/apply';
 import type { DocId, Highlight, HighlightRect, NoteColor } from '@/lib/types';
 import { createId } from '@/lib/util';
 import { useReaderStore } from '../reader/readerStore';
+import { reconcileRecords } from '../sync/liveMerge';
 
 export interface NewHighlightInput {
   page: number;
@@ -112,7 +115,9 @@ export const useHighlightsStore = create<HighlightsState>()((set, get) => ({
 
   setColor(id, color) {
     set((s) => ({
-      highlights: s.highlights.map((h) => (h.id === id ? { ...h, color, updatedAt: Date.now() } : h)),
+      highlights: s.highlights.map((h) =>
+        h.id === id ? { ...h, color, updatedAt: nextStamp(h.updatedAt) } : h,
+      ),
       lastColor: color,
     }));
     schedulePersist(id);
@@ -128,10 +133,13 @@ export const useHighlightsStore = create<HighlightsState>()((set, get) => ({
 
   restoreHighlight(highlight) {
     if (get().docId !== highlight.docId) return;
+    // A fresh edit time makes the restore outrank the deletion on every synced device.
+    // The deletion was stamped at least `updatedAt + 1`; outrank it on every synced device.
+    const restored = { ...highlight, updatedAt: nextStamp(nextStamp(highlight.updatedAt)) };
     set((s) => ({
-      highlights: [...s.highlights.filter((h) => h.id !== highlight.id), highlight].sort(byPosition),
+      highlights: [...s.highlights.filter((h) => h.id !== restored.id), restored].sort(byPosition),
     }));
-    savePut(highlight);
+    savePut(restored);
   },
 }));
 
@@ -153,6 +161,14 @@ useReaderStore.subscribe((state, prev) => {
     flushHighlights();
     useHighlightsStore.setState({ docId: null, highlights: [] });
   }
+});
+
+// Highlights merged in from another device or a backup appear on the open book.
+onBookDataMerged((docId, data) => {
+  const { docId: openId, highlights } = useHighlightsStore.getState();
+  if (openId !== docId) return;
+  const next = reconcileRecords(highlights, data.highlights, data.tombstones, (h) => h.updatedAt);
+  if (next !== highlights) useHighlightsStore.setState({ highlights: [...next].sort(byPosition) });
 });
 
 if (typeof window !== 'undefined') {

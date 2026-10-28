@@ -1,5 +1,6 @@
 import { navigate } from '@/app/router';
 import { showToast } from '@/components/Toast';
+import { downloadTextFile } from '@/lib/download';
 import type { DocId, Highlight, MarginNote, OutlineItem } from '@/lib/types';
 import { useHistoryStore } from '../navigation/historyStore';
 import { useReaderStore } from '../reader/readerStore';
@@ -39,17 +40,6 @@ export function jumpToHighlightInBook(highlight: Highlight): void {
   });
   useHighlightUiStore.getState().pulse(highlight.id);
   navigate({ name: 'reader', docId: highlight.docId });
-}
-
-function downloadTextFile(fileName: string, text: string, mimeType: string): void {
-  const url = URL.createObjectURL(new Blob([text], { type: `${mimeType};charset=utf-8` }));
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = fileName;
-  document.body.append(link);
-  link.click();
-  link.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 /** Downloads every note and highlight in the book (ignoring any review filters) as a Markdown file. */

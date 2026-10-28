@@ -2,15 +2,13 @@ import { create } from 'zustand';
 import { reportSaveError } from '@/app/reportSaveError';
 import { loadOutline } from '@/lib/pdf/outline';
 import { destroyPdf, loadPdf, type PDFDocumentProxy } from '@/lib/pdf/pdfjs';
-import {
-  getDocument,
-  getDocumentFile,
-  getReadingState,
-  putReadingState,
-  updateDocument,
-} from '@/lib/storage/repository';
+import { getDocument, getReadingState, putReadingState, updateDocument } from '@/lib/storage/repository';
+import { onBookDataMerged } from '@/lib/sync/apply';
+import { nextStamp } from '@/lib/sync/clock';
+import { currentDeviceId } from '@/lib/sync/device';
 import type { DocId, LibraryDocument, OutlineItem, ReadingLocation, ZoomState } from '@/lib/types';
 import { debounce } from '@/lib/util';
+import { readBookBytes } from '../sync/bookBytes';
 
 export type SidebarTab = 'contents' | 'bookmarks' | 'notes' | 'search';
 export type LoadStatus = 'idle' | 'loading' | 'ready' | 'error';
@@ -83,20 +81,10 @@ export const useReaderStore = create<ReaderState>()((set, get) => ({
     const token = ++openToken;
     set({ docId, status: 'loading', error: null });
     try {
-      const [doc, file, saved] = await Promise.all([
-        getDocument(docId),
-        getDocumentFile(docId),
-        getReadingState(docId),
-      ]);
-      if (!doc || !file) throw new Error('This book is no longer in your library.');
-      let bytes: ArrayBuffer;
-      try {
-        bytes = await file.arrayBuffer();
-      } catch {
-        throw new Error(
-          'This book’s saved copy couldn’t be read. Import the same PDF again to restore it — your notes, bookmarks and progress are kept.',
-        );
-      }
+      const [doc, saved] = await Promise.all([getDocument(docId), getReadingState(docId)]);
+      if (!doc) throw new Error('This book is no longer in your library.');
+      const bytes = await readBookBytes(doc);
+      if (token !== openToken) return;
       const pdf = await loadPdf(bytes);
       if (token !== openToken) {
         destroyPdf(pdf);
@@ -111,6 +99,7 @@ export const useReaderStore = create<ReaderState>()((set, get) => ({
         return;
       }
       const lastOpenedAt = Date.now();
+      progressStamp = saved?.updatedAt ?? 0;
       set({
         doc: { ...doc, lastOpenedAt },
         pdf,
@@ -164,11 +153,23 @@ export const useReaderStore = create<ReaderState>()((set, get) => ({
 
 // ------------------------------------------------------ progress persistence
 
+/** Newest progress stamp known for the open book, from this or any synced device. */
+let progressStamp = 0;
+
 const saveProgress = debounce(() => {
   const { docId, status, location, zoom } = useReaderStore.getState();
   if (!docId || status !== 'ready') return;
-  putReadingState({ docId, location, zoom, updatedAt: Date.now() }).catch(reportSaveError);
+  progressStamp = nextStamp(progressStamp);
+  putReadingState({ docId, location, zoom, updatedAt: progressStamp, deviceId: currentDeviceId() }).catch(
+    reportSaveError,
+  );
 }, 400);
+
+onBookDataMerged((docId, data) => {
+  if (docId === useReaderStore.getState().docId && data.progress) {
+    progressStamp = Math.max(progressStamp, data.progress.updatedAt);
+  }
+});
 
 /** Writes any pending reading-progress change immediately. */
 export function flushProgress(): void {

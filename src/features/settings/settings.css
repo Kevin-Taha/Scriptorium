@@ -1,0 +1,272 @@
+/* "Library & storage" dialog. */
+
+.storage-dialog {
+  position: fixed;
+  inset: 0;
+  width: min(580px, calc(100vw - 2 * var(--space-4)));
+  max-width: none;
+  max-height: calc(100dvh - 2 * var(--space-4));
+  margin: auto;
+  padding: 0;
+  overflow: hidden;
+  font-family: var(--font-ui);
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+.storage-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+.storage-dialog::backdrop {
+  background: var(--color-scrim);
+}
+
+.storage-dialog__header {
+  display: flex;
+  flex: none;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+.storage-dialog__icon {
+  display: grid;
+  flex: 0 0 40px;
+  place-items: center;
+  height: 40px;
+  color: var(--color-accent);
+  background: var(--color-accent-subtle);
+  border-radius: var(--radius-md);
+}
+.storage-dialog__icon .lucide {
+  width: 20px;
+  height: 20px;
+}
+.storage-dialog__heading {
+  flex: 1;
+  min-width: 0;
+}
+.storage-dialog__heading h2 {
+  font-family: var(--font-ui);
+  font-size: var(--font-size-lg);
+}
+.storage-dialog__heading p {
+  margin-top: var(--space-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+.storage-dialog__body {
+  flex: 1;
+  min-height: 0;
+  padding: var(--space-5);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* ---- Sections -------------------------------------------------------------- */
+.storage-section + .storage-section {
+  margin-top: var(--space-5);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-border-subtle);
+}
+.storage-section__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-ui);
+  font-size: var(--font-size-md);
+}
+.storage-section__title .lucide {
+  width: 18px;
+  height: 18px;
+  color: var(--color-text-secondary);
+}
+.storage-section__title [aria-hidden='true'] {
+  display: inline-flex;
+}
+.storage-section__intro {
+  margin-top: var(--space-2);
+  max-width: 62ch;
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-relaxed);
+  color: var(--color-text-secondary);
+}
+
+/* ---- Status card ----------------------------------------------------------- */
+.storage-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+}
+.storage-card--notice {
+  background: var(--color-accent-subtle);
+  border-color: transparent;
+}
+.storage-card--error {
+  background: var(--color-danger-subtle);
+  border-color: transparent;
+}
+.storage-card__icon {
+  display: grid;
+  flex: 0 0 36px;
+  place-items: center;
+  height: 36px;
+  color: var(--color-text-secondary);
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+}
+.storage-card__icon .lucide {
+  width: 18px;
+  height: 18px;
+}
+.storage-card--notice .storage-card__icon {
+  color: var(--color-accent);
+  border-color: transparent;
+}
+.storage-card--error .storage-card__icon {
+  color: var(--color-danger);
+  border-color: transparent;
+}
+.storage-card__body {
+  display: grid;
+  flex: 1;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.storage-card__title {
+  padding-top: 7px;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--leading-snug);
+  overflow-wrap: anywhere;
+}
+.storage-card__detail {
+  display: grid;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-normal);
+  color: var(--color-text-secondary);
+}
+.storage-card__actions,
+.storage-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.storage-card__actions {
+  margin-top: var(--space-3);
+}
+.storage-actions {
+  margin-top: var(--space-4);
+}
+
+.storage-spinner {
+  animation: spin 0.8s linear infinite;
+}
+
+.storage-progress {
+  display: block;
+  height: 4px;
+  margin-top: var(--space-1);
+  overflow: hidden;
+  background: var(--color-border);
+  border-radius: 2px;
+}
+.storage-progress > span {
+  display: block;
+  height: 100%;
+  background: var(--color-accent);
+  border-radius: inherit;
+  transition: width var(--duration-base) var(--ease-out);
+}
+
+/* ---- Notes, results, devices ------------------------------------------------ */
+.storage-note {
+  margin-top: var(--space-3);
+  max-width: 62ch;
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-relaxed);
+  color: var(--color-text-secondary);
+}
+.storage-note--error {
+  color: var(--color-danger);
+}
+
+.storage-outcome:not(:empty) {
+  margin-top: var(--space-3);
+}
+.storage-result {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-normal);
+  color: var(--color-text-secondary);
+}
+.storage-result .lucide {
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+}
+.storage-result--error {
+  color: var(--color-danger);
+}
+.storage-result ul {
+  margin-top: var(--space-1);
+  padding-left: var(--space-4);
+  list-style: disc;
+  color: var(--color-text);
+}
+.storage-result li {
+  overflow-wrap: anywhere;
+}
+
+.storage-devices {
+  margin-top: var(--space-4);
+}
+.storage-devices__label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.storage-devices li {
+  padding: var(--space-1) 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.storage-field {
+  display: grid;
+  gap: var(--space-1);
+  max-width: 340px;
+  margin-top: var(--space-3);
+}
+.storage-field label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+.storage-field__hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+.storage-field__saved {
+  color: var(--color-text);
+}
+
+@media (max-width: 600px) {
+  .storage-dialog__header,
+  .storage-dialog__body {
+    padding: var(--space-4);
+  }
+}

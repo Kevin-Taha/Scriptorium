@@ -31,7 +31,13 @@ where you left off — days later.
   shown and accepted everywhere, so "p. 142" means the book's page 142.
 - **Built for long books.** Virtualized rendering keeps 1,000-page textbooks fast and smooth.
 - **Easy on the eyes.** Light, sepia, and dark themes, with optional page inversion for night reading.
-- **Private by default.** Books and notes stay on your device (IndexedDB). No account, no upload.
+- **Your library, on every device.** Link a folder of PDFs — on your computer, or inside OneDrive,
+  Google Drive or Dropbox — and Scriptorium reads books from it and keeps notes beside them, so every
+  computer that links the folder shares books, notes and reading progress.
+- **Hard to lose.** Notes are saved as you type, the library asks the browser for persistent storage,
+  and you can export everything to a backup file and restore it anywhere.
+- **Private by default.** No account and no server: books and notes stay on your devices and in folders
+  you choose. See [`docs/DATA.md`](docs/DATA.md).
 
 ## Keyboard shortcuts
 
@@ -120,5 +126,5 @@ All persistence goes through `src/lib/storage/repository.ts`, which keeps the do
 filesystem-backed store in a future desktop build. State lives in small
 [Zustand](https://github.com/pmndrs/zustand) stores per feature.
 
-See [`docs/ROADMAP.md`](docs/ROADMAP.md) for what's next and [`docs/DESIGN.md`](docs/DESIGN.md)
+See [`docs/ROADMAP.md`](docs/ROADMAP.md) for what's next, [`docs/DATA.md`](docs/DATA.md) for how data is stored and synced, and [`docs/DESIGN.md`](docs/DESIGN.md)
 for the design system.

@@ -10,9 +10,11 @@ import { App } from './app/App';
 import { startLaunchQueue } from './app/pwa/launchQueue';
 import { registerServiceWorker } from './app/pwa/registerServiceWorker';
 import './app/pwa/installPrompt';
+import { startFolderSync } from './features/sync/folderSync';
 
 startLaunchQueue();
 registerServiceWorker();
+void startFolderSync();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

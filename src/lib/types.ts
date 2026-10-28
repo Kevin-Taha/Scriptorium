@@ -3,8 +3,15 @@
  * it can be imported from anywhere (UI, storage, tests).
  */
 
-/** Stable document identifier: the pdf.js fingerprint of the file. */
+/** Stable document identifier: the SHA-256 hash of the PDF's bytes. */
 export type DocId = string;
+
+/**
+ * Where a book's bytes live. Imported books are copied into browser storage;
+ * folder books are read from the linked library folder at `path` (relative,
+ * `/`-separated) and never copied.
+ */
+export type BookSource = { kind: 'imported' } | { kind: 'folder'; path: string; missing?: boolean };
 
 export interface LibraryDocument {
   id: DocId;
@@ -16,6 +23,8 @@ export interface LibraryDocument {
   lastOpenedAt: number;
   /** Small JPEG data URL of the first page, used as the library cover. */
   coverDataUrl?: string;
+  /** Absent on books imported before folder sync existed, which are `imported`. */
+  source?: BookSource;
 }
 
 /**
@@ -41,6 +50,8 @@ export interface ReadingState {
   location: ReadingLocation;
   zoom: ZoomState;
   updatedAt: number;
+  /** Device that saved this position; lets another device say where you left off. */
+  deviceId?: string;
 }
 
 export interface Bookmark {
@@ -49,6 +60,8 @@ export interface Bookmark {
   page: number;
   label: string;
   createdAt: number;
+  /** Last edit (e.g. rename). Bookmarks saved before sync existed only have `createdAt`. */
+  updatedAt?: number;
 }
 
 export const NOTE_COLORS = ['amber', 'sage', 'sky', 'rose', 'lavender'] as const;
@@ -89,6 +102,19 @@ export interface Highlight {
   color: NoteColor;
   createdAt: number;
   updatedAt: number;
+}
+
+export type AnnotationKind = 'note' | 'highlight' | 'bookmark';
+
+/**
+ * Record that an annotation was deleted. Kept so the deletion reaches other
+ * devices instead of the annotation being resurrected from their copies.
+ */
+export interface Tombstone {
+  id: string;
+  kind: AnnotationKind;
+  docId: DocId;
+  deletedAt: number;
 }
 
 export type Theme = 'light' | 'sepia' | 'dark';

@@ -72,11 +72,31 @@ describe('PDF import', () => {
     mocks.getDocument.mockResolvedValue(existing);
     const result = await importPdfFile(file);
     expect(result.isNew).toBe(false);
-    expect(result.doc).toEqual({ ...existing, lastOpenedAt: result.doc.lastOpenedAt });
+    expect(result.doc).toEqual({
+      ...existing,
+      lastOpenedAt: result.doc.lastOpenedAt,
+      source: { kind: 'imported' },
+    });
     expect(result.doc.lastOpenedAt).toBeGreaterThan(existing.lastOpenedAt);
     expect(mocks.putDocument).toHaveBeenCalledWith(result.doc, expect.any(Blob));
     expect(mocks.loadPdf).not.toHaveBeenCalled();
     expect(mocks.renderThumbnailDataUrl).not.toHaveBeenCalled();
+  });
+
+  it('gives a book from the linked folder its own copy when the same PDF is imported', async () => {
+    mocks.getDocument.mockResolvedValue({
+      id: 'content-hash',
+      title: 'Original',
+      fileName: 'original.pdf',
+      fileSize: 4,
+      pageCount: 12,
+      addedAt: 1,
+      lastOpenedAt: 2,
+      source: { kind: 'folder', path: 'Physics/original.pdf', missing: true },
+    } satisfies LibraryDocument);
+    const result = await importPdfFile(file);
+    expect(result.doc.source).toEqual({ kind: 'imported' });
+    expect(mocks.putDocument).toHaveBeenCalledWith(result.doc, expect.any(Blob));
   });
 
   it('reports corrupt and password-protected PDFs without storing them', async () => {

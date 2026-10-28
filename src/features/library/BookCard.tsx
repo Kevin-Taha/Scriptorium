@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { MoreHorizontal } from 'lucide-react';
+import { FileX, Folder, MoreHorizontal } from 'lucide-react';
 import type { LibraryDocument, ReadingState } from '@/lib/types';
 import { formatOpened, progressPercent } from './libraryUtils';
 
@@ -17,6 +17,11 @@ export function BookCover({ doc, className = '' }: { doc: LibraryDocument; class
   );
 }
 
+/** True for a book that lives in the linked folder and whose PDF has gone from it. */
+export function isMissingFromFolder(doc: LibraryDocument): boolean {
+  return doc.source?.kind === 'folder' && doc.source.missing === true;
+}
+
 export function BookCard({
   doc,
   reading,
@@ -31,13 +36,16 @@ export function BookCard({
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
   const progress = progressPercent(doc.pageCount, reading?.location);
+  const folderPath = doc.source?.kind === 'folder' ? doc.source.path : null;
+  const missing = isMissingFromFolder(doc);
   return (
-    <article className="book-card">
+    <article className={`book-card ${missing ? 'is-missing' : ''}`}>
       <button
         type="button"
         className="book-card__main"
         onClick={onOpen}
-        aria-label={`Open ${doc.title}, ${progress}% read`}
+        aria-disabled={missing || undefined}
+        aria-label={`Open ${doc.title}, ${progress}% read${missing ? ', file missing from folder' : ''}`}
       >
         <BookCover doc={doc} />
         <span className="book-card__title">{doc.title}</span>
@@ -47,7 +55,21 @@ export function BookCard({
           </span>
           <span>{progress}%</span>
         </span>
-        <span className="book-card__opened">{formatOpened(doc.lastOpenedAt)}</span>
+        <span className="book-card__opened">
+          {missing ? (
+            <span className="book-card__missing">
+              <FileX aria-hidden="true" />
+              File missing from folder
+            </span>
+          ) : (
+            <span>{formatOpened(doc.lastOpenedAt)}</span>
+          )}
+          {folderPath !== null && (
+            <span className="book-card__source" title={folderPath}>
+              <Folder aria-hidden="true" />
+            </span>
+          )}
+        </span>
       </button>
       {/* biome-ignore lint/a11y/noStaticElementInteractions: closes the menu on Escape or blur; the controls inside are buttons */}
       <div
@@ -75,15 +97,19 @@ export function BookCard({
         </button>
         {menuOpen && (
           <div className="book-card__popover">
-            <button
-              type="button"
-              onClick={() => {
-                setMenuOpen(false);
-                onRemove(menuButton.current);
-              }}
-            >
-              Remove from library…
-            </button>
+            {folderPath !== null ? (
+              <p className="book-card__popover-note">Remove the file from the folder to remove this book.</p>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  onRemove(menuButton.current);
+                }}
+              >
+                Remove from library…
+              </button>
+            )}
           </div>
         )}
       </div>
