@@ -18,7 +18,9 @@ describe('resolveShortcut', () => {
     ['b', 'bookmark'],
     ['B', 'bookmark'],
     ['n', 'note'],
-    ['g', 'page'],
+    ['g', 'go-to'],
+    ['f', 'focus'],
+    ['r', 'ruler'],
     ['[', 'sidebar'],
     ['+', 'zoom-in'],
     ['=', 'zoom-in'],
@@ -29,6 +31,7 @@ describe('resolveShortcut', () => {
   ] as const)('maps %s', (key, action) => expect(resolveShortcut(event(key))).toBe(action));
   it('recognizes shifted review and browser-independent history shortcuts', () => {
     expect(resolveShortcut(event('R', { shiftKey: true }))).toBe('review');
+    expect(resolveShortcut(event('F', { shiftKey: true }))).toBeNull();
     expect(resolveShortcut(event('ArrowLeft', { altKey: true }))).toBe('back');
     expect(resolveShortcut(event('ArrowRight', { altKey: true }))).toBe('forward');
     expect(resolveShortcut(event('+', { shiftKey: true }))).toBe('zoom-in');
@@ -39,7 +42,6 @@ describe('resolveShortcut', () => {
     for (const modifiers of [{ ctrlKey: true }, { metaKey: true }, { altKey: true }, { shiftKey: true }]) {
       expect(resolveShortcut(event('b', modifiers))).toBeNull();
     }
-    expect(resolveShortcut(event('r'))).toBeNull();
     expect(resolveShortcut(event('ArrowLeft'))).toBeNull();
     expect(resolveShortcut(event('ArrowLeft', { altKey: true, shiftKey: true }))).toBeNull();
     expect(resolveShortcut(event('+', { ctrlKey: true }))).toBeNull();

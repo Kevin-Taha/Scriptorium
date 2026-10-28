@@ -4,11 +4,16 @@ import { DEFAULT_SETTINGS, type AppSettings, type Theme } from '@/lib/types';
 
 const THEME_CACHE_KEY = 'scriptorium.theme';
 
+/** Settings that are simple on/off switches. */
+export type SettingSwitch = 'invertPagesInDark' | 'readingRuler' | 'bookMap' | 'chapterProgress';
+
 interface SettingsState extends AppSettings {
   loaded: boolean;
   load(): Promise<void>;
   setTheme(theme: Theme): void;
   setInvertPagesInDark(invert: boolean): void;
+  setSwitch(key: SettingSwitch, on: boolean): void;
+  toggle(key: SettingSwitch): void;
 }
 
 function apply({ theme }: AppSettings): void {
@@ -22,7 +27,11 @@ function apply({ theme }: AppSettings): void {
 }
 
 function snapshot(s: SettingsState): AppSettings {
-  return { theme: s.theme, invertPagesInDark: s.invertPagesInDark };
+  const settings = { ...DEFAULT_SETTINGS };
+  for (const key of Object.keys(DEFAULT_SETTINGS) as (keyof AppSettings)[]) {
+    (settings as Record<keyof AppSettings, unknown>)[key] = s[key];
+  }
+  return settings;
 }
 
 export const useSettingsStore = create<SettingsState>()((set, get) => ({
@@ -42,8 +51,16 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   },
 
   setInvertPagesInDark(invertPagesInDark) {
-    set({ invertPagesInDark });
+    get().setSwitch('invertPagesInDark', invertPagesInDark);
+  },
+
+  setSwitch(key, on) {
+    set({ [key]: on });
     void putSettings(snapshot(get()));
+  },
+
+  toggle(key) {
+    get().setSwitch(key, !get()[key]);
   },
 }));
 

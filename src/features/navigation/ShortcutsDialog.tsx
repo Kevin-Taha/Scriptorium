@@ -16,7 +16,11 @@ const groups = [
   {
     title: 'Navigate',
     shortcuts: [
-      { label: 'Go to page', detail: 'Enter a printed label, or # for a PDF page number', keys: ['G'] },
+      {
+        label: 'Go to a page, chapter or note',
+        detail: 'Type a page number, a title, or words from a note',
+        keys: ['G'],
+      },
       { label: 'Go back', keys: ['Alt', '←'] },
       { label: 'Go forward', keys: ['Alt', '→'] },
       { label: 'Dismiss a control', keys: ['Esc'] },
@@ -33,6 +37,8 @@ const groups = [
   {
     title: 'Read',
     shortcuts: [
+      { label: 'Focus mode', detail: 'Esc also leaves it', keys: ['F'] },
+      { label: 'Reading ruler', keys: ['R'] },
       { label: 'Zoom in', keys: ['+', '='], alternatives: true },
       { label: 'Zoom out', keys: ['−'] },
       { label: 'Fit page width', keys: ['0'] },
@@ -45,6 +51,7 @@ const groups = [
       { label: 'Toggle bookmark', keys: ['B'] },
       { label: 'New margin note', detail: 'Select text to include a quote', keys: ['N'] },
       { label: 'Highlight selected text', detail: 'In the colour used last', keys: ['H'] },
+      { label: 'Bold or italic in a note', detail: 'While writing · ⌘ on macOS', keys: ['Ctrl', 'B / I'] },
       { label: 'Review notes', keys: ['Shift', 'R'] },
     ],
   },

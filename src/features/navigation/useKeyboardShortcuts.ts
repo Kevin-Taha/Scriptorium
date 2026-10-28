@@ -1,8 +1,11 @@
 import { useEffect } from 'react';
 import { navigate } from '@/app/router';
+import { useSettingsStore } from '@/app/settingsStore';
 import { isEditableTarget } from '@/lib/util';
+import { exitFocusMode, toggleFocusMode, useFocusStore } from '../focus/focusStore';
 import { useNotesStore } from '../notes/notesStore';
 import { addNoteFromSelection } from '../notes/selectionNote';
+import { openGoTo } from '../palette/paletteStore';
 import { useReaderStore } from '../reader/readerStore';
 import { setZoomMode, zoomIn, zoomOut } from '../reader/zoom';
 import { useBookmarksStore } from './bookmarksStore';
@@ -12,7 +15,9 @@ import { openShortcutsDialog } from './ShortcutsDialog';
 export type ShortcutAction =
   | 'bookmark'
   | 'note'
-  | 'page'
+  | 'go-to'
+  | 'focus'
+  | 'ruler'
   | 'sidebar'
   | 'review'
   | 'back'
@@ -44,7 +49,11 @@ export function resolveShortcut(
     case 'n':
       return 'note';
     case 'g':
-      return 'page';
+      return 'go-to';
+    case 'f':
+      return 'focus';
+    case 'r':
+      return 'ruler';
     case '[':
       return 'sidebar';
     case '-':
@@ -78,8 +87,14 @@ export function useKeyboardShortcuts(): void {
           }
           break;
         }
-        case 'page':
-          document.getElementById('page-field')?.focus();
+        case 'go-to':
+          openGoTo();
+          break;
+        case 'focus':
+          toggleFocusMode();
+          break;
+        case 'ruler':
+          useSettingsStore.getState().toggle('readingRuler');
           break;
         case 'sidebar':
           reader.toggleSidebar();
@@ -103,7 +118,8 @@ export function useKeyboardShortcuts(): void {
           setZoomMode('fit-width');
           break;
         case 'dismiss':
-          history.dismissReturn();
+          if (useFocusStore.getState().active) exitFocusMode();
+          else history.dismissReturn();
           break;
         case 'help':
           openShortcutsDialog();

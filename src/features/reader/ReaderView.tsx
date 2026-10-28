@@ -2,11 +2,16 @@ import { useCallback, useMemo } from 'react';
 import { Keyboard, LibraryBig, NotebookText, PanelLeft, Search as SearchIcon } from 'lucide-react';
 import { AppearanceMenu } from '@/app/AppearanceMenu';
 import { navigate } from '@/app/router';
-import { usePagesInverted } from '@/app/settingsStore';
+import { usePagesInverted, useSettingsStore } from '@/app/settingsStore';
 import { sectionForPage } from '@/lib/pdf/outline';
+import { BookMap } from '../bookmap/BookMap';
+import { FocusMode } from '../focus/FocusMode';
+import { FocusModeButton } from '../focus/FocusModeButton';
+import { ReadingRuler } from '../focus/ReadingRuler';
 import { BookmarkRibbon } from '../navigation/BookmarkRibbon';
 import { BookmarksPanel } from '../navigation/BookmarksPanel';
 import { BookmarkToggle } from '../navigation/BookmarkToggle';
+import { ChapterProgress } from '../navigation/ChapterProgress';
 import { HistoryButtons } from '../navigation/HistoryButtons';
 import { useHistoryStore } from '../navigation/historyStore';
 import { OutlinePanel } from '../navigation/OutlinePanel';
@@ -21,6 +26,8 @@ import { useHighlightsStore } from '../notes/highlightsStore';
 import { PageHighlights } from '../notes/PageHighlights';
 import { PageNoteMarkers } from '../notes/PageNoteMarkers';
 import { SelectionNotePopover } from '../notes/SelectionNotePopover';
+import { GoToPalette } from '../palette/GoToPalette';
+import { openGoTo } from '../palette/paletteStore';
 import { SearchHighlights } from '../search/SearchHighlights';
 import { SearchPanel } from '../search/SearchPanel';
 import { useSearchShortcut } from '../search/useSearchShortcut';
@@ -44,6 +51,8 @@ export function ReaderView() {
   const sidebarOpen = useReaderStore((s) => s.sidebarOpen);
   const jumpTo = useHistoryStore((s) => s.jumpTo);
   const inverted = usePagesInverted();
+  const bookMap = useSettingsStore((s) => s.bookMap);
+  const readingRuler = useSettingsStore((s) => s.readingRuler);
   useKeyboardShortcuts();
   useSearchShortcut();
 
@@ -59,10 +68,14 @@ export function ReaderView() {
             renderMargin={renderMargin}
             renderPageOverlay={renderPageOverlay}
           />
+          {bookMap && <BookMap />}
+          {readingRuler && <ReadingRuler />}
           <ReturnPill />
           <SelectionNotePopover />
         </main>
       </div>
+      <FocusMode />
+      <GoToPalette />
       <ShortcutsDialog />
     </div>
   );
@@ -73,6 +86,7 @@ function ReaderToolbar() {
   const docId = useReaderStore((s) => s.docId);
   const sidebarOpen = useReaderStore((s) => s.sidebarOpen);
   const toggleSidebar = useReaderStore((s) => s.toggleSidebar);
+  const chapterProgress = useSettingsStore((s) => s.chapterProgress);
   const section = useCurrentSection();
   const noteCount = useAnnotationCount();
 
@@ -105,9 +119,21 @@ function ReaderToolbar() {
             {doc?.title}
           </h1>
           {section && (
-            <span className="reader__section" title={section}>
-              {section}
-            </span>
+            <>
+              <span className="reader__section-dot" aria-hidden="true">
+                ·
+              </span>
+              <button
+                type="button"
+                className="reader__section tooltip tooltip--below"
+                data-tooltip="Go to… (G)"
+                aria-label={`${section}. Go to a page, chapter or note`}
+                aria-keyshortcuts="G"
+                onClick={() => openGoTo()}
+              >
+                <span>{section}</span>
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -118,6 +144,7 @@ function ReaderToolbar() {
         <ZoomControls />
         <span className="divider divider--vertical" aria-hidden="true" />
         <BookmarkToggle />
+        <FocusModeButton />
         <AppearanceMenu />
         <button
           type="button"
@@ -131,6 +158,7 @@ function ReaderToolbar() {
           {noteCount > 0 && <span className="reader__count">{noteCount}</span>}
         </button>
       </div>
+      {chapterProgress && <ChapterProgress />}
     </header>
   );
 }

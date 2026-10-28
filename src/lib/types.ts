@@ -25,6 +25,18 @@ export interface LibraryDocument {
   coverDataUrl?: string;
   /** Absent on books imported before folder sync existed, which are `imported`. */
   source?: BookSource;
+  /**
+   * The top two levels of the book's outline, saved when the book is opened so the
+   * library can name the chapter you're in without loading the PDF. Local only.
+   */
+  contents?: ContentsEntry[];
+}
+
+/** A resolved outline entry: `depth` 0 is a chapter, 1 a section within it. */
+export interface ContentsEntry {
+  title: string;
+  page: number;
+  depth: 0 | 1;
 }
 
 /**
@@ -123,11 +135,20 @@ export interface AppSettings {
   theme: Theme;
   /** Invert page colours while the dark theme is active. */
   invertPagesInDark: boolean;
+  /** A band that follows the pointer to keep your place on the line. */
+  readingRuler: boolean;
+  /** The map of the whole book along the reader's right edge. */
+  bookMap: boolean;
+  /** The chapter progress strip under the reader toolbar. */
+  chapterProgress: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
   theme: 'light',
   invertPagesInDark: false,
+  readingRuler: false,
+  bookMap: true,
+  chapterProgress: true,
 };
 
 export interface OutlineItem {

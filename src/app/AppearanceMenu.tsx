@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { Coffee, HardDrive, Moon, Palette, Sun } from 'lucide-react';
 import { openLibraryStorageDialog } from '@/features/settings/storageDialogStore';
 import type { Theme } from '@/lib/types';
-import { useSettingsStore } from './settingsStore';
+import { type SettingSwitch, useSettingsStore } from './settingsStore';
 
 const THEMES: { id: Theme; label: string; Icon: typeof Sun }[] = [
   { id: 'light', label: 'Light', Icon: Sun },
@@ -10,7 +10,17 @@ const THEMES: { id: Theme; label: string; Icon: typeof Sun }[] = [
   { id: 'dark', label: 'Dark', Icon: Moon },
 ];
 
-/** Toolbar popover with the theme switcher and the dark-mode page inversion toggle. */
+const READING_SWITCHES: { key: SettingSwitch; label: string; detail: string; shortcut?: string }[] = [
+  { key: 'readingRuler', label: 'Reading ruler', detail: 'Keeps your place on the line', shortcut: 'R' },
+  { key: 'bookMap', label: 'Book map', detail: 'The whole book along the right edge' },
+  {
+    key: 'chapterProgress',
+    label: 'Chapter progress',
+    detail: 'Your place in each chapter, under the toolbar',
+  },
+];
+
+/** Toolbar popover with the theme, page inversion and reading aids. */
 export function AppearanceMenu() {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -20,6 +30,7 @@ export function AppearanceMenu() {
   const invert = useSettingsStore((s) => s.invertPagesInDark);
   const setTheme = useSettingsStore((s) => s.setTheme);
   const setInvert = useSettingsStore((s) => s.setInvertPagesInDark);
+  const settings = useSettingsStore();
 
   useEffect(() => {
     if (!open) return;
@@ -86,6 +97,29 @@ export function AppearanceMenu() {
               onChange={(e) => setInvert(e.target.checked)}
             />
           </label>
+          <hr className="divider appearance-menu__divider" />
+          <div className="appearance-menu__label">Reading</div>
+          {READING_SWITCHES.map(({ key, label, detail, shortcut }) => (
+            <label className="appearance-menu__switch" key={key}>
+              <span>
+                {label}
+                {shortcut && (
+                  // biome-ignore lint/a11y/noAriaHiddenOnFocusable: <kbd> is not focusable; the shortcut is in the shortcuts dialog
+                  <kbd className="kbd appearance-menu__kbd" aria-hidden="true">
+                    {shortcut}
+                  </kbd>
+                )}
+                <small>{detail}</small>
+              </span>
+              <input
+                type="checkbox"
+                // biome-ignore lint/a11y/useAriaPropsForRole: the native checkbox already exposes its checked state
+                role="switch"
+                checked={settings[key]}
+                onChange={(e) => settings.setSwitch(key, e.target.checked)}
+              />
+            </label>
+          ))}
           <hr className="divider appearance-menu__divider" />
           <button
             type="button"

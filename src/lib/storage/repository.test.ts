@@ -1,6 +1,12 @@
 import { openDB } from 'idb';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import type { Highlight, LibraryDocument, MarginNote } from '../types';
+import {
+  DEFAULT_SETTINGS,
+  type AppSettings,
+  type Highlight,
+  type LibraryDocument,
+  type MarginNote,
+} from '../types';
 import { DB_NAME, DB_VERSION, getDB, resetDBForTests } from './db';
 import {
   deleteBookmark,
@@ -219,9 +225,16 @@ describe('repository', () => {
   });
 
   it('returns default settings until saved', async () => {
-    expect(await getSettings()).toEqual({ theme: 'light', invertPagesInDark: false });
-    await putSettings({ theme: 'dark', invertPagesInDark: true });
-    expect(await getSettings()).toEqual({ theme: 'dark', invertPagesInDark: true });
+    expect(await getSettings()).toEqual(DEFAULT_SETTINGS);
+    const saved = { ...DEFAULT_SETTINGS, theme: 'dark' as const, invertPagesInDark: true, bookMap: false };
+    await putSettings(saved);
+    expect(await getSettings()).toEqual(saved);
+  });
+
+  it('fills in settings added after they were saved', async () => {
+    const db = await getDB();
+    await db.put('settings', { theme: 'sepia', invertPagesInDark: true } as AppSettings, 'app');
+    expect(await getSettings()).toEqual({ ...DEFAULT_SETTINGS, theme: 'sepia', invertPagesInDark: true });
   });
 });
 
@@ -269,7 +282,7 @@ describe('schema upgrade', () => {
     expect((await listDocuments()).map((d) => d.id)).toEqual(['book']);
     expect((await listNotes('book')).map((n) => n.id)).toEqual(['n1']);
     expect((await listBookmarks('book')).map((b) => b.label)).toEqual(['Intro']);
-    expect(await getSettings()).toEqual({ theme: 'sepia', invertPagesInDark: false });
+    expect(await getSettings()).toEqual({ ...DEFAULT_SETTINGS, theme: 'sepia', invertPagesInDark: false });
 
     await putHighlight(makeHighlight('h1', 'book', 3, 0.4));
     expect((await listHighlights('book')).map((h) => h.id)).toEqual(['h1']);
