@@ -1,10 +1,13 @@
 import { useMemo } from 'react';
 import { create } from 'zustand';
+import { nextStamp } from '@/lib/sync/clock';
 import { deleteNote as deleteNoteRecord, listNotes, putNote } from '@/lib/storage/repository';
+import { onBookDataMerged } from '@/lib/sync/apply';
 import type { DocId, MarginNote, NoteColor } from '@/lib/types';
 import { clamp, createId } from '@/lib/util';
 import { reportSaveError } from '@/app/reportSaveError';
 import { useReaderStore } from '../reader/readerStore';
+import { reconcileRecords } from '../sync/liveMerge';
 
 export interface NewNoteInput {
   page: number;
@@ -107,7 +110,7 @@ export const useNotesStore = create<NotesState>()((set, get) => ({
   updateNote(id, patch) {
     set((s) => ({
       notes: s.notes
-        .map((n) => (n.id === id ? { ...n, ...patch, updatedAt: Date.now() } : n))
+        .map((n) => (n.id === id ? { ...n, ...patch, updatedAt: nextStamp(n.updatedAt) } : n))
         .sort(byPosition),
       lastColor: patch.color ?? s.lastColor,
     }));
@@ -152,6 +155,18 @@ useReaderStore.subscribe((state, prev) => {
     flushNotes();
     useNotesStore.setState({ docId: null, notes: [], editingId: null });
   }
+});
+
+// Notes merged in from another device or a backup appear without interrupting an edit.
+onBookDataMerged((docId, data) => {
+  const { docId: openId, notes, editingId } = useNotesStore.getState();
+  if (openId !== docId) return;
+  const next = reconcileRecords(notes, data.notes, data.tombstones, (n) => n.updatedAt);
+  if (next === notes) return;
+  useNotesStore.setState({
+    notes: [...next].sort(byPosition),
+    editingId: editingId && next.some((n) => n.id === editingId) ? editingId : null,
+  });
 });
 
 if (typeof window !== 'undefined') {

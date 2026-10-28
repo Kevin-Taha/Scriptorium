@@ -10,6 +10,7 @@ import {
   type ReadingState,
   type Tombstone,
 } from '../types';
+import { nextStamp } from '../sync/clock';
 import { type FolderFileRecord, getDB } from './db';
 
 /**
@@ -79,6 +80,15 @@ export async function deleteDocumentFile(id: DocId): Promise<void> {
 }
 
 /**
+ * Removes a book from the library list only, keeping its annotations and
+ * progress (e.g. a folder book after its folder is unlinked; linking the
+ * folder again brings everything back).
+ */
+export async function removeDocumentEntry(id: DocId): Promise<void> {
+  await (await getDB()).delete('documents', id);
+}
+
+/**
  * Removes a book and everything attached to it on this device (file,
  * progress, bookmarks, notes, highlights). Deliberately records no
  * tombstones: removing a book here does not erase its notes on other devices.
@@ -120,12 +130,19 @@ async function deleteAnnotation(kind: AnnotationKind, id: string): Promise<void>
   const db = await getDB();
   const tx = db.transaction([STORE_FOR_KIND[kind], 'tombstones'], 'readwrite');
   const store = tx.objectStore(STORE_FOR_KIND[kind]);
-  const existing = (await store.get(id)) as { docId: DocId } | undefined;
+  const existing = (await store.get(id)) as
+    | (Pick<MarginNote, 'docId' | 'createdAt'> & { updatedAt?: number })
+    | undefined;
   if (!existing) {
     await tx.done;
     return;
   }
-  const tombstone: Tombstone = { id, kind, docId: existing.docId, deletedAt: Date.now() };
+  const tombstone: Tombstone = {
+    id,
+    kind,
+    docId: existing.docId,
+    deletedAt: nextStamp(existing.updatedAt ?? existing.createdAt),
+  };
   await Promise.all([store.delete(id), tx.objectStore('tombstones').put(tombstone), tx.done]);
   emitChange(existing.docId);
 }

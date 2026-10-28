@@ -94,4 +94,14 @@ describe('book files', () => {
     ).toBeNull();
     expect(parseBookFile({ format: BOOK_FILE_FORMAT, version: 1, book })).toBeNull();
   });
+
+  it('accepts the fallback hash ids used on insecure origins, but not empty ones', () => {
+    const id = 'fnv-0123456789abcdef-1f4';
+    expect(
+      parseBookFile({ format: BOOK_FILE_FORMAT, version: 1, book: { ...book, id }, device })?.book.id,
+    ).toBe(id);
+    expect(
+      parseBookFile({ format: BOOK_FILE_FORMAT, version: 1, book: { ...book, id: '' }, device }),
+    ).toBeNull();
+  });
 });

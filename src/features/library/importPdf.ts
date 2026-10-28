@@ -26,7 +26,9 @@ export async function importPdfFile(file: File): Promise<{ doc: LibraryDocument;
   try {
     existing = await getDocument(id);
     if (existing) {
-      existing = { ...existing, lastOpenedAt: now };
+      // Importing a book that came from the linked folder gives it its own copy here, so it
+      // stays readable if the file leaves the folder or the folder can't be reached.
+      existing = { ...existing, lastOpenedAt: now, source: { kind: 'imported' } };
       await putDocument(existing, storedCopy());
     }
   } catch {

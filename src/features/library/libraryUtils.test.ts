@@ -29,4 +29,8 @@ describe('library dates', () => {
     expect(formatOpened(now, now)).toBe('Opened just now');
     expect(formatOpened(now - 2 * 60 * 60 * 1000, now)).toBe('Opened 2 hours ago');
   });
+
+  it('says a book that was never opened has not been opened', () => {
+    expect(formatOpened(0)).toBe('Not opened yet');
+  });
 });

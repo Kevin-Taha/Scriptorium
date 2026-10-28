@@ -169,8 +169,15 @@ export function parseBookData(value: unknown, docId: DocId): BookData {
   };
 }
 
+/**
+ * Book ids are content hashes: SHA-256 hex normally, or a shorter fallback hash
+ * on insecure origins (see `contentHash`). Anything else — including path-like
+ * strings — is rejected.
+ */
+const BOOK_ID = /^[A-Za-z0-9-]{8,128}$/;
+
 export function parseBookInfo(value: unknown): BookInfo | null {
-  if (!isObject(value) || !isString(value.id) || !/^[0-9a-f]{64}$/.test(value.id)) return null;
+  if (!isObject(value) || !isString(value.id) || !BOOK_ID.test(value.id)) return null;
   return {
     id: value.id,
     title: isString(value.title) ? value.title : 'Untitled',

@@ -90,6 +90,14 @@ describe('sync bookkeeping', () => {
     expect(data.tombstones).toEqual([]);
   });
 
+  it('stamps a deletion after the deleted version, even if this device’s clock is behind', async () => {
+    const future = Date.now() + 3_600_000;
+    await putNote({ ...makeNote('n1', 'book', 1, 0.1), updatedAt: future });
+    await deleteNote('n1');
+    const [tombstone] = (await getBookData('book')).tombstones;
+    expect(tombstone.deletedAt).toBeGreaterThan(future);
+  });
+
   it('announces reading progress but not document metadata changes', async () => {
     const changes: string[] = [];
     const stop = onLibraryChange(({ docId }) => changes.push(docId));

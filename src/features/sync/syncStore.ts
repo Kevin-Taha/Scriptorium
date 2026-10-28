@@ -33,6 +33,12 @@ export interface SyncState {
   progress: SyncProgress | null;
   /** Other devices seen in the folder, newest activity first. */
   devices: { id: string; name: string; lastWriteAt: number }[];
+  /**
+   * Increments whenever sync adds, updates or removes library entries (new
+   * folder books, covers read, files gone missing, unlinking). Library views
+   * reload their list when it changes.
+   */
+  libraryRevision: number;
 
   /** Opens the folder picker and links the chosen folder. Call from a click. */
   linkFolder(): Promise<void>;
@@ -55,6 +61,7 @@ export const useSyncStore = create<SyncState>()(() => ({
   error: null,
   progress: null,
   devices: [],
+  libraryRevision: 0,
   linkFolder: notReady,
   reconnect: notReady,
   unlinkFolder: notReady,

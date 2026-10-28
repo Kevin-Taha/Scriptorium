@@ -1,14 +1,28 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { BookOpen, FilePlus, LibraryBig, LoaderCircle, UploadCloud } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  BookOpen,
+  FilePlus,
+  FolderOpen,
+  HardDrive,
+  LibraryBig,
+  LoaderCircle,
+  UploadCloud,
+} from 'lucide-react';
 import { navigate } from '@/app/router';
 import { InstallButton } from '@/app/pwa/InstallButton';
 import { ThemeMenu } from '@/app/ThemeMenu';
 import { showToast } from '@/components/Toast';
+import { linkLibraryFolder } from '@/features/settings/folderActions';
+import { openLibraryStorageDialog } from '@/features/settings/storageDialogStore';
+import { requestPersistenceQuietly } from '@/features/settings/storageStatus';
+import { useSyncStore } from '@/features/sync/syncStore';
 import { deleteDocument, getReadingState, listDocuments } from '@/lib/storage/repository';
+import { onBookDataMerged } from '@/lib/sync/apply';
 import type { LibraryDocument, ReadingState } from '@/lib/types';
-import { formatRelativeTime } from '@/lib/util';
-import { BookCard, BookCover } from './BookCard';
+import { debounce, formatRelativeTime } from '@/lib/util';
+import { BookCard, BookCover, isMissingFromFolder } from './BookCard';
 import { ConfirmDialog } from './ConfirmDialog';
+import { FolderStatusChip } from './FolderStatusChip';
 import { importPdfFile } from './importPdf';
 import './library.css';
 
@@ -34,6 +48,11 @@ export function LibraryView() {
   const dragDepth = useRef(0);
   const loadVersion = useRef(0);
   const removalOpener = useRef<HTMLButtonElement | null>(null);
+  const syncStatus = useSyncStore((s) => s.status);
+  const folder = useSyncStore((s) => s.folder);
+  const libraryRevision = useSyncStore((s) => s.libraryRevision);
+  const firstRevision = useRef(libraryRevision);
+  const [linkingFolder, setLinkingFolder] = useState(false);
 
   const refresh = useCallback(async () => {
     const version = ++loadVersion.current;
@@ -73,6 +92,20 @@ export function LibraryView() {
     };
   }, [refresh]);
 
+  // Books arriving from the linked folder, or progress merged from another device or a
+  // backup, show up without waiting for the next focus; bursts are coalesced.
+  const scheduleRefresh = useMemo(() => debounce(() => void refresh(), 250), [refresh]);
+  useEffect(() => {
+    const stop = onBookDataMerged(scheduleRefresh);
+    return () => {
+      stop();
+      scheduleRefresh.cancel();
+    };
+  }, [scheduleRefresh]);
+  useEffect(() => {
+    if (libraryRevision !== firstRevision.current) scheduleRefresh();
+  }, [libraryRevision, scheduleRefresh]);
+
   const importFiles = useCallback(
     async (files: File[]) => {
       if (!files.length || importLock.current) return;
@@ -98,6 +131,7 @@ export function LibraryView() {
           }
         }
         await refresh();
+        if (added + duplicates > 0) requestPersistenceQuietly();
         if (singleResult) {
           showToast(
             singleResult.isNew
@@ -179,8 +213,23 @@ export function LibraryView() {
     }
   };
   const openPicker = () => fileInput.current?.click();
-  const openBook = (doc: LibraryDocument) => navigate({ name: 'reader', docId: doc.id });
-  const recent = entries?.[0];
+  const openBook = (doc: LibraryDocument) => {
+    if (isMissingFromFolder(doc)) {
+      showToast(
+        `“${doc.title}” isn’t in your library folder right now. Put the file back to read it — your notes are safe.`,
+      );
+      return;
+    }
+    navigate({ name: 'reader', docId: doc.id });
+  };
+  const linkFolder = async () => {
+    setLinkingFolder(true);
+    const message = await linkLibraryFolder();
+    setLinkingFolder(false);
+    if (message) showToast(message, { tone: 'error' });
+  };
+  const recent = entries?.find((entry) => entry.doc.lastOpenedAt > 0 && !isMissingFromFolder(entry.doc));
+  const folderLinked = folder !== null;
 
   return (
     <main className="library">
@@ -191,10 +240,20 @@ export function LibraryView() {
         </div>
         <div className="library__topline-actions">
           <InstallButton />
+          <button
+            type="button"
+            className="btn btn--ghost btn--icon tooltip tooltip--below"
+            data-tooltip="Library & storage"
+            aria-label="Library and storage"
+            aria-haspopup="dialog"
+            onClick={(event) => openLibraryStorageDialog(event.currentTarget)}
+          >
+            <HardDrive />
+          </button>
           <ThemeMenu />
         </div>
       </div>
-      <header className="library__header">
+      <header className={`library__header ${folderLinked ? 'library__header--with-status' : ''}`}>
         <div>
           <p className="library__eyebrow">YOUR READING ROOM</p>
           <h1>Library</h1>
@@ -228,6 +287,7 @@ export function LibraryView() {
           }}
         />
       </header>
+      <FolderStatusChip />
 
       {loadError && (
         <div className="library__error" role="alert">
@@ -270,32 +330,50 @@ export function LibraryView() {
                 )}
                 {importing ? 'Importing…' : 'Open PDF'}
               </button>
+              {syncStatus === 'unlinked' && (
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => void linkFolder()}
+                  disabled={linkingFolder}
+                >
+                  <FolderOpen aria-hidden="true" />
+                  Link a folder…
+                </button>
+              )}
             </div>
+            {syncStatus === 'unlinked' && (
+              <p className="library__empty-hint">Works with OneDrive and Google Drive folders too.</p>
+            )}
           </div>
         </section>
       )}
-      {recent && (
+      {entries && entries.length > 0 && (
         <>
-          <section aria-labelledby="continue-heading" className="library__continue-section">
-            <div className="library__section-heading">
-              <h2 id="continue-heading">Pick up where you left off</h2>
-              <span>LAST OPENED</span>
-            </div>
-            <div className="card library__continue">
-              <BookCover doc={recent.doc} className="library__continue-cover" />
-              <div className="library__continue-info">
-                <p className="library__continue-label">CONTINUE READING</p>
-                <h3>{recent.doc.title}</h3>
-                <p>
-                  Page {recent.reading?.location.page ?? 1} of {recent.doc.pageCount}{' '}
-                  <span aria-hidden="true">·</span> {formatRelativeTime(recent.doc.lastOpenedAt)}
-                </p>
+          {recent && (
+            <section aria-labelledby="continue-heading" className="library__continue-section">
+              <div className="library__section-heading">
+                <h2 id="continue-heading">Pick up where you left off</h2>
+                <span>LAST OPENED</span>
               </div>
-              <button type="button" className="btn btn--primary" onClick={() => openBook(recent.doc)}>
-                Continue reading
-              </button>
-            </div>
-          </section>
+              <div className="card library__continue">
+                <BookCover doc={recent.doc} className="library__continue-cover" />
+                <div className="library__continue-info">
+                  <p className="library__continue-label">CONTINUE READING</p>
+                  <h3>{recent.doc.title}</h3>
+                  <p>
+                    {recent.doc.pageCount > 0
+                      ? `Page ${recent.reading?.location.page ?? 1} of ${recent.doc.pageCount}`
+                      : `Page ${recent.reading?.location.page ?? 1}`}{' '}
+                    <span aria-hidden="true">·</span> {formatRelativeTime(recent.doc.lastOpenedAt)}
+                  </p>
+                </div>
+                <button type="button" className="btn btn--primary" onClick={() => openBook(recent.doc)}>
+                  Continue reading
+                </button>
+              </div>
+            </section>
+          )}
           <section aria-labelledby="books-heading" className="library__books">
             <div className="library__section-heading">
               <h2 id="books-heading">Your books</h2>
@@ -342,7 +420,10 @@ export function LibraryView() {
         {importing ? 'Importing PDFs' : ''}
       </span>
       <span className="library__footer">
-        <LibraryBig aria-hidden="true" /> Your books stay on this device
+        <LibraryBig aria-hidden="true" />{' '}
+        {folderLinked
+          ? 'Synced through your own folder — no account needed'
+          : 'Your books stay on this device'}
       </span>
     </main>
   );

@@ -1,10 +1,13 @@
 import { create } from 'zustand';
+import { nextStamp } from '@/lib/sync/clock';
 import { reportSaveError } from '@/app/reportSaveError';
 import { sectionForPage } from '@/lib/pdf/outline';
 import { deleteBookmark, listBookmarks, putBookmark } from '@/lib/storage/repository';
+import { onBookDataMerged } from '@/lib/sync/apply';
 import type { Bookmark, DocId } from '@/lib/types';
 import { createId } from '@/lib/util';
 import { useReaderStore } from '../reader/readerStore';
+import { reconcileRecords } from '../sync/liveMerge';
 import { pageLabelFor } from './pageLabels';
 
 interface BookmarksState {
@@ -60,7 +63,7 @@ export const useBookmarksStore = create<BookmarksState>()((set, get) => ({
     const updated = {
       ...bookmark,
       label: label.trim() || `Page ${pageLabelFor(useReaderStore.getState().pageLabels, bookmark.page)}`,
-      updatedAt: Date.now(),
+      updatedAt: nextStamp(bookmark.updatedAt ?? bookmark.createdAt),
     };
     set((s) => ({ bookmarks: s.bookmarks.map((b) => (b.id === id ? updated : b)) }));
     putBookmark(updated).catch(reportSaveError);
@@ -82,4 +85,17 @@ useReaderStore.subscribe((state, prev) => {
   if (state.docId === prev.docId) return;
   if (state.docId) void useBookmarksStore.getState().load(state.docId);
   else useBookmarksStore.setState({ docId: null, bookmarks: [], loaded: false });
+});
+
+// Bookmarks merged in from another device or a backup appear on the open book.
+onBookDataMerged((docId, data) => {
+  const { docId: openId, bookmarks } = useBookmarksStore.getState();
+  if (openId !== docId) return;
+  const next = reconcileRecords(
+    bookmarks,
+    data.bookmarks,
+    data.tombstones,
+    (b) => b.updatedAt ?? b.createdAt,
+  );
+  if (next !== bookmarks) useBookmarksStore.setState({ bookmarks: [...next].sort(byPage) });
 });

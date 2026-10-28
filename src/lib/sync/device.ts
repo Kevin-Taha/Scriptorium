@@ -7,6 +7,15 @@ const DEVICE_KEY = 'device';
 let cached: DeviceInfo | null = null;
 let loading: Promise<DeviceInfo> | null = null;
 
+type RenameListener = (device: DeviceInfo) => void;
+const renameListeners = new Set<RenameListener>();
+
+/** Notifies `listener` after this device is renamed (sync rewrites its files). Returns an unsubscribe. */
+export function onDeviceRenamed(listener: RenameListener): () => void {
+  renameListeners.add(listener);
+  return () => renameListeners.delete(listener);
+}
+
 /** A friendly default such as "Edge on Windows", from the user agent. */
 export function describeDevice(userAgent: string): string {
   const browser = /Edg\//.test(userAgent)
@@ -62,6 +71,7 @@ export async function renameDevice(name: string): Promise<DeviceInfo> {
   const device = { ...(await getDevice()), name: name.trim() || describeDevice(navigator.userAgent) };
   await putMeta(DEVICE_KEY, device);
   cached = device;
+  for (const listener of renameListeners) listener(device);
   return device;
 }
 
