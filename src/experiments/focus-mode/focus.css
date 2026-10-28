@@ -1,0 +1,232 @@
+/* ==========================================================================
+   Focus mode. Everything that touches the app hangs off `html.exp-focus`,
+   which is only present while focus mode is on, so with the experiment off
+   (or focus mode left) none of these rules match anything.
+   ========================================================================== */
+
+/* ---- Chrome recedes ------------------------------------------------------------ */
+/* The toolbar leaves the grid and floats over the page, so revealing it never moves the text. */
+html.exp-focus .reader {
+  position: relative;
+  grid-template-rows: minmax(0, 1fr);
+}
+
+html.exp-focus .reader__toolbar {
+  position: absolute;
+  inset: 0 0 auto;
+  height: var(--toolbar-height);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(calc(-100% - 12px));
+  transition:
+    transform var(--duration-base) var(--ease-in),
+    opacity var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-base) var(--ease-standard);
+}
+
+/* Revealed by the pointer near the top edge (see focusHooks.ts) or by keyboard focus inside it. */
+html.exp-focus.exp-focus-chrome .reader__toolbar,
+html.exp-focus .reader__toolbar:has(:focus-visible) {
+  pointer-events: auto;
+  opacity: 1;
+  transform: none;
+  box-shadow: var(--shadow-md);
+  transition:
+    transform var(--duration-base) var(--ease-out),
+    opacity var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-base) var(--ease-standard);
+}
+
+/* ---- Margin notes recede -------------------------------------------------------- */
+/* Anchor dots stay; the cards, their leaders and tethers fade until the page row is hovered or a note is focused. */
+html.exp-focus .margin-note {
+  opacity: 0.3;
+  box-shadow: none;
+  transition:
+    opacity var(--duration-slow) var(--ease-standard),
+    box-shadow var(--duration-slow) var(--ease-standard);
+}
+
+html.exp-focus .margin-note__leader,
+html.exp-focus .margin-note__tether {
+  opacity: 0.3;
+  transition: opacity var(--duration-slow) var(--ease-standard);
+}
+
+/* Matches the viewer's own gliding rule (notes.css) so that opacity keeps easing as well. */
+html.exp-focus .margin-column[data-settled] .margin-note-slot[data-ready] .margin-note {
+  transition:
+    top var(--duration-base) var(--ease-out),
+    opacity var(--duration-slow) var(--ease-standard),
+    box-shadow var(--duration-slow) var(--ease-standard);
+}
+
+html.exp-focus .margin-column[data-settled] .margin-note-slot[data-ready] .margin-note__leader {
+  transition:
+    top var(--duration-base) var(--ease-out),
+    height var(--duration-fast) var(--ease-standard),
+    opacity var(--duration-slow) var(--ease-standard),
+    background-color var(--duration-fast) var(--ease-standard);
+}
+
+html.exp-focus .margin-column[data-settled] .margin-note-slot[data-ready] .margin-note__tether {
+  transition:
+    top var(--duration-base) var(--ease-out),
+    height var(--duration-base) var(--ease-out),
+    opacity var(--duration-slow) var(--ease-standard),
+    width var(--duration-fast) var(--ease-standard);
+}
+
+html.exp-focus .reader__page:hover .margin-note,
+html.exp-focus .reader__page:has(.margin-note:focus-within) .margin-note,
+html.exp-focus .reader__page .margin-note.is-editing {
+  opacity: 1;
+  box-shadow: var(--shadow-sm);
+}
+
+html.exp-focus .reader__page:hover .margin-note__leader,
+html.exp-focus .reader__page:hover .margin-note__tether,
+html.exp-focus .reader__page:has(.margin-note:focus-within) .margin-note__leader,
+html.exp-focus .reader__page:has(.margin-note:focus-within) .margin-note__tether {
+  opacity: 1;
+}
+
+html.exp-focus .reader__page .margin-note:is(:hover, :focus-within) {
+  box-shadow: var(--shadow-md);
+}
+
+html.exp-focus .reader__page .margin-note.is-editing {
+  box-shadow:
+    0 0 0 2px var(--color-focus-ring),
+    var(--shadow-md);
+}
+
+/* ---- Spotlight ---------------------------------------------------------------------- */
+/* The opacity rule for the pages that are not current is a <style> element kept by useSpotlight. */
+html.exp-focus .reader__page {
+  transition: opacity var(--duration-slower) var(--ease-standard);
+}
+
+/* ---- Reading ruler -------------------------------------------------------------------- */
+.focus-ruler {
+  --ruler-y: 40%;
+  --ruler-feather: 14px;
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-sticky);
+  pointer-events: none;
+}
+
+.focus-ruler__pane {
+  position: absolute;
+  right: 0;
+  left: 0;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.focus-ruler__pane--above {
+  top: 0;
+  height: max(0px, calc(var(--ruler-y) - var(--ruler-h) / 2));
+  background: linear-gradient(to bottom, var(--color-scrim) calc(100% - var(--ruler-feather)), transparent);
+}
+
+.focus-ruler__pane--below {
+  top: calc(var(--ruler-y) + var(--ruler-h) / 2);
+  bottom: 0;
+  background: linear-gradient(to bottom, transparent, var(--color-scrim) var(--ruler-feather));
+}
+
+/* ---- Entry hint ------------------------------------------------------------------------ */
+.focus-hint-region {
+  position: absolute;
+  inset: var(--space-4) 0 auto;
+  z-index: var(--z-sticky);
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+/* The hint is about getting the toolbar back, so it steps aside once the toolbar is there. */
+html.exp-focus.exp-focus-chrome .focus-hint-region,
+html.exp-focus:has(.reader__toolbar :focus-visible) .focus-hint-region {
+  opacity: 0;
+}
+
+.focus-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 36px;
+  padding: 0 var(--space-4);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  color: var(--color-float-text);
+  background: var(--color-float-bg);
+  border: 1px solid var(--color-float-border);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-lg);
+  animation: focus-hint 2.5s var(--ease-out) both;
+}
+
+.focus-hint .lucide {
+  width: 16px;
+  height: 16px;
+  color: var(--color-float-accent);
+}
+
+.focus-hint strong {
+  font-weight: var(--font-weight-semibold);
+}
+
+.focus-hint__sep {
+  opacity: 0.5;
+}
+
+.focus-hint .kbd {
+  height: 18px;
+  min-width: 18px;
+  color: var(--color-float-text);
+  background: transparent;
+  border-color: var(--color-float-border);
+}
+
+@keyframes focus-hint {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  8%,
+  82% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+    transform: none;
+  }
+}
+
+/* ---- Reduced motion: no sliding, just opacity -------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  html.exp-focus .reader__toolbar,
+  html.exp-focus.exp-focus-chrome .reader__toolbar,
+  html.exp-focus .reader__toolbar:has(:focus-visible) {
+    transform: none;
+  }
+
+  @keyframes focus-hint {
+    0% {
+      opacity: 0;
+    }
+    8%,
+    82% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+}

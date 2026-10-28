@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
 import { ToastHost } from '@/components/Toast';
+import { ExperimentsLab } from '@/experiments/ExperimentsLab';
+import { ExperimentSlot } from '@/experiments/slots';
 import { LibraryView } from '@/features/library/LibraryView';
 import { ReaderScreen } from '@/features/reader/ReaderScreen';
 import { LibraryStorageDialog } from '@/features/settings/LibraryStorageDialog';
@@ -20,6 +22,8 @@ export function App() {
     <>
       {route.name === 'library' ? <LibraryView /> : <ReaderScreen docId={route.docId} view={route.name} />}
       <LibraryStorageDialog />
+      <ExperimentsLab />
+      <ExperimentSlot name="App" />
       <ToastHost />
     </>
   );

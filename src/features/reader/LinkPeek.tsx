@@ -1,7 +1,9 @@
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowRight, Maximize2, Minimize2 } from 'lucide-react';
+import { ArrowRight, Maximize2, Minimize2, Pin } from 'lucide-react';
 import { usePagesInverted } from '@/app/settingsStore';
+import { useExperiment } from '@/experiments/experimentsStore';
+import { pinLinkDestination } from '@/experiments/pinned-pane/linkTitle';
 import { pageCanvasContext } from '@/lib/pdf/canvas';
 import { sectionForPage } from '@/lib/pdf/outline';
 import type { PDFDocumentProxy } from '@/lib/pdf/pdfjs';
@@ -42,6 +44,7 @@ export function LinkPeek({ pdf, viewportRef, onNavigate }: LinkPeekProps) {
   const interactionsRef = useRef<PeekInteractions | null>(null);
   const id = useId();
   const inverted = usePagesInverted();
+  const pinEnabled = useExperiment('pinned-pane');
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -82,6 +85,14 @@ export function LinkPeek({ pdf, viewportRef, onNavigate }: LinkPeekProps) {
         interactionsRef.current?.close('viewport');
         onNavigate(peek.target);
       }}
+      onPin={
+        pinEnabled
+          ? () => {
+              pinLinkDestination(peek.link, peek.target);
+              interactionsRef.current?.close('viewport');
+            }
+          : undefined
+      }
     />,
     document.body,
   );
@@ -97,6 +108,8 @@ interface PeekCardProps {
   onPointerEnter(): void;
   onPointerLeave(): void;
   onGo(): void;
+  /** Present only while the pinned-pane experiment is on. */
+  onPin?(): void;
 }
 
 function PeekCard({
@@ -109,6 +122,7 @@ function PeekCard({
   onPointerEnter,
   onPointerLeave,
   onGo,
+  onPin,
 }: PeekCardProps) {
   const { target, width, maxPageHeight } = peek;
   const pageNumber = target.page;
@@ -202,6 +216,17 @@ function PeekCard({
         >
           {expanded ? <Minimize2 /> : <Maximize2 />}
         </button>
+        {onPin && (
+          <button
+            type="button"
+            className="btn btn--ghost btn--icon btn--sm tooltip tooltip--below"
+            data-tooltip="Pin beside your reading"
+            aria-label={`Pin page ${label} beside your reading`}
+            onClick={onPin}
+          >
+            <Pin />
+          </button>
+        )}
         <button
           type="button"
           className="btn btn--sm link-peek__go"

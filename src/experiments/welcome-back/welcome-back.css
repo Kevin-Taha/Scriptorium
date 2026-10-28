@@ -1,0 +1,173 @@
+.welcome-card {
+  position: absolute;
+  z-index: var(--z-popover);
+  top: var(--space-5);
+  left: 50%;
+  width: min(420px, calc(100% - 32px));
+  max-height: calc(100% - 112px);
+  overflow: auto;
+  padding: var(--space-5);
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  transform: translateX(-50%);
+  animation: welcome-card-enter var(--duration-slow) var(--ease-spring) both;
+}
+
+@keyframes welcome-card-enter {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
+.welcome-card__close {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  color: var(--color-text-secondary);
+}
+
+.welcome-card__eyebrow {
+  margin: 0 0 var(--space-2);
+  color: var(--color-accent);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+}
+
+.welcome-card__heading {
+  margin: 0;
+  padding-right: var(--space-5);
+  font-family: var(--font-serif);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--leading-snug);
+}
+
+.welcome-card__heading strong {
+  font-weight: var(--font-weight-semibold);
+}
+
+.welcome-card__meta {
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.welcome-card__progress {
+  margin-top: var(--space-5);
+}
+
+.welcome-card__progress-label {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.welcome-card__track {
+  height: 4px;
+  margin-top: var(--space-2);
+  overflow: hidden;
+  background: var(--color-surface-sunken);
+  border-radius: var(--radius-full);
+}
+
+.welcome-card__fill {
+  height: 100%;
+  background: var(--color-accent);
+  border-radius: inherit;
+}
+
+.welcome-card__notes {
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.welcome-card__notes h3 {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-ui);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.welcome-card__empty {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.welcome-card__note {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-xs);
+  text-align: left;
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+}
+
+.welcome-card__note:hover {
+  color: var(--color-accent);
+}
+
+.welcome-card__dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  background: var(--note-dot);
+  border-radius: 50%;
+}
+
+.welcome-card__excerpt {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.welcome-card__page {
+  flex: none;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.welcome-card__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .welcome-card {
+    animation-name: welcome-card-fade;
+  }
+  @keyframes welcome-card-fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}

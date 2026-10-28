@@ -3,6 +3,9 @@ import { Keyboard, LibraryBig, NotebookText, PanelLeft, Search as SearchIcon } f
 import { AppearanceMenu } from '@/app/AppearanceMenu';
 import { navigate } from '@/app/router';
 import { usePagesInverted } from '@/app/settingsStore';
+import { LabButton } from '@/experiments/ExperimentsLab';
+import { ReadingActivityTracker } from '@/experiments/shared/readingLog';
+import { ExperimentSlot, PageOverlaySlot } from '@/experiments/slots';
 import { sectionForPage } from '@/lib/pdf/outline';
 import { BookmarkRibbon } from '../navigation/BookmarkRibbon';
 import { BookmarksPanel } from '../navigation/BookmarksPanel';
@@ -36,6 +39,7 @@ const renderPageOverlay = (page: number, size: PageSize) => (
     <SearchHighlights page={page} size={size} />
     <PageNoteMarkers page={page} size={size} />
     <BookmarkRibbon page={page} />
+    <PageOverlaySlot page={page} size={size} />
   </>
 );
 
@@ -61,6 +65,8 @@ export function ReaderView() {
           />
           <ReturnPill />
           <SelectionNotePopover />
+          <ExperimentSlot name="Reader" />
+          <ReadingActivityTracker />
         </main>
       </div>
       <ShortcutsDialog />
@@ -118,7 +124,9 @@ function ReaderToolbar() {
         <ZoomControls />
         <span className="divider divider--vertical" aria-hidden="true" />
         <BookmarkToggle />
+        <ExperimentSlot name="ReaderToolbar" />
         <AppearanceMenu />
+        <LabButton />
         <button
           type="button"
           className="btn btn--sm reader__review-btn tooltip tooltip--below"
@@ -131,6 +139,7 @@ function ReaderToolbar() {
           {noteCount > 0 && <span className="reader__count">{noteCount}</span>}
         </button>
       </div>
+      <ExperimentSlot name="ReaderToolbarStrip" />
     </header>
   );
 }

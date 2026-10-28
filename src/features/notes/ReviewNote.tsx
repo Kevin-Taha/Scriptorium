@@ -8,6 +8,8 @@ import {
   type RefObject,
 } from 'react';
 import { ArrowUpRight, Trash2 } from 'lucide-react';
+import { useExperiment } from '@/experiments/experimentsStore';
+import { RichEditAids, RichNoteText } from '@/experiments/rich-notes/RichNoteText';
 import type { Highlight, MarginNote } from '@/lib/types';
 import { deleteNoteWithUndo } from './noteActions';
 import { NOTE_COLOR_LABELS } from './noteColors';
@@ -39,6 +41,7 @@ export const ReviewNote = memo(function ReviewNote({
   onActive,
 }: ReviewNoteProps) {
   const rootRef = useRef<HTMLDivElement>(null);
+  const richNotes = useExperiment('rich-notes');
   const quote = highlight?.text ?? note.quote;
 
   const handleClick = (event: MouseEvent<HTMLDivElement>) => {
@@ -99,6 +102,10 @@ export const ReviewNote = memo(function ReviewNote({
         )}
         {editing ? (
           <NoteEditor note={note} rootRef={rootRef} onEdit={onEdit} />
+        ) : richNotes && note.text.trim() ? (
+          <div className="review-note__text">
+            <RichNoteText text={note.text} terms={terms} />
+          </div>
         ) : (
           <p className={`review-note__text${note.text.trim() ? '' : ' is-empty'}`}>
             {note.text.trim() ? <MarkedText text={note.text} terms={terms} /> : 'Empty note'}
@@ -128,6 +135,7 @@ interface NoteEditorProps {
 
 function NoteEditor({ note, rootRef, onEdit }: NoteEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const richNotes = useExperiment('rich-notes');
 
   useLayoutEffect(() => {
     const textarea = textareaRef.current!;
@@ -169,6 +177,7 @@ function NoteEditor({ note, rootRef, onEdit }: NoteEditorProps) {
         onChange={(event) => useNotesStore.getState().updateNote(note.id, { text: event.target.value })}
         onKeyDown={handleKeyDown}
       />
+      {richNotes && <RichEditAids text={note.text} />}
       <div className="review-note__editbar">
         <NoteSwatches
           className="review-note__swatches"

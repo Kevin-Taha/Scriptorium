@@ -10,6 +10,8 @@ import {
   type MouseEvent,
 } from 'react';
 import { Trash2 } from 'lucide-react';
+import { useExperiment } from '@/experiments/experimentsStore';
+import { plainPreview, RichEditAids, RichNoteText } from '@/experiments/rich-notes/RichNoteText';
 import type { MarginNote, NoteColor } from '@/lib/types';
 import { useHighlightUiStore } from './highlightUi';
 import { useHighlight } from './highlightsStore';
@@ -48,6 +50,7 @@ export const MarginNoteCard = memo(function MarginNoteCard({
   onCollapse,
 }: MarginNoteCardProps) {
   const editing = useNotesStore((s) => s.editingId === note.id);
+  const richNotes = useExperiment('rich-notes');
   const pulsing = useIsNotePulsing(note.id);
   const highlight = useHighlight(note.highlightId);
   const [startedEditing] = useState(editing);
@@ -252,7 +255,11 @@ export const MarginNoteCard = memo(function MarginNoteCard({
         onPointerEnter={() => highlight && useHighlightUiStore.getState().setLinkedHover(highlight.id)}
         onPointerLeave={() => highlight && useHighlightUiStore.getState().setLinkedHover(null)}
       >
-        {compact && <span className="margin-note__preview">{note.text || note.quote}</span>}
+        {compact && (
+          <span className="margin-note__preview">
+            {(richNotes ? plainPreview(note.text) : note.text) || note.quote}
+          </span>
+        )}
 
         <div ref={contentRef} className="margin-note__content">
           {!editing && (
@@ -308,6 +315,7 @@ export const MarginNoteCard = memo(function MarginNoteCard({
                   onKeyDown={onInputKeyDown}
                 />
               </div>
+              {richNotes && <RichEditAids text={note.text} />}
               <div className="margin-note__footer">
                 <NoteSwatches value={note.color} onChange={setColor} />
                 <button
@@ -330,7 +338,7 @@ export const MarginNoteCard = memo(function MarginNoteCard({
                   style={bodyStyle}
                 >
                   <div ref={textRef} className="margin-note__text">
-                    {note.text}
+                    {richNotes ? <RichNoteText text={note.text} /> : note.text}
                   </div>
                 </div>
                 {clamped && !bodyExpanded && (

@@ -1,0 +1,171 @@
+/* Rendered Markdown and maths inside notes (experiment "rich-notes"). Sizes and colours come
+   from the note the text sits in, so it fits every note colour, theme and review density. */
+
+.rich-note {
+  /* Lays margins out inside the box, so the card measures what it shows. */
+  display: flow-root;
+  min-width: 0;
+  white-space: normal;
+}
+
+/* A margin note's text stays in the note's own colour; the review has room for the accent. */
+.margin-note .rich-note {
+  --rich-link: currentColor;
+}
+
+.rich-note > * + * {
+  margin-top: 0.45em;
+}
+
+.rich-note p {
+  margin: 0;
+}
+
+/* ---- Inline ------------------------------------------------------------------ */
+.rich-note strong {
+  font-weight: var(--font-weight-semibold);
+}
+
+.rich-note del {
+  text-decoration-thickness: 1px;
+  opacity: 0.75;
+}
+
+.rich-note code {
+  padding: 0.05em 0.28em;
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  font-style: normal;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  border-radius: var(--radius-xs);
+}
+
+.rich-note a {
+  color: var(--rich-link, var(--color-accent));
+  text-decoration-line: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 55%, transparent);
+  text-underline-offset: 0.18em;
+}
+
+.rich-note a:hover {
+  color: var(--rich-link, var(--color-accent-hover));
+  text-decoration-color: currentColor;
+  text-decoration-thickness: 2px;
+}
+
+/* ---- Blocks ------------------------------------------------------------------- */
+.rich-note ul,
+.rich-note ol {
+  margin: 0;
+  padding-left: 1.35em;
+}
+
+.rich-note ul {
+  list-style: disc outside;
+}
+.rich-note ul ul {
+  list-style-type: circle;
+}
+.rich-note ol {
+  list-style: decimal outside;
+}
+
+.rich-note li::marker {
+  color: color-mix(in srgb, currentColor 65%, transparent);
+  font-variant-numeric: tabular-nums;
+}
+
+.rich-note li + li {
+  margin-top: 0.12em;
+}
+.rich-note li > * + * {
+  margin-top: 0.25em;
+}
+
+.rich-note blockquote.rich-quote {
+  margin: 0;
+  padding-left: 0.75em;
+  font-family: inherit;
+  font-style: normal;
+  color: color-mix(in srgb, currentColor 82%, transparent);
+  border-left: 2px solid color-mix(in srgb, currentColor 30%, transparent);
+}
+
+/* ---- Maths -------------------------------------------------------------------- */
+.rich-note .katex {
+  font-size: 1.08em;
+}
+
+.rich-math--raw {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  color: color-mix(in srgb, currentColor 62%, transparent);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+/* Wider than the note: scroll sideways rather than spill out of the card. */
+.rich-math--display {
+  display: block;
+  max-width: 100%;
+  padding: 0.1em 0 0.3em;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+
+.rich-math--display .katex-display {
+  margin: 0.2em 0;
+}
+
+/* Fade the edge(s) that have more equation beyond them (set from TexMath). */
+.rich-math--display[data-fade='end'] {
+  mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+}
+.rich-math--display[data-fade='start'] {
+  mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent);
+}
+.rich-math--display[data-fade='both'] {
+  mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent);
+}
+
+/* Invalid TeX: KaTeX leaves the source in place, tinted (it is given var(--color-danger)). */
+.rich-note .katex-error {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  color: var(--color-danger);
+  cursor: help;
+}
+
+/* ---- Editing aids ------------------------------------------------------------- */
+.rich-hint {
+  margin-top: 4px;
+  font-family: var(--font-ui);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  line-height: 1.35;
+  color: var(--rich-muted, color-mix(in srgb, currentColor 72%, transparent));
+}
+
+.rich-hint .katex {
+  font-size: 1em;
+}
+
+.rich-preview {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed color-mix(in srgb, currentColor 28%, transparent);
+}
+
+.review-note .rich-hint {
+  --rich-muted: var(--color-text-muted);
+}
+
+.review-note .rich-preview {
+  font-family: var(--font-serif);
+  font-size: var(--review-note-size);
+  font-weight: var(--font-weight-note);
+  line-height: var(--review-note-leading);
+  color: var(--color-text);
+  cursor: auto;
+}

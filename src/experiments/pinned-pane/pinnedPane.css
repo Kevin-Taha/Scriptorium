@@ -1,0 +1,352 @@
+/* Pinned reference pane: a floating card over the reading area. */
+
+.pinned-pane {
+  --pinned-pane-header: 36px;
+  position: absolute;
+  z-index: var(--z-sidebar);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  container-type: inline-size;
+  font-family: var(--font-ui);
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  animation: pinned-pane-in var(--duration-base) var(--ease-out);
+}
+
+.pinned-pane.is-measuring {
+  visibility: hidden;
+}
+
+.pinned-pane.is-gesturing {
+  user-select: none;
+}
+
+@keyframes pinned-pane-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+/* ---- Docked: a full-height column; the viewer narrows beside it ----------------- */
+.pinned-pane.is-docked {
+  inset: 0 0 0 auto;
+  border-width: 0 0 0 1px;
+  border-radius: 0;
+  box-shadow: var(--shadow-md);
+  animation-name: pinned-pane-dock-in;
+}
+
+@keyframes pinned-pane-dock-in {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+}
+
+html.exp-pinned-docked .reader__viewport {
+  right: var(--pinned-dock-width);
+}
+
+.pinned-pane__edge {
+  position: absolute;
+  inset-block: 0;
+  left: -4px;
+  z-index: 2;
+  width: 9px;
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.pinned-pane__edge::after {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  left: 4px;
+  width: 2px;
+  background: var(--color-accent);
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+.pinned-pane__edge:hover::after,
+.pinned-pane.is-gesturing .pinned-pane__edge::after {
+  opacity: 0.7;
+}
+
+/* ---- Header ----------------------------------------------------------------------- */
+.pinned-pane__header {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+  height: var(--pinned-pane-header);
+  padding: 0 var(--space-1) 0 var(--space-3);
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.pinned-pane.is-gesturing .pinned-pane__header {
+  cursor: grabbing;
+}
+
+.pinned-pane.is-docked .pinned-pane__header {
+  cursor: default;
+}
+
+.pinned-pane__icon {
+  width: 14px;
+  height: 14px;
+  margin-right: var(--space-1);
+  color: var(--color-accent);
+}
+
+.pinned-pane__title {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  margin-right: var(--space-1);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--leading-snug);
+  color: var(--color-text);
+  white-space: pre;
+}
+
+/* The name gives way first; the page reference always stays. */
+.pinned-pane__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pinned-pane__page {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.pinned-pane__header .btn {
+  --btn-height: 26px;
+  cursor: pointer;
+}
+
+.pinned-pane__header .btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* The last button sits at the card's edge; its tooltip aligns right instead of centring. */
+.pinned-pane .pinned-pane__end.tooltip::after {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+@container (max-width: 300px) {
+  .pinned-pane__icon,
+  .pinned-pane__narrow-hidden {
+    display: none;
+  }
+}
+
+/* ---- Tabs ------------------------------------------------------------------------- */
+.pinned-pane__tabs {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  padding: 0 var(--space-2) var(--space-2);
+}
+
+.pinned-pane__tab {
+  flex: none;
+  height: 24px;
+  padding: 0 var(--space-3);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: var(--transition-colors);
+}
+
+.pinned-pane__tab:hover {
+  color: var(--color-text);
+  background: var(--color-hover);
+}
+
+.pinned-pane__tab[aria-selected='true'] {
+  color: var(--color-accent);
+  background: var(--color-accent-subtle);
+  border-color: transparent;
+}
+
+/* ---- Body ------------------------------------------------------------------------- */
+.pinned-pane__scroll {
+  flex: 1;
+  min-height: 0;
+  padding: 8px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable both-edges;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-text) 26%, transparent) transparent;
+  background: var(--color-surface-sunken);
+  border-top: 1px solid var(--color-border-subtle);
+  border-radius: 0 0 calc(var(--radius-md) - 1px) calc(var(--radius-md) - 1px);
+}
+
+.pinned-pane.is-docked .pinned-pane__scroll {
+  border-radius: 0;
+}
+
+.pinned-pane__scroll:focus-visible {
+  outline-offset: -2px;
+}
+
+.pinned-pane__scroll.is-zoomed {
+  cursor: zoom-out;
+}
+
+.pinned-pane__scroll:not(.is-zoomed) {
+  cursor: zoom-in;
+}
+
+/* The sheet is a .page-thumb, so the sheet colour and night-reading inversion apply. */
+.pinned-pane__sheet {
+  position: relative;
+  flex: none;
+  overflow: hidden;
+  animation: pinned-pane-sheet-in var(--duration-fast) var(--ease-out);
+}
+
+@keyframes pinned-pane-sheet-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.pinned-pane__bitmap {
+  position: absolute;
+  inset: 0;
+}
+
+.pinned-pane__canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.pinned-pane__skeleton {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      100deg,
+      transparent 30%,
+      color-mix(in srgb, var(--color-text) 9%, transparent) 50%,
+      transparent 70%
+    )
+    0 0 / 220% 100%,
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 14px,
+      color-mix(in srgb, var(--color-text) 7%, transparent) 14px 22px
+    )
+    0 36px / 100% calc(100% - 72px) no-repeat;
+  animation: pinned-pane-shimmer 1.4s linear infinite;
+}
+
+@keyframes pinned-pane-shimmer {
+  from {
+    background-position:
+      120% 0,
+      0 36px;
+  }
+  to {
+    background-position:
+      -120% 0,
+      0 36px;
+  }
+}
+
+/* ---- Resize corners (bottom-left and top-left are the natural ones for a right-hand pane) */
+.pinned-pane__corner {
+  position: absolute;
+  z-index: 2;
+  width: 16px;
+  height: 16px;
+  touch-action: none;
+}
+
+.pinned-pane__corner::after {
+  content: '';
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border: 0 solid var(--color-accent);
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+.pinned-pane__corner:hover::after,
+.pinned-pane.is-gesturing .pinned-pane__corner::after {
+  opacity: 0.75;
+}
+
+.pinned-pane__corner--nw {
+  top: -5px;
+  left: -5px;
+  cursor: nwse-resize;
+}
+.pinned-pane__corner--nw::after {
+  top: 4px;
+  left: 4px;
+  border-width: 2px 0 0 2px;
+  border-top-left-radius: var(--radius-md);
+}
+
+.pinned-pane__corner--ne {
+  top: -5px;
+  right: -5px;
+  cursor: nesw-resize;
+}
+.pinned-pane__corner--ne::after {
+  top: 4px;
+  right: 4px;
+  border-width: 2px 2px 0 0;
+  border-top-right-radius: var(--radius-md);
+}
+
+.pinned-pane__corner--sw {
+  bottom: -5px;
+  left: -5px;
+  cursor: nesw-resize;
+}
+.pinned-pane__corner--sw::after {
+  bottom: 4px;
+  left: 4px;
+  border-width: 0 0 2px 2px;
+  border-bottom-left-radius: var(--radius-md);
+}
+
+.pinned-pane__corner--se {
+  right: -5px;
+  bottom: -5px;
+  cursor: nwse-resize;
+}
+.pinned-pane__corner--se::after {
+  right: 4px;
+  bottom: 4px;
+  border-width: 0 2px 2px 0;
+  border-bottom-right-radius: var(--radius-md);
+}

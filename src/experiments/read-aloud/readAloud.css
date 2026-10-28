@@ -1,0 +1,261 @@
+/* Read aloud: the sentence highlight on the page and the floating mini player. */
+
+/* ---- Highlight on the page ------------------------------------------------------
+   Like the active search match, but a wash with a line under it, so the two never
+   read as the same thing. It multiplies with the paper (ink stays dark) and sits in
+   the page overlay, beneath the text layer, so a text selection still draws over it. */
+.ra-highlight {
+  --ra-tint: var(--color-accent);
+
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.ra-highlight__sentence,
+.ra-highlight__word {
+  position: absolute;
+  box-sizing: border-box;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+}
+
+.ra-highlight__sentence {
+  background: color-mix(in srgb, var(--ra-tint) 16%, transparent);
+  border-bottom: 2px solid var(--ra-tint);
+  border-radius: 2px;
+  animation: ra-sentence-in var(--duration-base) var(--ease-out);
+}
+
+/* The word being spoken: a stronger wash that glides from word to word. */
+.ra-highlight__word {
+  background: color-mix(in srgb, var(--ra-tint) 30%, transparent);
+  border-radius: 2px;
+  transition:
+    left var(--duration-fast) var(--ease-standard),
+    top var(--duration-fast) var(--ease-standard),
+    width var(--duration-fast) var(--ease-standard),
+    height var(--duration-fast) var(--ease-standard);
+}
+
+@keyframes ra-sentence-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Dimmed paper is still light; the dark theme's accent is a pastel, so use the deeper red. */
+[data-theme='dark'] .ra-highlight {
+  --ra-tint: var(--color-bookmark);
+}
+
+/* Night pages are truly dark: lighten instead of multiplying. */
+[data-theme='dark'] .invert-pages .ra-highlight {
+  --ra-tint: var(--color-accent);
+}
+
+[data-theme='dark'] .invert-pages .ra-highlight__sentence,
+[data-theme='dark'] .invert-pages .ra-highlight__word {
+  mix-blend-mode: screen;
+}
+
+[data-theme='dark'] .invert-pages .ra-highlight__sentence {
+  background: color-mix(in srgb, var(--ra-tint) 26%, transparent);
+}
+
+[data-theme='dark'] .invert-pages .ra-highlight__word {
+  background: color-mix(in srgb, var(--ra-tint) 44%, transparent);
+}
+
+/* ---- Mini player ------------------------------------------------------------------
+   Top-right of the reading area, below the toolbar. Never bottom-centre: that is the
+   Return pill's place. The region ignores the pointer; only its pieces take it. */
+.ra-region {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: var(--z-popover);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-2);
+  pointer-events: none;
+}
+
+.ra-player {
+  position: relative;
+  z-index: 2; /* its tooltips and popover paint over the chips below */
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 40px;
+  padding: 0 var(--space-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-float-text);
+  background: var(--color-float-bg);
+  border: 1px solid var(--color-float-border);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-lg);
+  pointer-events: auto;
+  animation: ra-player-in var(--duration-slow) var(--ease-spring) backwards;
+}
+
+@keyframes ra-player-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.97);
+  }
+}
+
+.ra-player__position {
+  min-width: 84px;
+  padding: 0 var(--space-2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-align: center;
+  color: color-mix(in srgb, var(--color-float-text) 78%, transparent);
+}
+
+.ra-btn {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  min-width: 30px;
+  height: 30px;
+  padding: 0;
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-medium);
+  color: inherit;
+  border-radius: var(--radius-full);
+  transition: var(--transition-colors);
+}
+
+.ra-btn .lucide {
+  width: 16px;
+  height: 16px;
+}
+
+.ra-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-float-text) 14%, transparent);
+}
+
+.ra-btn:active:not(:disabled) {
+  background: color-mix(in srgb, var(--color-float-text) 20%, transparent);
+}
+
+.ra-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.ra-btn--text {
+  padding: 0 var(--space-2);
+  color: var(--color-float-accent);
+}
+
+.ra-btn--primary {
+  color: var(--color-float-bg);
+  background: var(--color-float-accent);
+}
+
+.ra-btn--primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-float-accent), var(--color-float-text) 18%);
+}
+
+.ra-btn--primary .lucide {
+  fill: currentColor;
+}
+
+.ra-btn:focus-visible,
+.ra-chip:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 1px;
+}
+
+.ra-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: 26px;
+  padding: 0 var(--space-3);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  color: var(--color-float-text);
+  background: var(--color-float-bg);
+  border: 1px solid var(--color-float-border);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-md);
+  pointer-events: auto;
+  animation: ra-chip-in var(--duration-base) var(--ease-out) backwards;
+}
+
+.ra-chip .lucide {
+  width: 14px;
+  height: 14px;
+  color: var(--color-float-accent);
+}
+
+button.ra-chip {
+  cursor: pointer;
+  transition: var(--transition-colors);
+}
+
+button.ra-chip:hover {
+  background: color-mix(in srgb, var(--color-float-bg), var(--color-float-text) 8%);
+}
+
+@keyframes ra-chip-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+/* ---- Voice popover ------------------------------------------------------------------ */
+.ra-voice {
+  position: relative;
+  display: flex;
+}
+
+.ra-popover {
+  position: absolute;
+  top: calc(100% + var(--space-3));
+  right: 0;
+  display: grid;
+  gap: var(--space-2);
+  width: 260px;
+  padding: var(--space-3);
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  animation: ra-chip-in var(--duration-fast) var(--ease-out) backwards;
+}
+
+.ra-popover__label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.ra-popover__select {
+  width: 100%;
+  text-align: left;
+  text-overflow: ellipsis;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ra-highlight__sentence,
+  .ra-player,
+  .ra-chip,
+  .ra-popover {
+    animation: none;
+  }
+
+  .ra-highlight__word {
+    transition: none;
+  }
+}

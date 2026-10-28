@@ -1,0 +1,426 @@
+/* ==========================================================================
+   Book minimap — the whole book as a fore-edge along the reader's right side.
+   Chapters are thumb-index bands, notes and highlights are marks on the edge,
+   bookmarks are ribbons tucked into it, and the accent window is where you are.
+   ========================================================================== */
+
+/* The rail stands in for the viewport's scrollbar. */
+html.exp-minimap .reader__viewport {
+  scrollbar-width: none;
+}
+
+.minimap {
+  --minimap-rest: 24px;
+  --minimap-open: 52px;
+  --minimap-paper: var(--page-sheet-bg);
+  --minimap-edge: color-mix(in srgb, var(--color-text) 18%, transparent);
+  --minimap-rule: color-mix(in srgb, var(--color-text) 6%, transparent);
+  --minimap-read: color-mix(in srgb, var(--color-text) 9%, transparent);
+
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-sticky);
+  width: var(--minimap-rest);
+  /* Opens with a beat of hover intent and lingers a moment after the pointer leaves. */
+  transition: width var(--duration-base) var(--ease-out) 240ms;
+}
+
+.minimap:is(:hover, .is-dragging, .is-keyboard) {
+  width: var(--minimap-open);
+  transition-delay: 60ms;
+}
+
+/* In dark the edge is a quiet raised strip (dimmed paper at full strength would glare at the
+   window edge); pages you've read are a shade lighter, as if handled. */
+[data-theme='dark'] .minimap {
+  --minimap-paper: var(--color-surface-raised);
+  --minimap-edge: color-mix(in srgb, var(--color-text) 22%, transparent);
+  --minimap-rule: color-mix(in srgb, var(--color-text) 6%, transparent);
+  --minimap-read: color-mix(in srgb, var(--color-text) 11%, transparent);
+}
+
+/* ---- Rail ------------------------------------------------------------------ */
+.minimap__rail {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  background: transparent;
+  border-left: 1px solid transparent;
+  transition:
+    background-color var(--duration-base) var(--ease-standard) 240ms,
+    border-color var(--duration-base) var(--ease-standard) 240ms,
+    box-shadow var(--duration-base) var(--ease-standard) 240ms;
+}
+
+.minimap:is(:hover, .is-dragging, .is-keyboard) .minimap__rail {
+  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+  border-left-color: var(--color-border-subtle);
+  box-shadow: var(--shadow-md);
+  transition-delay: 60ms;
+}
+
+.minimap__rail:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
+}
+
+.minimap.is-dragging .minimap__rail {
+  cursor: grabbing;
+}
+
+/* ---- The fore-edge (SVG) ----------------------------------------------------- */
+.minimap__map {
+  position: absolute;
+  right: 0;
+  max-width: none;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.minimap__paper {
+  fill: var(--minimap-paper);
+}
+
+.minimap__read {
+  fill: var(--minimap-read);
+}
+
+.minimap__rules,
+.minimap__separators {
+  fill: none;
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+.minimap__rules {
+  stroke: var(--minimap-rule);
+}
+
+.minimap__separators {
+  stroke: var(--minimap-edge);
+}
+
+.minimap__edge {
+  fill: none;
+  stroke: var(--minimap-edge);
+  stroke-width: 1;
+}
+
+.minimap__highlight {
+  fill: var(--note-dot);
+  opacity: 0.85;
+}
+
+.minimap__note {
+  fill: var(--note-dot);
+  stroke: var(--minimap-paper);
+  stroke-width: 1.25;
+}
+
+.minimap__ribbon {
+  fill: var(--color-bookmark);
+}
+
+/* ---- Where you are, and where you're pointing --------------------------------- */
+.minimap__thumb {
+  position: absolute;
+  right: 4px;
+  width: 16px;
+  height: 0;
+  border: 1.5px solid var(--color-accent);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-bg-app) 85%, transparent);
+  pointer-events: none;
+  will-change: transform;
+}
+
+.minimap.is-dragging .minimap__thumb {
+  background: color-mix(in srgb, var(--color-accent) 22%, transparent);
+}
+
+.minimap__probe {
+  position: absolute;
+  right: 6px;
+  width: 12px;
+  background: color-mix(in srgb, var(--color-text) 20%, transparent);
+  border-radius: 1px;
+  pointer-events: none;
+}
+
+.minimap.is-dragging .minimap__probe {
+  display: none;
+}
+
+/* ---- Chapter tabs (thumb index), revealed when the rail opens ----------------- */
+.minimap__tabs {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+.minimap:is(:hover, .is-dragging, .is-keyboard) .minimap__tabs {
+  opacity: 1;
+  transition-delay: 160ms;
+}
+
+/* Tabs sit against the strip's edge, like a printed thumb index. */
+.minimap__tab {
+  position: absolute;
+  right: 17px;
+  min-width: 18px;
+  padding: 0 4px 0 5px;
+  font-size: 10.5px;
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  line-height: 16px;
+  text-align: center;
+  color: var(--color-text-secondary);
+  background: var(--color-surface-sunken);
+  border-radius: var(--radius-xs) 0 0 var(--radius-xs);
+  translate: 0 -50%;
+}
+
+.minimap__tab.is-current {
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+}
+
+/* ---- Preview card ---------------------------------------------------------- */
+.minimap-card {
+  position: absolute;
+  top: 0;
+  right: calc(100% + var(--space-3));
+  z-index: var(--z-popover);
+  width: 172px;
+  padding: var(--space-2);
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  pointer-events: none;
+  animation: minimap-card-in var(--duration-fast) var(--ease-out);
+}
+
+/* Points at the spot on the rail. */
+.minimap-card::after {
+  content: '';
+  position: absolute;
+  top: var(--minimap-caret-y, 50%);
+  right: -6px;
+  width: 10px;
+  height: 10px;
+  background: var(--color-surface-raised);
+  border-top: 1px solid var(--color-border);
+  border-right: 1px solid var(--color-border);
+  border-top-right-radius: 2px;
+  transform: translateY(-50%) rotate(45deg);
+}
+
+@keyframes minimap-card-in {
+  from {
+    opacity: 0;
+    transform: translateX(6px);
+  }
+}
+
+.minimap-card.is-compact {
+  width: auto;
+  min-width: 132px;
+  max-width: 220px;
+  padding: var(--space-2) var(--space-3);
+}
+
+.minimap-card__sheet {
+  position: relative;
+  width: 100%;
+}
+
+.minimap-card__image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  mix-blend-mode: var(--page-canvas-blend);
+  filter: var(--page-canvas-filter);
+  animation: minimap-fade-in var(--duration-fast) var(--ease-out);
+}
+
+@keyframes minimap-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.minimap-card__placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-serif);
+  font-size: var(--font-size-2xl);
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--color-text) 16%, transparent);
+}
+
+[data-theme='dark'] .minimap-card__placeholder {
+  color: color-mix(in srgb, var(--color-bg-app) 30%, transparent);
+}
+
+[data-theme='dark'] .invert-pages .minimap-card__placeholder {
+  color: color-mix(in srgb, var(--color-text) 22%, transparent);
+}
+
+/* Annotations on the thumbnail, as the page draws them. */
+.minimap-card__highlight {
+  position: absolute;
+  background: var(--note-border);
+  border-radius: 1px;
+  mix-blend-mode: multiply;
+}
+
+[data-theme='dark'] .minimap-card__highlight {
+  background: color-mix(in srgb, var(--note-dot) 52%, var(--page-sheet-bg));
+}
+
+[data-theme='dark'] .invert-pages .minimap-card__highlight {
+  background: color-mix(in srgb, var(--note-dot) 50%, transparent);
+  mix-blend-mode: screen;
+}
+
+.minimap-card__anchor {
+  position: absolute;
+  left: 100%;
+  width: 8px;
+  height: 8px;
+  background: var(--note-dot);
+  border-radius: var(--radius-full);
+  box-shadow: 0 0 0 2px var(--color-surface-raised);
+  transform: translate(-50%, -50%);
+}
+
+.minimap-card__ribbon {
+  position: absolute;
+  top: 0;
+  right: 12px;
+  width: 9px;
+  height: 15px;
+  background: var(--color-bookmark);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%);
+}
+
+.minimap-card__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-2) var(--space-1) 0;
+}
+
+.minimap-card.is-compact .minimap-card__meta {
+  padding: 0;
+}
+
+.minimap-card__page {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-snug);
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+.minimap-card__page strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.minimap-card__of {
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+.minimap-card__here {
+  margin-left: auto;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-accent);
+}
+
+.minimap-card__section {
+  display: -webkit-box;
+  overflow: hidden;
+  font-family: var(--font-serif);
+  font-size: var(--font-size-xs);
+  font-style: italic;
+  line-height: var(--leading-snug);
+  color: var(--color-text-secondary);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.minimap-card__summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px var(--space-2);
+  margin-top: var(--space-1);
+  padding-top: var(--space-1);
+  font-size: 11.5px;
+  line-height: 18px;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.minimap-card__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.minimap-card__chip--bookmark .lucide {
+  width: 12px;
+  height: 12px;
+  color: var(--color-bookmark);
+  fill: var(--color-bookmark);
+}
+
+.minimap-card__swatches {
+  display: inline-flex;
+}
+
+.minimap-card__swatches > span {
+  background: var(--note-dot);
+}
+
+.minimap-card__swatches--dot > span {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  box-shadow: 0 0 0 1.5px var(--color-surface-raised);
+}
+
+.minimap-card__swatches--dot > span + span {
+  margin-left: -3px;
+}
+
+.minimap-card__swatches--bar > span {
+  width: 3px;
+  height: 11px;
+  border-radius: 1px;
+}
+
+.minimap-card__swatches--bar > span + span {
+  margin-left: 2px;
+}

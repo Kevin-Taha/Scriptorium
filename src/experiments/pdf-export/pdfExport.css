@@ -1,0 +1,25 @@
+.pdf-export__button {
+  flex-shrink: 0;
+}
+
+.pdf-export__spinner {
+  animation: pdf-export-spin 1s linear infinite;
+}
+
+@keyframes pdf-export-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 1120px) {
+  .pdf-export__button span {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pdf-export__spinner {
+    animation: none;
+  }
+}

@@ -12,6 +12,10 @@ import { navigate } from '@/app/router';
 import { InstallButton } from '@/app/pwa/InstallButton';
 import { ThemeMenu } from '@/app/ThemeMenu';
 import { showToast } from '@/components/Toast';
+import { LabButton } from '@/experiments/ExperimentsLab';
+import { useExperiment } from '@/experiments/experimentsStore';
+import { ReadingDesk } from '@/experiments/reading-desk/ReadingDesk';
+import { ExperimentSlot } from '@/experiments/slots';
 import { linkLibraryFolder } from '@/features/settings/folderActions';
 import { openLibraryStorageDialog } from '@/features/settings/storageDialogStore';
 import { requestPersistenceQuietly } from '@/features/settings/storageStatus';
@@ -53,6 +57,7 @@ export function LibraryView() {
   const libraryRevision = useSyncStore((s) => s.libraryRevision);
   const firstRevision = useRef(libraryRevision);
   const [linkingFolder, setLinkingFolder] = useState(false);
+  const readingDesk = useExperiment('reading-desk');
 
   const refresh = useCallback(async () => {
     const version = ++loadVersion.current;
@@ -230,6 +235,23 @@ export function LibraryView() {
   };
   const recent = entries?.find((entry) => entry.doc.lastOpenedAt > 0 && !isMissingFromFolder(entry.doc));
   const folderLinked = folder !== null;
+  const startRemoval = (doc: LibraryDocument, opener: HTMLButtonElement | null) => {
+    removalOpener.current = opener;
+    setRemoving(doc);
+  };
+  const bookGrid = entries && (
+    <div className="library__grid">
+      {entries.map(({ doc, reading }) => (
+        <BookCard
+          key={doc.id}
+          doc={doc}
+          reading={reading}
+          onOpen={() => openBook(doc)}
+          onRemove={(opener) => startRemoval(doc, opener)}
+        />
+      ))}
+    </div>
+  );
 
   return (
     <main className="library">
@@ -240,6 +262,7 @@ export function LibraryView() {
         </div>
         <div className="library__topline-actions">
           <InstallButton />
+          <LabButton />
           <button
             type="button"
             className="btn btn--ghost btn--icon tooltip tooltip--below"
@@ -288,6 +311,7 @@ export function LibraryView() {
         />
       </header>
       <FolderStatusChip />
+      <ExperimentSlot name="Library" />
 
       {loadError && (
         <div className="library__error" role="alert">
@@ -348,7 +372,10 @@ export function LibraryView() {
           </div>
         </section>
       )}
-      {entries && entries.length > 0 && (
+      {entries && entries.length > 0 && readingDesk && (
+        <ReadingDesk entries={entries} grid={bookGrid} onOpen={openBook} onRemove={startRemoval} />
+      )}
+      {entries && entries.length > 0 && !readingDesk && (
         <>
           {recent && (
             <section aria-labelledby="continue-heading" className="library__continue-section">
@@ -381,20 +408,7 @@ export function LibraryView() {
                 {entries.length} {entries.length === 1 ? 'BOOK' : 'BOOKS'}
               </span>
             </div>
-            <div className="library__grid">
-              {entries.map(({ doc, reading }) => (
-                <BookCard
-                  key={doc.id}
-                  doc={doc}
-                  reading={reading}
-                  onOpen={() => openBook(doc)}
-                  onRemove={(opener) => {
-                    removalOpener.current = opener;
-                    setRemoving(doc);
-                  }}
-                />
-              ))}
-            </div>
+            {bookGrid}
           </section>
         </>
       )}

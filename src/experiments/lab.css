@@ -1,0 +1,221 @@
+/* ---- Experiments lab ------------------------------------------------------ */
+
+.lab-button {
+  position: relative;
+}
+.lab-button__count {
+  position: absolute;
+  top: 3px;
+  right: 2px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  font-size: 10px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 14px;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-on-accent);
+  text-align: center;
+  background: var(--color-accent);
+  border-radius: var(--radius-full);
+  pointer-events: none;
+}
+
+.lab-dialog {
+  position: fixed;
+  inset: 0;
+  display: none;
+  width: min(760px, calc(100vw - 2 * var(--space-4)));
+  max-width: none;
+  max-height: calc(100dvh - 2 * var(--space-4));
+  margin: auto;
+  padding: 0;
+  overflow: hidden;
+  font-family: var(--font-ui);
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+.lab-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+.lab-dialog::backdrop {
+  background: var(--color-scrim);
+}
+
+.lab-dialog__header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-5) var(--space-4);
+}
+.lab-dialog__icon {
+  display: grid;
+  flex: 0 0 40px;
+  place-items: center;
+  height: 40px;
+  color: var(--color-accent);
+  background: var(--color-accent-subtle);
+  border-radius: var(--radius-md);
+}
+.lab-dialog__icon .lucide {
+  width: 20px;
+  height: 20px;
+}
+.lab-dialog__heading {
+  flex: 1;
+  min-width: 0;
+}
+.lab-dialog__heading h2 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: var(--font-size-lg);
+}
+.lab-dialog__heading p {
+  margin: 2px 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.lab-dialog__bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-5);
+  border-top: 1px solid var(--color-border-subtle);
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: var(--color-surface);
+}
+.lab-dialog__count {
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+}
+.lab-dialog__spacer {
+  flex: 1;
+}
+
+.lab-dialog__list {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: var(--space-3) var(--space-5) var(--space-4);
+  overflow-y: auto;
+  list-style: none;
+}
+
+.lab-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4) var(--space-3) var(--space-3);
+  margin-bottom: var(--space-2);
+  border: 1px solid var(--color-border-subtle);
+  border-left: 3px solid transparent;
+  border-radius: var(--radius-md);
+  transition: var(--transition-colors);
+}
+.lab-card.is-on {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  border-left-color: var(--color-accent);
+}
+.lab-card__main {
+  flex: 1;
+  min-width: 0;
+}
+.lab-card__title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.lab-card__number {
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+.lab-card__title {
+  font-family: var(--font-serif);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+}
+.lab-card__kind {
+  padding: 1px 7px;
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  border-radius: var(--radius-full);
+}
+.lab-card__kind--feature {
+  color: var(--note-sky-text);
+  background: var(--note-sky-bg);
+}
+.lab-card__kind--redesign {
+  color: var(--note-lavender-text);
+  background: var(--note-lavender-bg);
+}
+.lab-card__kind--improvement {
+  color: var(--note-sage-text);
+  background: var(--note-sage-bg);
+}
+.lab-card__summary {
+  margin: var(--space-1) 0 0;
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-normal);
+  color: var(--color-text-secondary);
+}
+.lab-card__try {
+  margin-top: var(--space-1);
+  font-size: var(--font-size-sm);
+}
+.lab-card__try summary {
+  width: fit-content;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-accent);
+  cursor: pointer;
+}
+.lab-card__try ol {
+  margin: var(--space-1) 0 0;
+  padding-left: 20px;
+  color: var(--color-text);
+  list-style: decimal;
+}
+.lab-card__try li + li {
+  margin-top: 2px;
+}
+.lab-card__switch {
+  margin-top: 4px;
+}
+
+.lab-dialog__footer {
+  padding: var(--space-3) var(--space-5);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  border-top: 1px solid var(--color-border-subtle);
+}
+.lab-dialog__footer code {
+  font-family: var(--font-mono);
+  color: var(--color-text-secondary);
+}
+
+/* ---- Interplay between experiments ----------------------------------------
+   The minimap rail owns the reader's right edge; floating panels from other
+   experiments step left of it. */
+html.exp-minimap .ra-region {
+  right: calc(var(--space-4) + 24px);
+}
+html.exp-minimap .pinned-pane:not(.is-docked) {
+  margin-right: 24px;
+}
+html.exp-minimap .pinned-pane.is-docked {
+  right: 24px;
+}
+html.exp-minimap.exp-pinned-docked .reader__viewport {
+  right: calc(var(--pinned-dock-width) + 24px);
+}

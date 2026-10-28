@@ -39,6 +39,14 @@ where you left off — days later.
 - **Private by default.** No account and no server: books and notes stay on your devices and in folders
   you choose. See [`docs/DATA.md`](docs/DATA.md).
 
+## Experiments
+
+Proof-of-concept features (command palette, book minimap, focus mode, chapter progress, welcome-back
+recap, reading desk library, pinned reference pane, Markdown & maths in notes, flashcards, annotated
+PDF export, read aloud) sit behind switches in the **Experiments lab** — the flask button in the library
+and reader toolbars, or `?exp=all` in the address bar. All are off by default. See
+[`docs/EXPERIMENTS.md`](docs/EXPERIMENTS.md) for what each one does and how to try it.
+
 ## Keyboard shortcuts
 
 | Shortcut | Action |
@@ -107,6 +115,7 @@ out beside its margin column.
 src/
   app/          App shell, hash router, settings and theming
   components/   Shared UI primitives (toasts)
+  experiments/  Experiments lab: switchable proof-of-concept features (see docs/EXPERIMENTS.md)
   features/
     library/    Library screen and PDF import
     reader/     Reader shell, viewer engine, zoom, link peek

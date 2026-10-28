@@ -1,6 +1,8 @@
 import type { RefObject } from 'react';
 import { ArrowLeft, Download, Search, X } from 'lucide-react';
 import { ThemeMenu } from '@/app/ThemeMenu';
+import { LabButton } from '@/experiments/ExperimentsLab';
+import { ExperimentSlot } from '@/experiments/slots';
 import { NOTE_COLORS, type NoteColor } from '@/lib/types';
 import { NOTE_COLOR_LABELS } from './noteColors';
 import type { ReviewDensity } from './reviewDensity';
@@ -133,6 +135,8 @@ export function ReviewToolbar(props: ReviewToolbarProps) {
       )}
 
       <ThemeMenu />
+      <LabButton />
+      <ExperimentSlot name="ReviewToolbar" />
 
       {hasNotes && (
         <button
