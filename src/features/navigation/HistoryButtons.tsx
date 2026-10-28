@@ -13,6 +13,7 @@ export function HistoryButtons() {
   return (
     <>
       <button
+        type="button"
         className="btn btn--ghost btn--icon btn--sm tooltip tooltip--below"
         aria-label={back ? `Back to page ${pageLabelFor(labels, back.page)} (Alt+Left)` : 'Back (Alt+Left)'}
         data-tooltip={back ? `Back to ${formatPageRef(labels, back.page)} (Alt+←)` : 'Back (Alt+←)'}
@@ -22,6 +23,7 @@ export function HistoryButtons() {
         <ArrowLeft />
       </button>
       <button
+        type="button"
         className="btn btn--ghost btn--icon btn--sm tooltip tooltip--below"
         aria-label={
           forward

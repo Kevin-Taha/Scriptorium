@@ -31,10 +31,17 @@ export function ConfirmDialog({
       <h2 id="library-dialog-title">{title}</h2>
       <p id="library-dialog-description">{description}</p>
       <div className="library-dialog__actions">
-        <button className="btn" autoFocus disabled={busy} onClick={onCancel}>
+        <button
+          type="button"
+          className="btn"
+          // biome-ignore lint/a11y/noAutofocus: focus moves to the safe action when the modal opens
+          autoFocus
+          disabled={busy}
+          onClick={onCancel}
+        >
           Cancel
         </button>
-        <button className="btn library-dialog__danger" disabled={busy} onClick={onConfirm}>
+        <button type="button" className="btn library-dialog__danger" disabled={busy} onClick={onConfirm}>
           {busy ? 'Removing…' : 'Remove'}
         </button>
       </div>

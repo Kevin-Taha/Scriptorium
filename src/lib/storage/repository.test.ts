@@ -60,7 +60,7 @@ describe('repository', () => {
 
     await updateDocument('a', { lastOpenedAt: 3 });
     expect((await listDocuments()).map((d) => d.id)).toEqual(['a', 'b']);
-    // jsdom Blobs don't survive fake-indexeddb's structured clone intact; presence is what matters here.
+    // happy-dom Blobs don't survive fake-indexeddb's structured clone intact; presence is what matters here.
     expect(await getDocumentFile('b')).toBeDefined();
     expect(await getDocumentFile('a')).toBeUndefined();
   });

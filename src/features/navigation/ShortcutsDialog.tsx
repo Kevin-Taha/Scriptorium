@@ -107,8 +107,10 @@ export function ShortcutsDialog() {
           <p>Find your way around the reader.</p>
         </div>
         <button
+          type="button"
           className="btn btn--ghost btn--icon btn--sm"
           aria-label="Close keyboard shortcuts"
+          // biome-ignore lint/a11y/noAutofocus: focus moves into the modal when it opens
           autoFocus
           onClick={dismiss}
         >

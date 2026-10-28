@@ -34,6 +34,7 @@ export function BookCard({
   return (
     <article className="book-card">
       <button
+        type="button"
         className="book-card__main"
         onClick={onOpen}
         aria-label={`Open ${doc.title}, ${progress}% read`}
@@ -48,6 +49,7 @@ export function BookCard({
         </span>
         <span className="book-card__opened">{formatOpened(doc.lastOpenedAt)}</span>
       </button>
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: closes the menu on Escape or blur; the controls inside are buttons */}
       <div
         className={`book-card__menu ${menuOpen ? 'is-open' : ''}`}
         onBlur={(event) => {
@@ -62,6 +64,7 @@ export function BookCard({
         }}
       >
         <button
+          type="button"
           ref={menuButton}
           className="btn btn--icon btn--sm book-card__menu-button"
           aria-label={`More options for ${doc.title}`}
@@ -73,6 +76,7 @@ export function BookCard({
         {menuOpen && (
           <div className="book-card__popover">
             <button
+              type="button"
               onClick={() => {
                 setMenuOpen(false);
                 onRemove(menuButton.current);

@@ -188,6 +188,7 @@ function DocumentViewer({ pdf, onLinkClick, renderMargin, renderPageOverlay }: V
       <div
         ref={viewportRef}
         className="reader__viewport"
+        // biome-ignore lint/a11y/noNoninteractiveTabindex: a scrollable region must be focusable for keyboard scrolling
         tabIndex={0}
         role="region"
         aria-label="Pages"

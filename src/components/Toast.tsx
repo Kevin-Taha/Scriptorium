@@ -59,6 +59,7 @@ export function ToastHost() {
             <span className="toast__message">{t.message}</span>
             {t.action && (
               <button
+                type="button"
                 className="toast__action"
                 onClick={() => {
                   t.action!.onAction();
@@ -68,7 +69,12 @@ export function ToastHost() {
                 {t.action.label}
               </button>
             )}
-            <button className="toast__close" aria-label="Dismiss notification" onClick={() => dismiss(t.id)}>
+            <button
+              type="button"
+              className="toast__close"
+              aria-label="Dismiss notification"
+              onClick={() => dismiss(t.id)}
+            >
               <X />
             </button>
           </div>

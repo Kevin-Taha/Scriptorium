@@ -32,6 +32,7 @@ const PageHighlight = memo(function PageHighlight({ highlight }: { highlight: Hi
 
   return highlight.rects.map((rect, index) => (
     <span
+      // biome-ignore lint/suspicious/noArrayIndexKey: rects have no identity and are replaced as a whole
       key={index}
       className={className}
       data-note-color={highlight.color}

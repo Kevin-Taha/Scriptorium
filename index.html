@@ -15,9 +15,9 @@
     <script>
       // Apply the cached theme before first paint to avoid a flash of the wrong theme.
       try {
-        var theme = localStorage.getItem('scriptorium.theme');
+        const theme = localStorage.getItem('scriptorium.theme');
         if (theme) document.documentElement.dataset.theme = theme;
-      } catch (e) {}
+      } catch {}
     </script>
   </head>
   <body>

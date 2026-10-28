@@ -45,6 +45,7 @@ export const ReviewHighlight = memo(function ReviewHighlight({
       data-note-color={highlight.color}
       role="group"
       aria-label={`${NOTE_COLOR_LABELS[highlight.color]} highlight on page ${highlight.page}`}
+      // biome-ignore lint/a11y/noNoninteractiveTabindex: review highlights are keyboard-focusable so their shortcuts work
       tabIndex={0}
       onKeyDown={handleKeyDown}
       onMouseEnter={() => onActive(highlight.id)}

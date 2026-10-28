@@ -9,6 +9,7 @@ export function BookmarkToggle() {
 
   return (
     <button
+      type="button"
       className="btn btn--ghost btn--icon tooltip tooltip--below bookmark-toggle"
       aria-label="Bookmark page (B)"
       aria-pressed={bookmarked}

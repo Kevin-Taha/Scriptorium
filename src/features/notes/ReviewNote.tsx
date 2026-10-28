@@ -77,6 +77,7 @@ export const ReviewNote = memo(function ReviewNote({
       data-note-color={note.color}
       role="group"
       aria-label={label}
+      // biome-ignore lint/a11y/noNoninteractiveTabindex: review notes are keyboard-focusable so their shortcuts work
       tabIndex={0}
       onClick={handleClick}
       onKeyDown={handleKeyDown}

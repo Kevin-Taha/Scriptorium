@@ -7,7 +7,7 @@ export function InstallButton() {
   if (!installable) return null;
 
   return (
-    <button className="btn btn--ghost btn--sm" onClick={() => void promptInstall()}>
+    <button type="button" className="btn btn--ghost btn--sm" onClick={() => void promptInstall()}>
       <MonitorDown aria-hidden="true" />
       Install app
     </button>

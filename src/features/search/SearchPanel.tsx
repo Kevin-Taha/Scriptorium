@@ -174,6 +174,7 @@ export function SearchPanel() {
         {!showHint && <SearchSummary onPrev={prev} onNext={next} />}
       </div>
 
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: delegates arrow-key navigation from the result buttons inside */}
       <div ref={resultsRef} className="search__results" onKeyDown={onResultsKeyDown}>
         {showHint && <SearchHint />}
         {done && hasText && <NoResultsHelp />}
@@ -304,7 +305,11 @@ function ResultList({ containerRef }: { containerRef: RefObject<HTMLDivElement |
           Show earlier ({from.toLocaleString('en-US')} before)
         </button>
       )}
-      <ul className="search__groups" role="list">
+      <ul
+        className="search__groups"
+        // biome-ignore lint/a11y/noRedundantRoles: list-style: none drops list semantics in Safari and VoiceOver
+        role="list"
+      >
         {groups.map(({ result, start, end }) => (
           <PageGroup
             key={result.page}
@@ -352,7 +357,11 @@ const PageGroup = memo(function PageGroup({
   return (
     <li className="search-group">
       <GroupHeading page={result.page} hits={result.matches.length} />
-      <ul className="search-group__hits" role="list">
+      <ul
+        className="search-group__hits"
+        // biome-ignore lint/a11y/noRedundantRoles: list-style: none drops list semantics in Safari and VoiceOver
+        role="list"
+      >
         {result.matches.slice(start, end).map((match, i) => (
           <ResultRow
             key={match.start}
@@ -377,7 +386,11 @@ function GroupHeading({ page, hits }: { page: number; hits: number }) {
     <h3 className="search-group__title">
       <span className="search-group__page">{label ? `p. ${label}` : `Page ${page}`}</span>
       {section && <span className="search-group__section">{section}</span>}
-      <span className="search-group__count" aria-label={`${hits} ${hits === 1 ? 'result' : 'results'}`}>
+      <span
+        className="search-group__count"
+        role="img"
+        aria-label={`${hits} ${hits === 1 ? 'result' : 'results'}`}
+      >
         {hits}
       </span>
     </h3>

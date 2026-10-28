@@ -117,6 +117,8 @@ export function OutlinePanel() {
             if (next) focus(next);
           }}
         >
+          {/* biome-ignore lint/a11y/noStaticElementInteractions: mouse target of the focusable treeitem, which handles the keys */}
+          {/* biome-ignore lint/a11y/useKeyWithClickEvents: keyboard activation is handled by the parent treeitem */}
           <div
             className={`outline__item${key === currentKey ? ' is-current' : ''}${!item.location ? ' is-unresolved' : ''}`}
             style={{ paddingLeft: `${(depth - 1) * 16}px` }}
@@ -127,6 +129,7 @@ export function OutlinePanel() {
           >
             {item.children.length > 0 ? (
               <button
+                type="button"
                 className="outline__chevron"
                 tabIndex={-1}
                 aria-label={`${expanded ? 'Collapse' : 'Expand'} ${item.title}`}

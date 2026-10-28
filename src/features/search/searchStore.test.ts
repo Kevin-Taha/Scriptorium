@@ -20,7 +20,9 @@ interface Harness {
 function openBook(pages: string[][], at: ReadingLocation = loc(1)): Harness {
   useReaderStore.setState({ docId: 'book', doc: { pageCount: pages.length } as never, pdf: null });
   const index = getTextIndex('book', pages.length);
-  pages.forEach((lines, i) => index.add(makePage(i + 1, ...lines)));
+  pages.forEach((lines, i) => {
+    index.add(makePage(i + 1, ...lines));
+  });
 
   let current = at;
   const scrollTo = vi.fn((location: ReadingLocation) => {

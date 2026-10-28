@@ -43,6 +43,7 @@ export function AppearanceMenu() {
   return (
     <div className="appearance-menu" ref={rootRef}>
       <button
+        type="button"
         ref={buttonRef}
         className="btn btn--ghost btn--icon tooltip tooltip--below"
         data-tooltip="Appearance"
@@ -59,6 +60,7 @@ export function AppearanceMenu() {
           <div className="segmented segmented--full" role="radiogroup" aria-label="Theme">
             {THEMES.map(({ id, label, Icon }) => (
               <button
+                type="button"
                 key={id}
                 role="radio"
                 className="segmented__item"
@@ -76,6 +78,7 @@ export function AppearanceMenu() {
             </span>
             <input
               type="checkbox"
+              // biome-ignore lint/a11y/useAriaPropsForRole: the native checkbox already exposes its checked state
               role="switch"
               checked={invert}
               disabled={theme !== 'dark'}

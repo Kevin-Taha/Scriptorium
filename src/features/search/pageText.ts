@@ -303,7 +303,7 @@ class PageTextBuilder {
     }
     if (this.tail !== '' && !this.tail.endsWith(' ')) {
       this.text += ' ';
-      this.tail = (this.tail + ' ').slice(-2);
+      this.tail = `${this.tail} `.slice(-2);
     }
   }
 
