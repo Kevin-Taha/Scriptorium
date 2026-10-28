@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { ReadingLocation } from '@/lib/types';
 import { useHistoryStore } from '../navigation/historyStore';
@@ -283,10 +283,11 @@ describe('SearchPanel', () => {
       expect(rows(container)).toHaveLength(600);
     });
 
-    it('moves from the field to the active match and between rows and the window buttons', () => {
+    it('moves from the field to the active match and between rows and the window buttons', async () => {
       openBook(BIG);
       const { container } = render(<SearchPanel />);
       typeQuery('force');
+      await waitFor(() => expect(search().phase).toBe('done'));
       act(() => search().activate({ page: 20, index: 50 }));
       const field = screen.getByRole('searchbox');
       fireEvent.keyDown(field, { key: 'ArrowDown' });
