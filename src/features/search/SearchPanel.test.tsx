@@ -222,10 +222,11 @@ describe('SearchPanel', () => {
     const pagesShown = (container: HTMLElement) =>
       [...container.querySelectorAll('.search-group__page')].map((p) => p.textContent);
 
-    it('mounts only a window around the active match, however deep it is', () => {
+    it('mounts only a window around the active match, however deep it is', async () => {
       openBook(BIG);
       const { container } = render(<SearchPanel />);
       typeQuery('force');
+      await waitFor(() => expect(search().phase).toBe('done'));
       expect(rows(container)).toHaveLength(200);
       expect(screen.queryByRole('button', { name: /Show earlier/ })).toBeNull();
 
