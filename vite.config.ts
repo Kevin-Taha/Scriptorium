@@ -90,6 +90,9 @@ function offlineApp(): Plugin {
 
 export default defineConfig({
   base: './',
+  // Browser storage belongs to an exact address, so a fallback port would open an empty library.
+  server: { port: 5173, strictPort: true },
+  preview: { port: 4173, strictPort: true },
   plugins: [react(), pdfjsAssets(), offlineApp()],
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },

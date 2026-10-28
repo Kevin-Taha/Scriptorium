@@ -18,5 +18,5 @@ export function progressPercent(pageCount: number, location?: ReadingLocation): 
 }
 
 export function formatOpened(timestamp: number, now = Date.now()): string {
-  return `Opened ${formatRelativeTime(timestamp, now)}`;
+  return timestamp > 0 ? `Opened ${formatRelativeTime(timestamp, now)}` : 'Not opened yet';
 }

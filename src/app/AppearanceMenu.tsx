@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import { Coffee, Moon, Palette, Sun } from 'lucide-react';
+import { Coffee, HardDrive, Moon, Palette, Sun } from 'lucide-react';
+import { openLibraryStorageDialog } from '@/features/settings/storageDialogStore';
 import type { Theme } from '@/lib/types';
 import { useSettingsStore } from './settingsStore';
 
@@ -85,6 +86,18 @@ export function AppearanceMenu() {
               onChange={(e) => setInvert(e.target.checked)}
             />
           </label>
+          <hr className="divider appearance-menu__divider" />
+          <button
+            type="button"
+            className="appearance-menu__link"
+            onClick={() => {
+              setOpen(false);
+              openLibraryStorageDialog(buttonRef.current);
+            }}
+          >
+            <HardDrive aria-hidden="true" />
+            Library & storage…
+          </button>
         </div>
       )}
     </div>

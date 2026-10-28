@@ -123,7 +123,10 @@ describe('highlightsStore', () => {
     await vi.waitFor(async () => expect(await listHighlights(DOC)).toEqual([]));
 
     useHighlightsStore.getState().restoreHighlight(created);
-    expect(useHighlightsStore.getState().highlights).toEqual([created]);
+    const [restored] = useHighlightsStore.getState().highlights;
+    expect({ ...restored, updatedAt: created.updatedAt }).toEqual(created);
+    // A fresh edit time lets the restore win over the deletion on synced devices.
+    expect(restored.updatedAt).toBeGreaterThanOrEqual(created.updatedAt);
     await vi.waitFor(async () => expect((await listHighlights(DOC)).map((h) => h.id)).toEqual([created.id]));
   });
 
