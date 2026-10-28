@@ -200,6 +200,7 @@ export function LibraryView() {
           <h1>Library</h1>
         </div>
         <button
+          type="button"
           ref={openButton}
           className="btn btn--primary library__open"
           onClick={openPicker}
@@ -230,7 +231,10 @@ export function LibraryView() {
 
       {loadError && (
         <div className="library__error" role="alert">
-          Couldn’t load your library. <button onClick={() => void refresh()}>Try again</button>
+          Couldn’t load your library.{' '}
+          <button type="button" onClick={() => void refresh()}>
+            Try again
+          </button>
         </div>
       )}
       {!entries && !loadError && (
@@ -258,7 +262,7 @@ export function LibraryView() {
               Drop a PDF here, or open one from your computer. Everything stays on this device.
             </p>
             <div className="empty-state__actions">
-              <button className="btn btn--primary" onClick={openPicker} disabled={importing}>
+              <button type="button" className="btn btn--primary" onClick={openPicker} disabled={importing}>
                 {importing ? (
                   <LoaderCircle className="library__spinner" aria-hidden="true" />
                 ) : (
@@ -287,7 +291,7 @@ export function LibraryView() {
                   <span aria-hidden="true">·</span> {formatRelativeTime(recent.doc.lastOpenedAt)}
                 </p>
               </div>
-              <button className="btn btn--primary" onClick={() => openBook(recent.doc)}>
+              <button type="button" className="btn btn--primary" onClick={() => openBook(recent.doc)}>
                 Continue reading
               </button>
             </div>

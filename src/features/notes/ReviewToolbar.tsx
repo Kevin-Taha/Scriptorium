@@ -87,6 +87,7 @@ export function ReviewToolbar(props: ReviewToolbarProps) {
                 <X />
               </button>
             ) : (
+              // biome-ignore lint/a11y/noAriaHiddenOnFocusable: <kbd> is not focusable; the hint is redundant for screen readers
               <kbd className="kbd review-search__hint" aria-hidden="true">
                 /
               </kbd>

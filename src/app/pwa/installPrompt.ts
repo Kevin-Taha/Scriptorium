@@ -8,7 +8,9 @@ const listeners = new Set<() => void>();
 
 function updatePrompt(event: InstallPromptEvent | null): void {
   promptEvent = event;
-  listeners.forEach((listener) => listener());
+  listeners.forEach((listener) => {
+    listener();
+  });
 }
 
 window.addEventListener('beforeinstallprompt', (event) => {

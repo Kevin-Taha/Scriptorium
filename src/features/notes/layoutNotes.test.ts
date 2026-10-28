@@ -140,7 +140,10 @@ describe('layoutNotes', () => {
 
   it('holds its invariants for arbitrary note sets', () => {
     let seed = 7;
-    const random = () => (seed = (seed * 48271) % 2147483647) / 2147483647;
+    const random = () => {
+      seed = (seed * 48271) % 2147483647;
+      return seed / 2147483647;
+    };
     for (let round = 0; round < 200; round++) {
       const count = 1 + Math.floor(random() * 10);
       const boxes = Array.from({ length: count }, (_, i) =>

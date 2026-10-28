@@ -95,6 +95,8 @@ export function MarginColumn({ page, size }: { page: number; size: PageSize }) {
   };
 
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: pointer-only shortcut; keyboard users add notes with N
+    // biome-ignore lint/a11y/useKeyWithClickEvents: pointer-only shortcut; keyboard users add notes with N
     <div
       ref={columnRef}
       className={`margin-column${ghostY !== null ? ' is-adding' : ''}`}

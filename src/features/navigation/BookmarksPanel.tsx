@@ -15,7 +15,7 @@ export function BookmarksPanel() {
 
   return (
     <div className="bookmark-list">
-      <button className="btn btn--ghost bookmark-list__toggle" onClick={() => toggle(page)}>
+      <button type="button" className="btn btn--ghost bookmark-list__toggle" onClick={() => toggle(page)}>
         <Bookmark fill={bookmarked ? 'currentColor' : 'none'} aria-hidden="true" />
         <span>{bookmarked ? 'Remove bookmark' : 'Bookmark this page'}</span>
         <kbd className="kbd">B</kbd>
@@ -82,6 +82,7 @@ function BookmarkItem({ bookmark, current }: { bookmark: BookmarkRecord; current
           className="input bookmark-list__input"
           aria-label={`Rename bookmark on page ${pageLabel}`}
           value={draft}
+          // biome-ignore lint/a11y/noAutofocus: the field appears on demand and should take focus at once
           autoFocus
           onChange={(event) => setDraft(event.currentTarget.value)}
           onBlur={save}
@@ -98,12 +99,17 @@ function BookmarkItem({ bookmark, current }: { bookmark: BookmarkRecord; current
           }}
         />
       ) : (
-        <button className="bookmark-list__link" onClick={() => jumpTo({ page: bookmark.page, offset: 0 })}>
+        <button
+          type="button"
+          className="bookmark-list__link"
+          onClick={() => jumpTo({ page: bookmark.page, offset: 0 })}
+        >
           <span className="bookmark-list__label">{bookmark.label}</span>
           <span className="bookmark-list__page">{pageLabel}</span>
         </button>
       )}
       <button
+        type="button"
         className="btn btn--ghost btn--icon btn--sm bookmark-list__action"
         aria-label={`Rename bookmark on page ${pageLabel}`}
         onClick={startEditing}
@@ -111,6 +117,7 @@ function BookmarkItem({ bookmark, current }: { bookmark: BookmarkRecord; current
         <Pencil />
       </button>
       <button
+        type="button"
         className="btn btn--ghost btn--icon btn--sm bookmark-list__action"
         aria-label={`Delete bookmark on page ${pageLabel}`}
         onClick={deleteWithUndo}

@@ -27,7 +27,7 @@ describe('normalizeQuote', () => {
   });
 });
 
-/** jsdom has no layout: give ranges deterministic line rectangles. */
+/** happy-dom has no layout: give ranges deterministic line rectangles. */
 function rect(top: number, left: number, width: number, height: number): DOMRect {
   return {
     top,

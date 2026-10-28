@@ -241,6 +241,7 @@ export const MarginNoteCard = memo(function MarginNoteCard({
         data-note-color={note.color}
         data-note-id={note.id}
         role="group"
+        // biome-ignore lint/a11y/noNoninteractiveTabindex: note cards are keyboard-focusable so their shortcuts work
         tabIndex={0}
         aria-label={`Note on page ${note.page}${highlight ? `, on a ${NOTE_COLOR_LABELS[highlight.color].toLowerCase()} highlight` : ''}`}
         style={{ top }}

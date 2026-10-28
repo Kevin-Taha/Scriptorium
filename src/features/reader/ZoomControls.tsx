@@ -102,6 +102,7 @@ export function ZoomControls() {
   return (
     <div className="zoom-controls">
       <button
+        type="button"
         className="btn btn--ghost btn--icon btn--sm tooltip tooltip--below"
         data-tooltip="Zoom out"
         aria-label="Zoom out"
@@ -113,6 +114,7 @@ export function ZoomControls() {
 
       <div className="zoom-controls__menu" ref={rootRef}>
         <button
+          type="button"
           ref={triggerRef}
           className="btn btn--ghost btn--sm zoom-controls__level tooltip tooltip--below"
           data-tooltip="Zoom options"
@@ -134,12 +136,13 @@ export function ZoomControls() {
             aria-label="Zoom"
             onKeyDown={onMenuKeyDown}
           >
-            {ZOOM_OPTIONS.map((group, groupIndex) => (
-              <div key={groupIndex} role="group" className="zoom-menu__group">
+            {ZOOM_OPTIONS.map((group) => (
+              <div key={group[0].label} role="group" className="zoom-menu__group">
                 {group.map((option) => {
                   const selected = isSelected(option, zoom);
                   return (
                     <button
+                      type="button"
                       key={option.label}
                       role="menuitemradio"
                       aria-checked={selected}
@@ -159,6 +162,7 @@ export function ZoomControls() {
       </div>
 
       <button
+        type="button"
         className="btn btn--ghost btn--icon btn--sm tooltip tooltip--below"
         data-tooltip="Zoom in"
         aria-label="Zoom in"

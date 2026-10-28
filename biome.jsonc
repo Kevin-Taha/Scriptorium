@@ -1,0 +1,78 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.6.3/schema.json",
+  "files": {
+    "includes": [
+      "**",
+      "!**/node_modules",
+      "!**/dist",
+      "!**/playwright-report",
+      "!**/test-results",
+      "!**/blob-report",
+      "!**/coverage",
+      "!**/e2e/.fixtures",
+      "!**/.scratch",
+      "!**/*.md",
+      "!public"
+    ]
+  },
+  "formatter": {
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 110,
+    "lineEnding": "lf"
+  },
+  "css": {
+    "formatter": { "quoteStyle": "single" }
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "jsxQuoteStyle": "double",
+      "trailingCommas": "all",
+      "semicolons": "always"
+    }
+  },
+  "assist": { "enabled": false },
+  "linter": {
+    "rules": {
+      "preset": "recommended",
+      "correctness": {
+        // Extra dependencies are deliberate re-run triggers; only missing ones are reported.
+        "useExhaustiveDependencies": {
+          "level": "error",
+          "options": { "reportUnnecessaryDependencies": false }
+        },
+        "useHookAtTopLevel": "error",
+        "noUnusedVariables": "error",
+        "noUnusedImports": "error",
+        "noUnusedFunctionParameters": "error"
+      },
+      "a11y": {
+        // Custom widgets (radio groups, toasts, note cards) use ARIA roles on purpose.
+        "useSemanticElements": "off"
+      },
+      "style": {
+        // Non-null assertions mark DOM and map lookups whose presence is already established.
+        "noNonNullAssertion": "off",
+        "noDescendingSpecificity": "off"
+      },
+      "complexity": {
+        // Needed by the visually-hidden and reduced-motion utility rules.
+        "noImportantStyles": "off"
+      }
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["e2e/**"],
+      "linter": {
+        "rules": {
+          "performance": {
+            // Playwright's locator.innerText() is not the DOM property; the tests assert on rendered text.
+            "useDomNodeTextContent": "off"
+          }
+        }
+      }
+    }
+  ]
+}

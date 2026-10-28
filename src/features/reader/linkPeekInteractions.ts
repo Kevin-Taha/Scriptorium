@@ -212,7 +212,7 @@ export class PeekInteractions {
 
   private readonly onFocusOut = (event: FocusEvent) => {
     const current = this.current;
-    if (!current || current.via !== 'keyboard') return;
+    if (current?.via !== 'keyboard') return;
     const next = event.relatedTarget as Node | null;
     if (next && (current.link.contains(next) || this.card()?.contains(next))) return;
     this.close('none');

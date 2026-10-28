@@ -1,4 +1,4 @@
-import { useCallback, useDeferredValue, useMemo, useRef, useState } from 'react';
+import { type ReactElement, useCallback, useDeferredValue, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, NotebookText, SearchX } from 'lucide-react';
 import { navigate } from '@/app/router';
 import { usePagesInverted } from '@/app/settingsStore';
@@ -87,7 +87,7 @@ export function NotesReview() {
 
   const dense = density === 'dense';
 
-  let body;
+  let body: ReactElement;
   if (items.length === 0) {
     body = (
       <div className="empty-state">

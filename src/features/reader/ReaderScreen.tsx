@@ -33,7 +33,7 @@ export function ReaderScreen({ docId, view }: ReaderScreenProps) {
           <h1 className="empty-state__title">Couldn’t open this book</h1>
           <p className="empty-state__body">{error}</p>
           <div className="empty-state__actions">
-            <button className="btn btn--primary" onClick={() => navigate({ name: 'library' })}>
+            <button type="button" className="btn btn--primary" onClick={() => navigate({ name: 'library' })}>
               <ArrowLeft /> Back to library
             </button>
           </div>

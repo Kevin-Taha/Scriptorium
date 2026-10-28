@@ -39,7 +39,9 @@ function reset(layer: HTMLElement, end: HTMLElement): void {
 }
 
 function resetAll(): void {
-  layers.forEach((end, layer) => reset(layer, end));
+  layers.forEach((end, layer) => {
+    reset(layer, end);
+  });
 }
 
 function ensureListeners(): void {
