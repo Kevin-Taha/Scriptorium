@@ -73,6 +73,7 @@ test('the pointer snaps to a nearby note; a click lands on the note and flashes 
   await page.mouse.move(x, track.y + markY + 4);
   const items = page.locator('.book-map-card__items li');
   await expect(items).toHaveText(['Energy is conserved here']);
+  await expect(page.locator('.book-map__lens')).toBeVisible();
   // Farther away it lets go and previews pages again.
   await page.mouse.move(x, track.y + markY + 12);
   await expect(page.locator('.book-map-card')).toContainText('of 36');

@@ -320,6 +320,13 @@ function BookMapRail({ pdf, docId, pageCount }: { pdf: PDFDocumentProxy; docId: 
             />
           )}
           <div ref={windowRef} className="book-map__window" />
+          {/* Rings what the pointer has snapped to, so the pull is visible before you click. */}
+          {snapped && (
+            <div
+              className="book-map__lens"
+              style={{ top: snapped.top, height: snapped.bottom - snapped.top }}
+            />
+          )}
         </div>
       </div>
       {card && (

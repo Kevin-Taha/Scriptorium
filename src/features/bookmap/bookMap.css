@@ -120,6 +120,25 @@ html.focus-mode .book-map:not(:hover, .is-dragging, .is-keyboard) {
   will-change: transform;
 }
 
+.book-map__lens {
+  position: absolute;
+  right: 3px;
+  box-sizing: content-box;
+  width: 15px;
+  margin-top: -7px;
+  padding-block: 5.5px;
+  border: 1.5px solid var(--color-text);
+  border-radius: var(--radius-full);
+  pointer-events: none;
+  animation: book-map-lens-in var(--duration-fast) var(--ease-out);
+}
+
+@keyframes book-map-lens-in {
+  from {
+    opacity: 0;
+    scale: 1.6;
+  }
+}
 /* Chapter tabs against the strip, like a printed thumb index, shown while the map is open. */
 .book-map__tabs {
   opacity: 0;
