@@ -147,8 +147,8 @@ describe('snapping', () => {
     expect(reachable(targets, 36, 600)).toBe(36);
   });
 
-  it('shrinks the pull between close marks and turns it off where they crowd', () => {
-    // A mark every 12px: each pulls 3px, leaving half of every gap unclaimed.
+  it('splits the gap between close marks, so a crowded stretch snaps to the nearest mark', () => {
+    // A mark every 12px: each claims the 6px on its side of the gap.
     const spaced = snapTargets(
       mapItems(
         Array.from({ length: 50 }, (_, i) => note(i + 1, 0.5)),
@@ -158,8 +158,16 @@ describe('snapping', () => {
       50,
       600,
     );
-    expect(spaced.every((t) => Math.abs(t.pull - 3) < 1e-9)).toBe(true);
+    expect(spaced.every((t) => Math.abs(t.pull - 6) < 1e-9)).toBe(true);
+    const y = spaced[9].top;
+    expect(snapAt(spaced, y + 5)?.items[0].page).toBe(10);
+    expect(snapAt(spaced, y + 7)?.items[0].page).toBe(11);
     expect(reachable(spaced, 50, 600)).toBe(50);
+    // Marks 5px apart in a long book still snap, each to the nearest.
+    const close = snapTargets(mapItems([note(100, 0.5), note(106, 0.5), note(112, 0.5)], [], []), 1000, 830);
+    expect(close).toHaveLength(3);
+    expect(snapAt(close, close[1].top - 2)?.items[0].page).toBe(106);
+    expect(snapAt(close, close[1].top + 3)?.items[0].page).toBe(112);
     const crowded = snapTargets(
       mapItems(
         Array.from({ length: 1000 }, (_, i) => note(i + 1, 0.5)),
@@ -169,7 +177,8 @@ describe('snapping', () => {
       1000,
       830,
     );
-    expect(crowded.every((t) => t.pull === 0)).toBe(true);
+    for (let at = crowded[0].top; at <= crowded.at(-1)!.bottom; at += 0.25)
+      expect(snapAt(crowded, at)).not.toBeNull();
   });
 
   it('treats marks on neighbouring pages of a long book as one target that lands on the first', () => {

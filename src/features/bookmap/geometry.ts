@@ -133,7 +133,6 @@ export function thumbBox(top: number, bottom: number, height: number, min: numbe
 /** Annotations within this many px are one target: the rail can't show them apart. */
 export const GROUP_SPAN = 3;
 export const MAX_PULL = 6;
-const MIN_PULL = 2;
 
 /** A note (with its highlight), a highlight without a note, or a bookmark. */
 export type MapItem =
@@ -170,10 +169,11 @@ export interface SnapTarget {
 }
 
 /**
- * Groups `items` into targets and sizes each pull to `min(MAX_PULL, gap / 4)`,
- * `gap` being the distance to the nearest other target. Pulls so never cover
- * more than half the stretch between two marks, and pulls under `MIN_PULL` are
- * dropped: in crowded stretches the map behaves as if there were no snapping.
+ * Groups `items` into targets and sizes each pull to `min(MAX_PULL, gap / 2)`,
+ * `gap` being the distance to the nearest other target: neighbours split the
+ * stretch between them, so in a crowded stretch the pointer snaps to the
+ * nearest mark, and wherever marks are more than `2 × MAX_PULL` apart the pages
+ * in between stay a plain click away. (Scrubbing never snaps.)
  */
 export function snapTargets(items: readonly MapItem[], pageCount: number, height: number): SnapTarget[] {
   const targets: SnapTarget[] = [];
@@ -188,13 +188,12 @@ export function snapTargets(items: readonly MapItem[], pageCount: number, height
   targets.forEach((target, i) => {
     const above = i > 0 ? target.top - targets[i - 1].bottom : Number.POSITIVE_INFINITY;
     const below = i < targets.length - 1 ? targets[i + 1].top - target.bottom : Number.POSITIVE_INFINITY;
-    const pull = Math.min(MAX_PULL, above / 4, below / 4);
-    target.pull = pull >= MIN_PULL ? pull : 0;
+    target.pull = Math.min(MAX_PULL, above / 2, below / 2);
   });
   return targets;
 }
 
-/** The target catching a pointer at track px `y`, if any (pulls never overlap). */
+/** The target catching a pointer at track px `y`, if any (neighbouring pulls meet but never overlap). */
 export function snapAt(targets: readonly SnapTarget[], y: number): SnapTarget | null {
-  return targets.find((t) => t.pull > 0 && y >= t.top - t.pull && y <= t.bottom + t.pull) ?? null;
+  return targets.find((t) => y >= t.top - t.pull && y <= t.bottom + t.pull) ?? null;
 }
