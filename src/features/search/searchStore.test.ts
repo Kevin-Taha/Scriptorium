@@ -2,28 +2,22 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReadingLocation } from '@/lib/types';
 import { useHistoryStore } from '../navigation/historyStore';
 import { useReaderStore, type ViewerController } from '../reader/readerStore';
-import { DEFAULT_OPTIONS } from './matcher';
-import { matchTop } from './searchResults';
-import { useSearchStore } from './searchStore';
+import { rangeRects } from './pageText';
+import { chooseMatch, clearSearch, searchBook, stepMatch, useSearchStore } from './searchStore';
 import { makePage } from './testPages';
 import { clearTextIndexes, getTextIndex } from './textIndex';
 
 const loc = (page: number, offset = 0): ReadingLocation => ({ page, offset });
 const search = () => useSearchStore.getState();
+const history = () => useHistoryStore.getState();
 
-interface Harness {
-  scrollTo: ReturnType<typeof vi.fn>;
-  setLocation(location: ReadingLocation): void;
-}
-
-/** Opens a pretend book (one entry of text lines per page) and a viewer controller at `at`. */
-function openBook(pages: string[][], at: ReadingLocation = loc(1)): Harness {
+/** Opens a pretend book (one entry of text lines per page), indexed, with a viewer at `at`. */
+function openBook(pages: string[][], at: ReadingLocation = loc(1)) {
   useReaderStore.setState({ docId: 'book', doc: { pageCount: pages.length } as never, pdf: null });
   const index = getTextIndex('book', pages.length);
   pages.forEach((lines, i) => {
-    index.add(makePage(i + 1, ...lines));
+    if (lines.length) index.add(makePage(i + 1, ...lines));
   });
-
   let current = at;
   const scrollTo = vi.fn((location: ReadingLocation) => {
     current = location;
@@ -35,20 +29,14 @@ function openBook(pages: string[][], at: ReadingLocation = loc(1)): Harness {
     getPageSize: () => ({ width: 600, height: 1000 }),
   };
   useReaderStore.setState({ controller, location: at });
-  return { scrollTo, setLocation: (location) => (current = location) };
-}
-
-function type(query: string) {
-  search().setQuery(query);
-  search().commitQuery();
+  return { index, scrollTo };
 }
 
 beforeEach(() => {
   clearTextIndexes();
   useReaderStore.setState({ docId: null, doc: null, pdf: null, controller: null, location: loc(1) });
   useHistoryStore.getState().reset();
-  search().reset();
-  useSearchStore.setState({ options: DEFAULT_OPTIONS });
+  clearSearch();
 });
 
 afterEach(() => {
@@ -63,232 +51,115 @@ const BOOK = [
 ];
 
 describe('searching', () => {
-  it('finds matches page by page and reports a finished search', () => {
+  it('finds matches page by page', async () => {
     openBook(BOOK);
-    type('force');
-    expect(search()).toMatchObject({ phase: 'done', hitCount: 3, appliedQuery: 'force', activeIndex: -1 });
-    expect(search().results.map((r) => r.page)).toEqual([1, 3]);
-    expect(search().byPage.get(3)?.matches).toHaveLength(1);
-  });
-
-  it('waits for typing to pause before searching, but not for an empty query', () => {
-    vi.useFakeTimers();
-    openBook(BOOK);
-    search().setQuery('forc');
-    search().setQuery('force');
-    expect(search().query).toBe('force');
-    expect(search().phase).toBe('idle');
-    vi.advanceTimersByTime(149);
-    expect(search().phase).toBe('idle');
-    vi.advanceTimersByTime(2);
-    expect(search().hitCount).toBe(3);
-
-    search().setQuery('  ');
-    expect(search()).toMatchObject({ phase: 'idle', hitCount: 0, results: [] });
+    searchBook('  Force ');
+    await vi.waitFor(() => expect(search().searching).toBe(false));
+    expect(search()).toMatchObject({ query: 'Force', hits: 3, active: null, hasText: true });
+    expect(search().results.map((r) => [r.page, r.matches.length])).toEqual([
+      [1, 2],
+      [3, 1],
+    ]);
   });
 
   it('streams in results as pages are indexed, with progress', () => {
     vi.useFakeTimers();
-    useReaderStore.setState({ docId: 'book', doc: { pageCount: 4 } as never });
-    const index = getTextIndex('book', 4);
-    index.add(makePage(1, 'force'));
-    type('force');
-    expect(search()).toMatchObject({ phase: 'searching', indexed: 1, total: 4, hitCount: 1 });
+    const { index } = openBook([['force'], [], [], []]);
+    searchBook('force');
+    vi.advanceTimersByTime(150);
+    expect(search()).toMatchObject({ searching: true, indexed: 1, total: 4, hits: 1 });
 
     index.add(makePage(2, 'no'));
     index.add(makePage(3, 'more force and force'));
     vi.advanceTimersByTime(150);
-    expect(search()).toMatchObject({ phase: 'searching', indexed: 3, hitCount: 3 });
+    expect(search()).toMatchObject({ searching: true, indexed: 3, hits: 3 });
 
     index.add(makePage(4, 'end'));
     vi.advanceTimersByTime(150);
-    expect(search()).toMatchObject({ phase: 'done', indexed: 4, hitCount: 3 });
-    expect(search().results.map((r) => r.page)).toEqual([1, 3]);
+    expect(search()).toMatchObject({ searching: false, indexed: 4, hits: 3 });
   });
 
-  it('keeps the active match active as earlier pages stream in', () => {
-    vi.useFakeTimers();
-    openBook([], loc(1));
-    useReaderStore.setState({ docId: 'book', doc: { pageCount: 3 } as never });
-    const index = getTextIndex('book', 3);
-    index.add(makePage(3, 'force'));
-    type('force');
-    search().next();
-    expect(search()).toMatchObject({ active: { page: 3, index: 0 }, activeIndex: 0 });
-
-    index.add(makePage(1, 'force and force'));
-    vi.advanceTimersByTime(150);
-    expect(search()).toMatchObject({ active: { page: 3, index: 0 }, activeIndex: 2, hitCount: 3 });
-  });
-
-  it('reapplies the query when an option changes', () => {
-    openBook([['Force and force']]);
-    type('force');
-    expect(search().hitCount).toBe(2);
-    search().setOptions({ matchCase: true });
-    expect(search().hitCount).toBe(1);
-    search().setOptions({ wholeWord: true, matchCase: false });
-    expect(search().hitCount).toBe(2);
-    expect(search().options).toEqual({ matchCase: false, wholeWord: true });
-  });
-
-  it('stops at a hit limit for very common queries', () => {
-    openBook([['a '.repeat(12_000)]]);
-    type('a');
-    expect(search()).toMatchObject({ phase: 'done', hitCount: 10_000, capped: true });
-  });
-
-  it('clears everything, and when the document changes', () => {
+  it('keeps a live search when asked for it again, and clears it, also when the book changes', async () => {
     openBook(BOOK);
-    type('force');
-    search().next();
-    search().clear();
-    expect(search()).toMatchObject({ query: '', phase: 'idle', hitCount: 0, active: null });
+    searchBook('force');
+    await vi.waitFor(() => expect(search().hits).toBe(3));
+    chooseMatch({ page: 3, index: 0 });
+    searchBook('force ');
+    expect(search().active).toEqual({ page: 3, index: 0 });
+    clearSearch();
+    expect(search()).toMatchObject({ query: '', hits: 0, results: [], active: null });
 
-    type('force');
+    searchBook('force');
     useReaderStore.setState({ docId: 'other' });
-    expect(search()).toMatchObject({ query: '', phase: 'idle', results: [], active: null });
+    expect(search()).toMatchObject({ query: '', results: [], active: null });
+  });
+
+  it('stops at a hit limit for very common queries', async () => {
+    openBook([['a '.repeat(12_000)]]);
+    searchBook('a');
+    await vi.waitFor(() => expect(search().searching).toBe(false));
+    expect(search()).toMatchObject({ hits: 10_000, capped: true });
+  });
+
+  it('notices a scanned book', async () => {
+    const { index } = openBook([[], []]);
+    index.add(makePage(1));
+    index.add(makePage(2));
+    searchBook('force');
+    await vi.waitFor(() => expect(search().searching).toBe(false));
+    expect(search().hasText).toBe(false);
   });
 });
 
-describe('stepping through matches', () => {
-  it('steps forward and backward, wrapping around the book', () => {
-    openBook(BOOK);
-    type('force');
-    const order: [number, number][] = [];
-    for (let i = 0; i < 4; i++) {
-      search().next();
-      order.push([search().active!.page, search().active!.index]);
+describe('choosing and stepping', () => {
+  it('records the chosen match in history, and steps without adding any, wrapping around', async () => {
+    const { scrollTo } = openBook(BOOK, loc(2, 0.5));
+    searchBook('force');
+    await vi.waitFor(() => expect(search().hits).toBe(3));
+    chooseMatch({ page: 1, index: 1 });
+    expect(history().returnTarget).toEqual(loc(2, 0.5));
+
+    const visited: [number, number][] = [];
+    for (const direction of [1, 1, -1, -1, -1] as const) {
+      stepMatch(direction);
+      visited.push([search().active!.page, search().active!.index]);
     }
-    expect(order).toEqual([
-      [1, 0],
-      [1, 1],
+    expect(visited).toEqual([
       [3, 0],
       [1, 0],
+      [3, 0],
+      [1, 1],
+      [1, 0],
     ]);
-
-    search().prev();
-    expect(search().active).toEqual({ page: 3, index: 0 });
-    search().prev();
-    search().prev();
-    expect(search().active).toEqual({ page: 1, index: 0 });
-    expect(search().activeIndex).toBe(0);
-  });
-
-  it('starts from the reader’s position rather than the top of the book', () => {
-    openBook(BOOK, loc(2, 0.1));
-    type('force');
-    search().next();
-    expect(search().active).toEqual({ page: 3, index: 0 });
-    search().reset();
-
-    useReaderStore.setState({ docId: 'book' });
-    openBook(BOOK, loc(2, 0.1));
-    type('force');
-    search().prev();
-    expect(search().active).toEqual({ page: 1, index: 1 });
-  });
-
-  it('applies a pending query before stepping', () => {
-    vi.useFakeTimers();
-    openBook(BOOK);
-    search().setQuery('force');
-    search().next();
-    expect(search().active).toEqual({ page: 1, index: 0 });
-  });
-
-  it('carries out a step asked for before the first result arrives', () => {
-    vi.useFakeTimers();
-    useReaderStore.setState({ docId: 'book', doc: { pageCount: 3 } as never });
-    const index = getTextIndex('book', 3);
-    type('force');
-    search().next();
-    expect(search().active).toBeNull();
-
-    index.add(makePage(2, 'the force'));
-    vi.advanceTimersByTime(150);
-    expect(search().active).toEqual({ page: 2, index: 0 });
-  });
-
-  it('does nothing when there are no matches', () => {
-    const { scrollTo } = openBook(BOOK);
-    type('absent');
-    search().next();
-    search().prev();
-    expect(search().active).toBeNull();
-    expect(scrollTo).not.toHaveBeenCalled();
-  });
-
-  it('activates a specific match', () => {
-    openBook(BOOK);
-    type('force');
-    search().activate({ page: 3, index: 0 });
-    expect(search()).toMatchObject({ active: { page: 3, index: 0 }, activeIndex: 2 });
-    search().activate({ page: 3, index: 9 });
-    expect(search().active).toEqual({ page: 3, index: 0 });
-  });
-});
-
-describe('navigation history', () => {
-  const history = () => useHistoryStore.getState();
-
-  it('records only the first jump of a search session, so Return goes back to where you were', () => {
-    const { scrollTo } = openBook(BOOK, loc(2, 0.5));
-    type('force');
-    search().next();
     expect(history().back).toEqual([loc(2, 0.5)]);
-    expect(history().returnTarget).toEqual(loc(2, 0.5));
-
-    search().next();
-    search().next();
-    search().prev();
-    expect(history().back).toEqual([loc(2, 0.5)]);
-    expect(history().returnTarget).toEqual(loc(2, 0.5));
-    expect(scrollTo).toHaveBeenCalledTimes(4);
-
+    expect(scrollTo).toHaveBeenCalledTimes(6);
     history().goBack();
     expect(scrollTo).toHaveBeenLastCalledWith(loc(2, 0.5));
   });
 
-  it('records a new jump after the query changes', () => {
-    const { setLocation } = openBook(BOOK, loc(2, 0.5));
-    type('force');
-    search().next();
-    search().next();
-    expect(history().back).toHaveLength(1);
-
-    type('plain');
-    setLocation(loc(1, 0.4));
-    search().next();
-    expect(history().back).toHaveLength(2);
-    expect(history().returnTarget).toEqual(loc(1, 0.4));
+  it('keeps the chosen match as earlier pages stream in', () => {
+    vi.useFakeTimers();
+    const { index } = openBook([[], [], ['force']]);
+    searchBook('force');
+    vi.advanceTimersByTime(150);
+    chooseMatch({ page: 3, index: 0 });
+    index.add(makePage(1, 'force and force'));
+    vi.advanceTimersByTime(150);
+    expect(search()).toMatchObject({ active: { page: 3, index: 0 }, hits: 3 });
+    stepMatch(1);
+    expect(search().active).toEqual({ page: 1, index: 0 });
   });
 
-  it('records a new jump after the panel closes', () => {
-    openBook([['force'], ['x'], ['force'], ['y'], ['force']], loc(2, 0.5));
-    type('force');
-    search().next();
-    search().next();
-    expect(history().back).toHaveLength(1);
-    search().endSession();
-    search().next();
-    expect(history().back).toHaveLength(2);
+  it('does nothing without a chosen match', async () => {
+    const { scrollTo } = openBook(BOOK);
+    searchBook('force');
+    await vi.waitFor(() => expect(search().hits).toBe(3));
+    stepMatch(1);
+    expect(search().active).toBeNull();
+    expect(scrollTo).not.toHaveBeenCalled();
   });
 
-  it('keeps trying to record while matches land where the reader already is', () => {
-    const { setLocation } = openBook(BOOK, loc(1, 0));
-    type('force');
-    search().next(); // page 1, near the top: same place, nothing to record
-    expect(history().back).toEqual([]);
-
-    setLocation(loc(1, 0));
-    search().next();
-    search().next(); // page 3
-    expect(history().back).toEqual([loc(1, 0)]);
-    expect(history().returnTarget).toEqual(loc(1, 0));
-  });
-
-  it('lands the match a third of the way down the viewport', () => {
+  it('lands the match a third of the way down the viewport', async () => {
     const viewport = document.createElement('div');
     viewport.className = 'reader__viewport';
     Object.defineProperty(viewport, 'clientHeight', { value: 600 });
@@ -296,11 +167,13 @@ describe('navigation history', () => {
 
     const lines = Array.from({ length: 40 }, (_, i) => (i === 30 ? 'the force' : 'filler'));
     const { scrollTo } = openBook([lines], loc(1, 0));
-    type('force');
-    search().next();
-    const top = matchTop(search().results[0], 0);
+    searchBook('force');
+    await vi.waitFor(() => expect(search().hits).toBe(1));
+    chooseMatch({ page: 1, index: 0 });
+    const [result] = search().results;
+    const top = rangeRects(result.text, result.matches[0].start, result.matches[0].end)[0].y;
     expect(top).toBeGreaterThan(0.5);
-    // Page is 1000px tall in the mock, the viewport 600px: a third of it is 0.2 of the page.
+    // The page is 1000px tall in the mock and the viewport 600px: a third of it is 0.2 of the page.
     const [target] = scrollTo.mock.calls[0] as [ReadingLocation];
     expect(target.page).toBe(1);
     expect(target.offset).toBeCloseTo(top - 0.2, 6);

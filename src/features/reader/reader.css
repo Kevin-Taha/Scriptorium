@@ -150,11 +150,6 @@
 }
 
 /* The search tab is a compact icon so the three text tabs keep their room. */
-.sidebar__tabs .sidebar__tab--icon {
-  flex: 0 0 36px;
-  padding: 0;
-}
-
 .sidebar__panel {
   flex: 1;
   min-height: 0;

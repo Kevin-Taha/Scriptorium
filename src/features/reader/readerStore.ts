@@ -11,7 +11,7 @@ import { debounce } from '@/lib/util';
 import { contentsFromOutline, sameContents } from '../library/bookProgress';
 import { readBookBytes } from '../sync/bookBytes';
 
-export type SidebarTab = 'contents' | 'bookmarks' | 'notes' | 'search';
+export type SidebarTab = 'contents' | 'bookmarks' | 'notes';
 export type LoadStatus = 'idle' | 'loading' | 'ready' | 'error';
 
 /** Imperative handle the viewer registers while it is mounted. */

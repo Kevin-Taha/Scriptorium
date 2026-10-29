@@ -54,17 +54,18 @@ test('finds chapters and notes and leaves typing alone', async ({ page }) => {
   await expect(dialog).not.toBeVisible();
 });
 
-test('last resort searches the book and actions can be chosen by keyboard', async ({ page }) => {
+test('finds words in the text, and actions can be chosen by keyboard', async ({ page }) => {
   await page.locator('.reader__viewport').focus();
   await page.keyboard.press('g');
   const dialog = page.getByRole('dialog', { name: 'Go to' });
   const input = dialog.getByRole('combobox');
   await input.fill('trajectory');
-  await dialog.getByRole('option', { name: 'Search the book for “trajectory”' }).click();
-  await expect(page.getByRole('searchbox', { name: 'Search in book' })).toHaveValue('trajectory');
-  await expect(page.getByRole('tab', { name: 'Search' })).toHaveAttribute('aria-selected', 'true');
-  await page.locator('.reader__viewport').focus();
+  const text = dialog.getByRole('group', { name: /^In the text/ });
+  await expect(text.getByRole('option').first().locator('mark')).toHaveText(/^trajectory$/i);
+  // Closing without choosing a match ends the search.
+  await input.press('Escape');
   await page.keyboard.press('g');
+  await expect(input).toHaveValue('');
   await input.fill('reading ruler');
   await input.press('Enter');
   await page.keyboard.press('g');

@@ -1,11 +1,11 @@
 import { useCallback, useMemo } from 'react';
-import { Keyboard, LibraryBig, NotebookText, PanelLeft, Search as SearchIcon } from 'lucide-react';
+import { LibraryBig, NotebookText, PanelLeft } from 'lucide-react';
 import { AppearanceMenu } from '@/app/AppearanceMenu';
 import { navigate } from '@/app/router';
 import { usePagesInverted, useSettingsStore } from '@/app/settingsStore';
 import { sectionForPage } from '@/lib/pdf/outline';
 import { BookMap } from '../bookmap/BookMap';
-import { ariaKeyShortcuts, keyLabel, withShortcut } from '../commands/keys';
+import { ariaKeyShortcuts, withShortcut } from '../commands/keys';
 import { FocusMode } from '../focus/FocusMode';
 import { FocusModeButton } from '../focus/FocusModeButton';
 import { ReadingRuler } from '../focus/ReadingRuler';
@@ -17,7 +17,7 @@ import { useHistoryStore } from '../navigation/historyStore';
 import { OutlinePanel } from '../navigation/OutlinePanel';
 import { PageIndicator } from '../navigation/PageIndicator';
 import { ReturnPill } from '../navigation/ReturnPill';
-import { openShortcutsDialog, ShortcutsButton } from '../navigation/ShortcutsDialog';
+import { ShortcutsButton } from '../navigation/ShortcutsDialog';
 import { useKeyboardShortcuts } from '../navigation/useKeyboardShortcuts';
 import { MarginColumn } from '../notes/MarginColumn';
 import { NotesPanel } from '../notes/NotesPanel';
@@ -29,7 +29,6 @@ import { SelectionNotePopover } from '../notes/SelectionNotePopover';
 import { GoToPalette } from '../palette/GoToPalette';
 import { openGoTo } from '../palette/paletteStore';
 import { SearchHighlights } from '../search/SearchHighlights';
-import { SearchPanel } from '../search/SearchPanel';
 import { useSearchShortcut } from '../search/useSearchShortcut';
 import { useReaderStore, type SidebarTab } from './readerStore';
 import { Viewer, type PageSize } from './Viewer';
@@ -183,11 +182,10 @@ function useAnnotationCount(): number {
   }, [notes, highlights]);
 }
 
-const TABS: { id: SidebarTab; label: string; Icon?: typeof SearchIcon }[] = [
+const TABS: { id: SidebarTab; label: string }[] = [
   { id: 'contents', label: 'Contents' },
   { id: 'bookmarks', label: 'Bookmarks' },
   { id: 'notes', label: 'Notes' },
-  { id: 'search', label: 'Search', Icon: SearchIcon },
 ];
 
 function ReaderSidebar() {
@@ -213,16 +211,13 @@ function ReaderSidebar() {
             key={t.id}
             id={`sidebar-tab-${t.id}`}
             role="tab"
-            className={`segmented__item${t.Icon ? ' sidebar__tab--icon' : ''}`}
+            className="segmented__item"
             aria-selected={tab === t.id}
             aria-controls="sidebar-panel"
-            aria-label={t.Icon ? withShortcut(t.label, 'search', { spoken: true }) : undefined}
-            aria-keyshortcuts={t.Icon ? ariaKeyShortcuts('search') : undefined}
-            title={t.Icon ? withShortcut(t.label, 'search') : undefined}
             tabIndex={tab === t.id ? 0 : -1}
             onClick={() => setTab(t.id)}
           >
-            {t.Icon ? <t.Icon aria-hidden="true" /> : t.label}
+            {t.label}
           </button>
         ))}
       </div>
@@ -235,24 +230,6 @@ function ReaderSidebar() {
         {tab === 'contents' && <OutlinePanel />}
         {tab === 'bookmarks' && <BookmarksPanel />}
         {tab === 'notes' && <NotesPanel />}
-        {tab === 'search' && <SearchPanel />}
-      </div>
-      <div className="sidebar__footer">
-        <button
-          type="button"
-          className="btn btn--ghost sidebar__shortcuts tooltip"
-          data-tooltip={withShortcut('Keyboard shortcuts', 'help')}
-          aria-label="Keyboard shortcuts"
-          aria-keyshortcuts={ariaKeyShortcuts('help')}
-          onClick={openShortcutsDialog}
-        >
-          <Keyboard aria-hidden="true" />
-          <span>Keyboard shortcuts</span>
-          {/* biome-ignore lint/a11y/noAriaHiddenOnFocusable: <kbd> is not focusable; the hint is redundant for screen readers */}
-          <kbd className="kbd" aria-hidden="true">
-            {keyLabel('help')}
-          </kbd>
-        </button>
       </div>
     </aside>
   );

@@ -5,7 +5,7 @@ import { keyLabel } from '@/features/commands/keys';
 import { toggleFocusMode, useFocusStore } from '@/features/focus/focusStore';
 import { useBookmarksStore } from '@/features/navigation/bookmarksStore';
 import { useHistoryStore } from '@/features/navigation/historyStore';
-import { formatPageRef } from '@/features/navigation/pageLabels';
+import { formatPageRef, resolvePageInput } from '@/features/navigation/pageLabels';
 import { openShortcutsDialog } from '@/features/navigation/ShortcutsDialog';
 import { useHighlightsStore } from '@/features/notes/highlightsStore';
 import { plainNoteText } from '@/features/notes/noteFormat';
@@ -14,20 +14,147 @@ import { jumpToHighlightInBook, jumpToNote } from '@/features/notes/reviewAction
 import { addNoteFromSelection } from '@/features/notes/selectionNote';
 import { useReaderStore } from '@/features/reader/readerStore';
 import { setZoomMode, zoomIn, zoomOut } from '@/features/reader/zoom';
-import { focusSearchInput } from '@/features/search/searchDom';
-import { useSearchStore } from '@/features/search/searchStore';
+import { buildSnippet } from '@/features/search/matcher';
+import { chooseMatch, flatIndexOf, sliceHits, type SearchState } from '@/features/search/searchStore';
 import { openLibraryStorageDialog } from '@/features/settings/storageDialogStore';
-import { chapterEntries, flattenOutline } from '@/lib/pdf/outline';
-import type { ReadingLocation } from '@/lib/types';
-import { candidate, type Candidate } from './results';
+import { chapterEntries, flattenOutline, sectionForPage } from '@/lib/pdf/outline';
+import type { OutlineItem, ReadingLocation } from '@/lib/types';
+import { matchPrepared, normalizeQuery, prepareFuzzyText, type FuzzyText } from './fuzzy';
 
-export function openBookSearch(query?: string): void {
-  useReaderStore.getState().setSidebarTab('search');
-  if (query !== undefined) {
-    useSearchStore.getState().setQuery(query);
-    useSearchStore.getState().commitQuery();
+export type Group = 'Contents' | 'Bookmarks' | 'Notes & highlights' | 'Actions';
+const GROUPS: Group[] = ['Contents', 'Bookmarks', 'Notes & highlights', 'Actions'];
+/** Rows per group of destinations; text matches have their own limit. */
+const GROUP_ROWS = 8;
+export const TEXT_ROWS = 50;
+
+export interface Destination {
+  id: string;
+  icon: 'page' | 'contents' | 'bookmark' | 'note' | 'highlight' | 'action' | 'text';
+  title: string;
+  detail?: string;
+  hint?: string;
+  run(): void;
+}
+
+export interface Row {
+  item: Destination;
+  /** Offsets of the characters to emphasise. */
+  titleMarks?: number[];
+  detailMarks?: number[];
+  /** The search match F3 steps on from. */
+  current?: boolean;
+}
+
+export interface Candidate extends Destination {
+  group: Group;
+  /** Listed before anything is typed. */
+  suggested?: boolean;
+  current?: boolean;
+  titleText: FuzzyText;
+  detailText?: FuzzyText;
+}
+
+export function candidate(input: Omit<Candidate, 'titleText' | 'detailText'>): Candidate {
+  return {
+    ...input,
+    titleText: prepareFuzzyText(input.title),
+    detailText: input.detail ? prepareFuzzyText(input.detail) : undefined,
+  };
+}
+
+/** What Go to needs from the open book, read once when it opens. */
+export interface Book {
+  labels: readonly string[] | null;
+  outline: OutlineItem[];
+  count: number;
+}
+
+export function readBook(): Book {
+  const { pageLabels, outline, pdf, doc } = useReaderStore.getState();
+  return { labels: pageLabels, outline, count: pdf?.numPages ?? doc?.pageCount ?? 0 };
+}
+
+const pageRef = (book: Book, page: number) => {
+  const section = sectionForPage(book.outline, page);
+  return `${formatPageRef(book.labels, page)}${section ? ` · ${section}` : ''}`;
+};
+
+export function pageQuery(labels: readonly string[] | null, query: string, count: number): number | null {
+  const trimmed = query.trim();
+  const direct = resolvePageInput(labels, trimmed, count);
+  if (direct !== null) return direct;
+  const prefix = /^(?:p\.?|page)\s+(.+)$/i.exec(trimmed);
+  return prefix ? resolvePageInput(labels, prefix[1], count) : null;
+}
+
+/** "Go to p. 37" when the query names a page. */
+export function pageRow(book: Book, query: string): Row | null {
+  const page = pageQuery(book.labels, query, book.count);
+  if (page === null) return null;
+  return {
+    item: {
+      id: 'page',
+      icon: 'page',
+      title: `Go to ${pageRef(book, page)}`,
+      run: () => useHistoryStore.getState().jumpTo({ page, offset: 0 }),
+    },
+  };
+}
+
+/** Matching candidates by group, best group first; with an empty query, the suggestions. Ties keep their order. */
+export function rankCandidates(candidates: Candidate[], query: string): { name: Group; rows: Row[] }[] {
+  const needle = normalizeQuery(query);
+  const ranked = new Map<Group, (Row & { score: number })[]>();
+  for (const item of candidates) {
+    if (!needle && !item.suggested) continue;
+    const titleMatch = needle ? matchPrepared(needle, item.titleText) : null;
+    const detailMatch = needle && item.detailText ? matchPrepared(needle, item.detailText) : null;
+    if (needle && !titleMatch && !detailMatch) continue;
+    const score = needle
+      ? Math.max(titleMatch?.score ?? -Infinity, (detailMatch?.score ?? -Infinity) - 5)
+      : Number(!!item.current);
+    const rows = ranked.get(item.group) ?? [];
+    const at = rows.findIndex((other) => score > other.score);
+    rows.splice(at < 0 ? rows.length : at, 0, {
+      item,
+      score,
+      titleMarks: titleMatch?.indices,
+      detailMarks: detailMatch?.indices,
+    });
+    if (rows.length > GROUP_ROWS) rows.pop();
+    ranked.set(item.group, rows);
   }
-  focusSearchInput();
+  const groups = GROUPS.flatMap((name) => {
+    const rows = ranked.get(name);
+    return rows ? [{ name, rows }] : [];
+  });
+  if (needle) groups.sort((a, b) => b.rows[0].score - a.rows[0].score);
+  return groups;
+}
+
+/** Up to {@link TEXT_ROWS} matches as snippets, from the first one (or the chosen one, when that is further on). */
+export function textRows(
+  { results, hits, active }: Pick<SearchState, 'results' | 'hits' | 'active'>,
+  book: Book,
+): Row[] {
+  const at = flatIndexOf(results, active);
+  const from = at < TEXT_ROWS ? 0 : Math.min(at, hits - TEXT_ROWS);
+  return sliceHits(results, from, TEXT_ROWS).map((hit) => {
+    const result = results.find((candidate) => candidate.page === hit.page)!;
+    const { start, end } = result.matches[hit.index];
+    const { before, match, after } = buildSnippet(result.text.text, start, end);
+    return {
+      item: {
+        id: `text-${hit.page}-${hit.index}`,
+        icon: 'text',
+        title: before + match + after,
+        detail: pageRef(book, hit.page),
+        run: () => chooseMatch(hit),
+      },
+      titleMarks: Array.from({ length: match.length }, (_, i) => before.length + i),
+      current: active?.page === hit.page && active.index === hit.index,
+    };
+  });
 }
 
 /** Snapshot searchable data once when the palette opens, rather than on every keystroke. */
@@ -132,7 +259,6 @@ export function buildCandidates(): Candidate[] {
     'ruler',
     true,
   );
-  action('search', 'Search the book', () => openBookSearch(), 'search', true);
   action(
     'review',
     'Review notes',

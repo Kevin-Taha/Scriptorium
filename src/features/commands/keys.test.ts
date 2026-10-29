@@ -74,7 +74,6 @@ describe('matches', () => {
   it('accepts aliases but never keys a focused control handles itself', () => {
     expect(matches(press('g', { ctrlKey: true }), 'next-result')).toBe(true);
     expect(matches(press('F3'), 'next-result')).toBe(true);
-    expect(matches(press('Enter'), 'next-result')).toBe(false);
     expect(matches(press('Escape'), 'finish-note')).toBe(false);
   });
 });
@@ -95,7 +94,7 @@ describe('key labels', () => {
     expect(keyLabel('search', { mac })).toBe('⌘F');
     expect(keyLabel('back', { mac })).toBe('⌥←');
     expect(keyLabel('review', { mac })).toBe('⇧R');
-    expect(keyLabel('previous-result', { mac })).toBe('⇧Enter');
+    expect(keyLabel('previous-result', { mac })).toBe('⇧F3');
     expect(keyLabel('back', { mac, spoken: true })).toBe('Option+Left');
     expect(keyLabel('search', { mac, spoken: true })).toBe('Command+F');
   });

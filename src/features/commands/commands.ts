@@ -13,7 +13,7 @@ export interface Binding {
   alt?: true;
   /** Whether Shift is held (default: not). `'any'` for characters some layouts type with Shift. */
   shift?: true | 'any';
-  /** Handled by the focused control itself (Enter in the search field): listed, never matched. */
+  /** Handled by the focused control itself (Esc in a note): listed, never matched. */
   local?: true;
   /** Accepted but not listed: a layout quirk or a browser habit. */
   alias?: true;
@@ -37,7 +37,7 @@ export interface Command {
 export const COMMANDS = {
   'go-to': {
     label: 'Go to a page, chapter or note',
-    detail: 'Type a page number, a title, or words from a note',
+    detail: 'A page number, a chapter, a note, or any words in the book',
     group: 'Navigate',
     scope: 'reader',
     keys: [{ key: 'g' }],
@@ -67,23 +67,23 @@ export const COMMANDS = {
   },
 
   search: {
-    label: 'Search the book',
+    label: 'Find in the book',
+    detail: 'Go to lists matches from the text; Esc clears their highlights',
     group: 'Search',
     scope: 'reader',
     keys: [{ key: 'f', mod: true, shift: 'any' }, { key: '/' }],
   },
   'next-result': {
-    label: 'Next result',
+    label: 'Next match',
     group: 'Search',
     scope: 'reader',
-    keys: [{ key: 'Enter', local: true }, { key: 'F3' }, { key: 'g', mod: true, alias: true }],
+    keys: [{ key: 'F3' }, { key: 'g', mod: true, alias: true }],
   },
   'previous-result': {
-    label: 'Previous result',
+    label: 'Previous match',
     group: 'Search',
     scope: 'reader',
     keys: [
-      { key: 'Enter', shift: true, local: true },
       { key: 'F3', shift: true },
       { key: 'g', mod: true, shift: true, alias: true },
     ],

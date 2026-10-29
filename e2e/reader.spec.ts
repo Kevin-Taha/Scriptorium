@@ -11,7 +11,7 @@ test('scrolling updates the page and G navigates; invalid pages do not navigate'
   await expect.poll(async () => Number(await page.locator('#page-field').inputValue())).toBeGreaterThan(1);
   await page.locator('.reader__viewport').focus();
   await page.keyboard.press('g');
-  const input = page.getByRole('combobox', { name: /Go to page/ });
+  const input = page.getByRole('combobox', { name: /Go to/ });
   await expect(input).toBeFocused();
   await input.fill('15');
   await page.keyboard.press('Enter');

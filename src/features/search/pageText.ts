@@ -55,17 +55,14 @@ export const DEFAULT_BOX: PageBox = { view: [0, 0, 612, 792], rotation: 0 };
 
 const MARKS = /[\u0300-\u036f]/g;
 const ASCII = /^[\t\n\r\x20-\x7e]*$/;
-const WORD_CHAR = /[\p{L}\p{N}_]/u;
 const SINGLE_QUOTES = new Set(['\u2018', '\u2019', '\u201a', '\u201b', '\u2032', '\u02bc']);
 const DOUBLE_QUOTES = new Set(['\u201c', '\u201d', '\u201e', '\u201f', '\u2033']);
 
 const foldedUnits = new Map<string, string>();
-const caseKeptUnits = new Map<string, string>();
 
 /** Folds one UTF-16 unit to exactly one unit; anything that cannot be folded 1:1 is left alone. */
-function foldUnit(unit: string, lower: boolean): string {
-  const cache = lower ? foldedUnits : caseKeptUnits;
-  let folded = cache.get(unit);
+function foldUnit(unit: string): string {
+  let folded = foldedUnits.get(unit);
   if (folded === undefined) {
     const code = unit.charCodeAt(0);
     if ((code >= 0x2010 && code <= 0x2013) || code === 0x2212) folded = '-';
@@ -75,31 +72,22 @@ function foldUnit(unit: string, lower: boolean): string {
       const base = unit.normalize('NFD').replace(MARKS, '');
       folded = base.length === 1 ? base : unit;
     }
-    if (lower) {
-      const lowered = folded.toLowerCase();
-      if (lowered.length === 1) folded = lowered;
-    }
-    cache.set(unit, folded);
+    const lowered = folded.toLowerCase();
+    if (lowered.length === 1) folded = lowered;
+    foldedUnits.set(unit, folded);
   }
   return folded;
 }
 
-/**
- * Removes diacritics and typographic quote/dash variants, and (unless
- * `lower` is false) case. The result always has the length of the input.
- */
-export function foldText(text: string, lower = true): string {
-  if (ASCII.test(text)) return lower ? text.toLowerCase() : text;
+/** Removes case, diacritics and typographic quote/dash variants. The result always has the length of the input. */
+export function foldText(text: string): string {
+  if (ASCII.test(text)) return text.toLowerCase();
   let folded = '';
   for (let i = 0; i < text.length; i++) {
     const unit = text[i];
-    folded += unit.charCodeAt(0) < 128 ? (lower ? unit.toLowerCase() : unit) : foldUnit(unit, lower);
+    folded += unit.charCodeAt(0) < 128 ? unit.toLowerCase() : foldUnit(unit);
   }
   return folded;
-}
-
-export function isWordChar(char: string | undefined): boolean {
-  return char !== undefined && WORD_CHAR.test(char);
 }
 
 // ------------------------------------------------------------ char cleaning

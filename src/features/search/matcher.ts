@@ -1,11 +1,4 @@
-import { cleanText, foldText, isWordChar, type PageText } from './pageText';
-
-export interface SearchOptions {
-  matchCase: boolean;
-  wholeWord: boolean;
-}
-
-export const DEFAULT_OPTIONS: SearchOptions = { matchCase: false, wholeWord: false };
+import { cleanText, foldText, type PageText } from './pageText';
 
 /** A query prepared for matching against {@link PageText.folded}. */
 export interface Matcher {
@@ -13,12 +6,6 @@ export interface Matcher {
   query: string;
   /** Folded query (case, diacritics, quote styles), compared with `PageText.folded`. */
   needle: string;
-  /** Case-preserving fold of the query; set only when matching case. */
-  caseNeedle: string | null;
-  wholeWord: boolean;
-  /** Whole-word checks apply only at query edges that are word characters (so "C++" still works). */
-  wordAtStart: boolean;
-  wordAtEnd: boolean;
 }
 
 export interface MatchRange {
@@ -33,49 +20,20 @@ export interface Snippet {
   after: string;
 }
 
-export function createMatcher(rawQuery: string, options: SearchOptions): Matcher | null {
+export function createMatcher(rawQuery: string): Matcher | null {
   const query = cleanText(rawQuery);
-  if (query === '') return null;
-  const needle = foldText(query);
-  return {
-    query,
-    needle,
-    caseNeedle: options.matchCase ? foldText(query, false) : null,
-    wholeWord: options.wholeWord,
-    wordAtStart: isWordChar(needle[0]),
-    wordAtEnd: isWordChar(needle.at(-1)),
-  };
+  return query === '' ? null : { query, needle: foldText(query) };
 }
 
 /** Finds non-overlapping matches of `matcher` on a page, in reading order. */
-export function findMatches(pageText: PageText, matcher: Matcher, limit = Infinity): MatchRange[] {
-  const { folded, text } = pageText;
-  const { needle, caseNeedle } = matcher;
+export function findMatches({ folded }: PageText, { needle }: Matcher, limit = Infinity): MatchRange[] {
   const matches: MatchRange[] = [];
-  let from = 0;
-  while (matches.length < limit) {
-    const start = folded.indexOf(needle, from);
-    if (start === -1) break;
-    const end = start + needle.length;
-    const accepted =
-      (!matcher.wholeWord || isWholeWord(folded, start, end, matcher)) &&
-      (caseNeedle === null || foldText(text.slice(start, end), false) === caseNeedle);
-    if (accepted) {
-      matches.push({ start, end });
-      from = end;
-    } else {
-      from = start + 1;
-    }
+  for (let start = folded.indexOf(needle); start !== -1 && matches.length < limit; ) {
+    matches.push({ start, end: start + needle.length });
+    start = folded.indexOf(needle, start + needle.length);
   }
   return matches;
 }
-
-function isWholeWord(folded: string, start: number, end: number, matcher: Matcher): boolean {
-  if (matcher.wordAtStart && start > 0 && isWordChar(folded[start - 1])) return false;
-  if (matcher.wordAtEnd && end < folded.length && isWordChar(folded[end])) return false;
-  return true;
-}
-
 /** Context kept on each side of a match in a result row. */
 const CONTEXT = 40;
 /** How far a snippet edge may move to land on a word boundary. */
