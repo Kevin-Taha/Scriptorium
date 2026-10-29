@@ -55,7 +55,6 @@
 }
 .library__eyebrow,
 .library__empty-kicker,
-.library__continue-label,
 .library__section-heading > span {
   color: var(--color-text-muted);
   font-size: var(--font-size-xs);
@@ -227,39 +226,194 @@
 .library__section-heading h2 {
   font-size: var(--font-size-lg);
 }
-.library__continue {
+/* ---- Now reading --------------------------------------------------------- */
+.now-reading {
+  position: relative;
+  display: grid;
+  overflow: hidden;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'cover head action'
+    'cover progress action';
+  align-items: center;
+  column-gap: 36px;
+  padding: 28px 32px 28px 36px;
+}
+/* Lamplight: a warm pool behind the book. */
+.now-reading::before {
+  position: absolute;
+  top: 50%;
+  left: 110px;
+  width: 440px;
+  height: 440px;
+  content: '';
+  background: radial-gradient(closest-side, var(--color-accent-subtle), transparent);
+  opacity: 0.7;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.now-reading > * {
+  position: relative;
+}
+.now-reading__cover {
+  grid-area: cover;
+  display: block;
+  width: 148px;
+  padding: 0;
+  cursor: pointer;
+  transform: rotate(-2deg);
+  transition: transform var(--duration-base) var(--ease-out);
+}
+.now-reading__cover:hover {
+  transform: translateY(-3px);
+}
+/* The page block: a few sheets peeking out past the fore-edge and the foot. */
+.now-reading__cover::before {
+  position: absolute;
+  inset: 3px -4px -3px 4px;
+  content: '';
+  background: var(--page-sheet-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 1px 3px 3px 1px;
+  box-shadow:
+    2px 2px 0 -1px var(--page-sheet-bg),
+    2px 2px 0 0 var(--color-border),
+    var(--shadow-sheet);
+}
+.now-reading__cover .book-card__cover {
+  border-radius: 2px 4px 4px 2px;
+  box-shadow: var(--shadow-md);
+}
+/* A soft sheen across the cloth. */
+.now-reading__cover .book-card__cover::before {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  content: '';
+  background: linear-gradient(
+    115deg,
+    color-mix(in srgb, var(--color-surface-raised) 22%, transparent),
+    transparent 42%
+  );
+  pointer-events: none;
+}
+.now-reading__head {
+  grid-area: head;
+  align-self: end;
+  min-width: 0;
+}
+.now-reading__eyebrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  color: var(--color-accent);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.1em;
+}
+.now-reading__eyebrow > [aria-hidden] {
+  color: var(--color-text-muted);
+}
+.now-reading__when {
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0;
+}
+.now-reading__title {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 8px 0 6px;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-family: var(--font-serif);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+  overflow-wrap: anywhere;
+}
+.now-reading__where {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--color-text-secondary);
+  font-family: var(--font-serif);
+  font-size: var(--font-size-md);
+}
+.now-reading__divider {
+  padding: 0 4px;
+  color: var(--color-border-control);
+}
+.now-reading__section {
+  display: inline-block;
+  max-width: 100%;
+  font-style: italic;
+}
+.now-reading__progress {
+  grid-area: progress;
+  align-self: start;
+  min-width: 0;
+  margin-top: 20px;
+}
+.now-reading__bar {
   display: flex;
   align-items: center;
-  gap: 22px;
-  min-height: 136px;
-  padding: 18px 22px;
+  gap: 3px;
+  height: 12px;
+  margin-bottom: 9px;
 }
-.library__continue .library__continue-cover {
-  flex: 0 0 72px;
-  width: 72px;
-  height: 96px;
+.now-reading__segment {
+  position: relative;
+  overflow: hidden;
+  min-width: 3px;
+  flex-basis: 0;
+  height: 6px;
+  background: var(--color-surface-sunken);
+  border-radius: 2px;
 }
-.library__continue-info {
-  min-width: 0;
+.now-reading__segment > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: color-mix(in srgb, var(--color-accent) 50%, var(--color-surface-sunken));
+}
+.now-reading__segment.is-current {
+  height: 12px;
+  border-radius: 3px;
+}
+.now-reading__segment.is-current > span {
+  background: var(--color-accent);
+}
+/* A book with no chapters to show gets one plain bar. */
+.now-reading__segment:only-child {
+  height: 6px;
+  border-radius: 3px;
+}
+.now-reading__stats {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+}
+/* Equal outer columns keep the page number centred under the bar when a chapter is named. */
+.now-reading__stats > :first-child,
+.now-reading__stats > :last-child {
   flex: 1;
 }
-.library__continue-info h3 {
-  overflow: hidden;
-  margin: 5px 0;
-  font-family: var(--font-serif);
-  font-size: var(--font-size-lg);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.now-reading__stats > :last-child {
+  text-align: right;
 }
-.library__continue-info > p:last-child {
+.now-reading__stats > :nth-child(2):not(:last-child) {
   color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
 }
-.library__continue-info > p:last-child span {
-  padding: 0 3px;
-}
-.library__continue-label {
-  color: var(--color-accent);
+.now-reading__continue {
+  grid-area: action;
+  height: 40px;
+  padding: 0 24px;
+  white-space: nowrap;
 }
 .library__books {
   margin-top: 48px;
@@ -554,9 +708,29 @@
   .book-card:focus-within .book-card__main .book-card__cover {
     transform: none;
   }
+  .now-reading__cover {
+    transition: none;
+  }
+  .now-reading__cover:hover {
+    transform: rotate(-2deg);
+  }
   .library__spinner,
   .folder-chip__spinner {
     animation: none;
+  }
+}
+@media (max-width: 880px) {
+  .now-reading {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      'cover head'
+      'cover progress'
+      'cover action';
+    column-gap: 28px;
+  }
+  .now-reading__continue {
+    justify-self: start;
+    margin-top: 20px;
   }
 }
 @media (max-width: 600px) {
@@ -583,13 +757,41 @@
     min-height: 390px;
     padding: 20px;
   }
-  .library__continue {
-    flex-wrap: wrap;
-    gap: 16px;
-    padding: 16px;
+  .now-reading {
+    grid-template-columns: 84px minmax(0, 1fr);
+    grid-template-areas:
+      'cover head'
+      'progress progress'
+      'action action';
+    gap: 18px 16px;
+    padding: 20px 18px;
   }
-  .library__continue > .btn {
+  .now-reading::before {
+    left: 60px;
+  }
+  .now-reading__cover {
+    width: 84px;
+  }
+  .now-reading__head {
+    align-self: center;
+  }
+  .now-reading__eyebrow {
+    flex-direction: column;
+    gap: 2px;
+  }
+  .now-reading__eyebrow > [aria-hidden] {
+    display: none;
+  }
+  .now-reading__title {
+    margin: 6px 0 4px;
+    font-size: var(--font-size-xl);
+  }
+  .now-reading__progress {
+    margin-top: 0;
+  }
+  .now-reading__continue {
     width: 100%;
+    margin-top: 0;
   }
   .library__grid {
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));

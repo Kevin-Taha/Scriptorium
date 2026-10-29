@@ -19,11 +19,12 @@ import { useSyncStore } from '@/features/sync/syncStore';
 import { deleteDocument, getReadingState, listDocuments } from '@/lib/storage/repository';
 import { onBookDataMerged } from '@/lib/sync/apply';
 import type { LibraryDocument, ReadingState } from '@/lib/types';
-import { debounce, formatRelativeTime } from '@/lib/util';
-import { BookCard, BookCover, isMissingFromFolder } from './BookCard';
+import { debounce } from '@/lib/util';
+import { BookCard, isMissingFromFolder } from './BookCard';
 import { ConfirmDialog } from './ConfirmDialog';
 import { FolderStatusChip } from './FolderStatusChip';
 import { importPdfFile } from './importPdf';
+import { NowReading } from './NowReading';
 import './library.css';
 
 interface LibraryEntry {
@@ -351,27 +352,11 @@ export function LibraryView() {
       {entries && entries.length > 0 && (
         <>
           {recent && (
-            <section aria-labelledby="continue-heading" className="library__continue-section">
+            <section aria-labelledby="continue-heading">
               <div className="library__section-heading">
                 <h2 id="continue-heading">Pick up where you left off</h2>
-                <span>LAST OPENED</span>
               </div>
-              <div className="card library__continue">
-                <BookCover doc={recent.doc} className="library__continue-cover" />
-                <div className="library__continue-info">
-                  <p className="library__continue-label">CONTINUE READING</p>
-                  <h3>{recent.doc.title}</h3>
-                  <p>
-                    {recent.doc.pageCount > 0
-                      ? `Page ${recent.reading?.location.page ?? 1} of ${recent.doc.pageCount}`
-                      : `Page ${recent.reading?.location.page ?? 1}`}{' '}
-                    <span aria-hidden="true">·</span> {formatRelativeTime(recent.doc.lastOpenedAt)}
-                  </p>
-                </div>
-                <button type="button" className="btn btn--primary" onClick={() => openBook(recent.doc)}>
-                  Continue reading
-                </button>
-              </div>
+              <NowReading doc={recent.doc} reading={recent.reading} onContinue={() => openBook(recent.doc)} />
             </section>
           )}
           <section aria-labelledby="books-heading" className="library__books">

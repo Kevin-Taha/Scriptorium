@@ -5,7 +5,7 @@ import { useStorageDialogStore } from '@/features/settings/storageDialogStore';
 import { useSyncStore } from '@/features/sync/syncStore';
 import { DB_NAME, resetDBForTests } from '@/lib/storage/db';
 import { requestPersistentStorage } from '@/lib/storage/persistence';
-import { putDocument } from '@/lib/storage/repository';
+import { putDocument, putReadingState } from '@/lib/storage/repository';
 import type { LibraryDocument } from '@/lib/types';
 import { importPdfFile } from './importPdf';
 import { LibraryView } from './LibraryView';
@@ -160,6 +160,42 @@ describe('books from a linked folder', () => {
     await putDocument(doc(4, { source: { kind: 'folder', path: 'book-4.pdf' } }));
     setSync({ libraryRevision: 1 });
     expect(await screen.findByRole('button', { name: /^Open Book 4,/ })).toBeTruthy();
+  });
+});
+
+describe('pick up where you left off', () => {
+  it('names the chapter and section you were in, and continues there', async () => {
+    const book = doc(1, {
+      contents: [
+        { title: 'Chapter 1: Kinematics', page: 3, depth: 0 },
+        { title: 'Chapter 2: Newton’s Laws', page: 11, depth: 0 },
+        { title: '2.2 The Second Law', page: 14, depth: 1 },
+      ],
+    });
+    await putDocument(book);
+    await putReadingState({
+      docId: book.id,
+      location: { page: 14, offset: 0 },
+      zoom: { mode: 'fit-width', scale: 1 },
+      updatedAt: 1,
+    });
+    render(<LibraryView />);
+    const section = await screen.findByRole('region', { name: 'Pick up where you left off' });
+    expect(within(section).getByRole('heading', { name: 'Book 1' })).toBeTruthy();
+    expect(within(section).getByText(/^Chapter 2: Newton’s Laws/)).toBeTruthy();
+    expect(within(section).getByText('2.2 The Second Law')).toBeTruthy();
+    expect(within(section).getByText('Page 14 of 100')).toBeTruthy();
+
+    fireEvent.click(within(section).getByRole('button', { name: 'Continue reading' }));
+    expect(window.location.hash).toBe(`#/read/${book.id}`);
+  });
+
+  it('shows the page alone for a book that has not been opened since contents were saved', async () => {
+    await putDocument(doc(1));
+    render(<LibraryView />);
+    const section = await screen.findByRole('region', { name: 'Pick up where you left off' });
+    expect(within(section).getByText('Page 1 of 100')).toBeTruthy();
+    expect(within(section).queryByText(/Chapter/)).toBeNull();
   });
 });
 
