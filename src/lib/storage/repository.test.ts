@@ -1,11 +1,13 @@
 import { openDB } from 'idb';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { mergeBookData } from '../sync/merge';
 import {
   DEFAULT_SETTINGS,
   type AppSettings,
   type Highlight,
   type LibraryDocument,
   type MarginNote,
+  type ReadingState,
 } from '../types';
 import { DB_NAME, DB_VERSION, getDB, resetDBForTests } from './db';
 import {
@@ -29,6 +31,7 @@ import {
   putNote,
   putReadingState,
   putSettings,
+  resetBookProgress,
   updateBookData,
   updateDocument,
 } from './repository';
@@ -156,6 +159,140 @@ describe('sync bookkeeping', () => {
     await deleteNote('n1');
     await deleteDocument('book');
     expect(await listDocIdsWithData()).toEqual([]);
+  });
+});
+
+describe('resetting a book', () => {
+  const future = Date.now() + 3_600_000;
+  const zoom = { mode: 'custom', scale: 1.4 } as const;
+  const progress: ReadingState = {
+    docId: 'book',
+    location: { page: 14, offset: 0.4 },
+    zoom,
+    updatedAt: future,
+    deviceId: 'laptop',
+  };
+
+  /** A book being read, with one of everything, plus another book that must stay as it is. */
+  async function seed(): Promise<void> {
+    await putDocument({ ...makeDoc('book', 500), contents: [{ title: 'Chapter 1', page: 1, depth: 0 }] });
+    await putDocument(makeDoc('other', 600));
+    await putNote({ ...makeNote('n1', 'book', 3, 0.1), createdAt: 10, updatedAt: future });
+    await putHighlight(makeHighlight('h1', 'book', 2, 0.2, 30));
+    await putBookmark({ id: 'b1', docId: 'book', page: 4, label: 'Intro', createdAt: 40 });
+    await putNote(makeNote('n2', 'other', 1, 0.1));
+    await putHighlight(makeHighlight('h2', 'other', 1, 0.1));
+    await putBookmark({ id: 'b2', docId: 'other', page: 1, label: 'Other', createdAt: 0 });
+    await putReadingState(progress);
+    await putReadingState({ ...progress, docId: 'other' });
+  }
+
+  it('deletes every note, highlight and bookmark, leaving a tombstone for each', async () => {
+    await seed();
+    await putNote(makeNote('gone', 'book', 5, 0.1));
+    await deleteNote('gone');
+    const [earlier] = (await getBookData('book')).tombstones;
+    const before = Date.now();
+
+    await resetBookProgress('book');
+
+    const data = await getBookData('book');
+    expect([data.notes, data.highlights, data.bookmarks]).toEqual([[], [], []]);
+    const byId = new Map(data.tombstones.map((t) => [t.id, t]));
+    expect([...byId.keys()].sort()).toEqual(['b1', 'gone', 'h1', 'n1']);
+    expect(byId.get('gone')).toEqual(earlier);
+    expect([byId.get('n1')?.kind, byId.get('h1')?.kind, byId.get('b1')?.kind]).toEqual([
+      'note',
+      'highlight',
+      'bookmark',
+    ]);
+    expect(data.tombstones.every((t) => t.docId === 'book')).toBe(true);
+    // Each deletion outranks the version it deletes, even a version stamped ahead of this clock.
+    expect(byId.get('n1')?.deletedAt).toBe(future + 1);
+    expect(byId.get('h1')?.deletedAt).toBeGreaterThanOrEqual(before);
+    expect(byId.get('b1')?.deletedAt).toBeGreaterThanOrEqual(before);
+  });
+
+  it('leaves other books alone', async () => {
+    await seed();
+    await resetBookProgress('book');
+
+    const other = await getBookData('other');
+    expect(other.notes.map((n) => n.id)).toEqual(['n2']);
+    expect(other.highlights.map((h) => h.id)).toEqual(['h2']);
+    expect(other.bookmarks.map((b) => b.id)).toEqual(['b2']);
+    expect(other.tombstones).toEqual([]);
+    expect(other.progress).toEqual({ ...progress, docId: 'other' });
+    expect((await listDocuments()).find((d) => d.id === 'other')?.lastOpenedAt).toBe(600);
+  });
+
+  it('returns to page 1 with a newer stamp, keeping the zoom and naming the device', async () => {
+    await seed();
+    await resetBookProgress('book', 'phone');
+
+    expect(await getReadingState('book')).toEqual({
+      docId: 'book',
+      location: { page: 1, offset: 0 },
+      zoom,
+      updatedAt: future + 1,
+      deviceId: 'phone',
+    });
+  });
+
+  it('creates no position for a book that never had one', async () => {
+    await putNote(makeNote('n1', 'book', 3, 0.1));
+    await resetBookProgress('book');
+    expect(await getReadingState('book')).toBeUndefined();
+    expect(await listNotes('book')).toEqual([]);
+  });
+
+  it('marks the book as not opened yet but keeps everything else about it', async () => {
+    await seed();
+    await resetBookProgress('book');
+
+    const doc = (await listDocuments()).find((d) => d.id === 'book');
+    expect(doc).toEqual({
+      ...makeDoc('book', 0),
+      contents: [{ title: 'Chapter 1', page: 1, depth: 0 }],
+    });
+    expect((await listDocuments()).map((d) => d.id)).toEqual(['other', 'book']);
+  });
+
+  it('works for a book with no data or library entry, and announces the change', async () => {
+    const changes: string[] = [];
+    const stop = onLibraryChange(({ docId }) => changes.push(docId));
+    await resetBookProgress('nothing');
+    await seed();
+    changes.length = 0;
+    await resetBookProgress('book');
+    stop();
+
+    expect(await getBookData('nothing')).toEqual({
+      notes: [],
+      highlights: [],
+      bookmarks: [],
+      tombstones: [],
+      progress: undefined,
+    });
+    expect(changes).toEqual(['book']);
+  });
+
+  it('survives a merge with what another device still holds', async () => {
+    await seed();
+    const stale = await getBookData('book');
+    await resetBookProgress('book', 'phone');
+    const reset = await getBookData('book');
+
+    for (const sets of [
+      [reset, stale],
+      [stale, reset],
+    ]) {
+      const merged = mergeBookData(sets);
+      expect([merged.notes, merged.highlights, merged.bookmarks]).toEqual([[], [], []]);
+      expect(merged.progress?.location).toEqual({ page: 1, offset: 0 });
+      expect(merged.progress?.deviceId).toBe('phone');
+      expect(merged.tombstones.map((t) => t.id).sort()).toEqual(['b1', 'h1', 'n1']);
+    }
   });
 });
 

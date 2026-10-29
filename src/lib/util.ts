@@ -1,3 +1,5 @@
+import type { ReadingLocation } from './types';
+
 /** Short, collision-resistant id for client-side records. */
 export function createId(): string {
   return crypto.randomUUID();
@@ -80,4 +82,9 @@ export function isEditableTarget(target: EventTarget | null): boolean {
   if (target.isContentEditable) return true;
   const tag = target.tagName;
   return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+}
+
+/** The very top of the first page: nothing of the book has been read yet. */
+export function isAtStart(location: ReadingLocation): boolean {
+  return location.page <= 1 && location.offset < 0.02;
 }

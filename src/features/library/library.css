@@ -604,6 +604,10 @@
   font-size: var(--font-size-sm);
   line-height: var(--leading-snug);
 }
+.book-card__popover button + .book-card__popover-note {
+  margin-top: 4px;
+  border-top: 1px solid var(--color-border);
+}
 
 .library__drop-overlay {
   position: fixed;

@@ -126,24 +126,32 @@ export async function putReadingState(state: ReadingState): Promise<void> {
 
 const STORE_FOR_KIND = { note: 'notes', highlight: 'highlights', bookmark: 'bookmarks' } as const;
 
+type Annotation = Pick<MarginNote, 'id' | 'docId' | 'createdAt'> & { updatedAt?: number };
+
+/** The deletion record for `record`, stamped after the version being deleted even on a slow clock. */
+function tombstoneFor(kind: AnnotationKind, record: Annotation): Tombstone {
+  return {
+    id: record.id,
+    kind,
+    docId: record.docId,
+    deletedAt: nextStamp(record.updatedAt ?? record.createdAt),
+  };
+}
+
 async function deleteAnnotation(kind: AnnotationKind, id: string): Promise<void> {
   const db = await getDB();
   const tx = db.transaction([STORE_FOR_KIND[kind], 'tombstones'], 'readwrite');
   const store = tx.objectStore(STORE_FOR_KIND[kind]);
-  const existing = (await store.get(id)) as
-    | (Pick<MarginNote, 'docId' | 'createdAt'> & { updatedAt?: number })
-    | undefined;
+  const existing = (await store.get(id)) as Annotation | undefined;
   if (!existing) {
     await tx.done;
     return;
   }
-  const tombstone: Tombstone = {
-    id,
-    kind,
-    docId: existing.docId,
-    deletedAt: nextStamp(existing.updatedAt ?? existing.createdAt),
-  };
-  await Promise.all([store.delete(id), tx.objectStore('tombstones').put(tombstone), tx.done]);
+  await Promise.all([
+    store.delete(id),
+    tx.objectStore('tombstones').put(tombstoneFor(kind, existing)),
+    tx.done,
+  ]);
   emitChange(existing.docId);
 }
 
@@ -279,6 +287,49 @@ export async function updateBookData(
   if (next.progress) writes.push(tx.objectStore('readingState').put(next.progress));
   await Promise.all([...writes, tx.done]);
   return next;
+}
+
+/**
+ * Starts a book over: deletes its notes, highlights and bookmarks, returns the
+ * reading position to the first page and marks the book as not opened yet. The
+ * book, its contents and the zoom level stay.
+ *
+ * Folder sync merges devices' data, so the reset has to outrank what other
+ * devices still hold: every deletion leaves a tombstone, and the position is
+ * replaced by a newer one (rather than removed, which would let an older
+ * position from elsewhere win). Everything happens in one transaction, so a
+ * failure changes nothing.
+ */
+export async function resetBookProgress(docId: DocId, deviceId?: string): Promise<void> {
+  const db = await getDB();
+  const tx = db.transaction(
+    ['documents', 'readingState', 'notes', 'highlights', 'bookmarks', 'tombstones'],
+    'readwrite',
+  );
+  const writes: Promise<unknown>[] = [];
+  const tombstones = tx.objectStore('tombstones');
+  for (const kind of ['note', 'highlight', 'bookmark'] as const) {
+    const store = tx.objectStore(STORE_FOR_KIND[kind]);
+    for (const record of (await store.index('docId').getAll(docId)) as Annotation[]) {
+      writes.push(store.delete(record.id), tombstones.put(tombstoneFor(kind, record)));
+    }
+  }
+  const progress = await tx.objectStore('readingState').get(docId);
+  if (progress) {
+    writes.push(
+      tx.objectStore('readingState').put({
+        docId,
+        location: { page: 1, offset: 0 },
+        zoom: progress.zoom,
+        updatedAt: nextStamp(progress.updatedAt),
+        deviceId,
+      }),
+    );
+  }
+  const doc = await tx.objectStore('documents').get(docId);
+  if (doc) writes.push(tx.objectStore('documents').put({ ...doc, lastOpenedAt: 0 }));
+  await Promise.all([...writes, tx.done]);
+  emitChange(docId);
 }
 
 /** Ids of every book that has notes, highlights, bookmarks, deletions or progress on this device. */
