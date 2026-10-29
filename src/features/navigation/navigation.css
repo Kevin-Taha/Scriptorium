@@ -21,9 +21,6 @@
   color: var(--color-text-muted);
   white-space: nowrap;
 }
-.bookmark-toggle[aria-pressed='true'] {
-  color: var(--color-bookmark);
-}
 
 @keyframes page-field-shake {
   25%,
@@ -169,16 +166,55 @@
   }
 }
 
-.page-sheet__ribbon {
+/* The bookmark control at each page's top-right corner. It sits above the text layer so it can
+   be clicked; only its own box takes pointer events, so text around it stays selectable. */
+.bookmark-ribbon {
   position: absolute;
   top: 0;
   right: 24px;
+  z-index: 3;
   width: 22px;
   height: 38px;
+  pointer-events: auto;
+}
+/* The ghost of an unset ribbon: faint while the pointer is near the corner (`data-ribbon-reveal`,
+   see useRibbonReveal), stronger on the ribbon itself. Touch has no hover, so it always shows. */
+.bookmark-ribbon::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--color-border-control);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%);
+  opacity: 0;
+  transition:
+    opacity var(--duration-fast) var(--ease-standard),
+    background-color var(--duration-fast) var(--ease-standard);
+}
+.page-sheet[data-ribbon-reveal] .bookmark-ribbon::before {
+  opacity: 0.4;
+}
+.bookmark-ribbon:hover::before {
+  background: var(--color-bookmark);
+  opacity: 0.6;
+}
+@media (hover: none) {
+  .bookmark-ribbon::before {
+    opacity: 0.25;
+  }
+}
+.bookmark-ribbon[aria-pressed='true']::before {
+  content: none;
+}
+.page-sheet__ribbon {
+  position: absolute;
+  inset: 0;
   background: var(--color-bookmark);
   clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%);
-  pointer-events: none;
+  transition: opacity var(--duration-fast) var(--ease-standard);
   animation: ribbon-enter var(--duration-slow) var(--ease-spring) both;
+}
+.bookmark-ribbon:hover .page-sheet__ribbon {
+  opacity: 0.8;
 }
 @keyframes ribbon-enter {
   from {
@@ -295,7 +331,7 @@
 .shortcuts-dialog {
   position: fixed;
   inset: 0;
-  width: min(520px, calc(100vw - 2 * var(--space-4)));
+  width: min(760px, calc(100vw - 2 * var(--space-4)));
   max-width: none;
   max-height: calc(100dvh - 2 * var(--space-4));
   margin: auto;
@@ -315,7 +351,7 @@
   display: flex;
   align-items: flex-start;
   gap: var(--space-3);
-  padding: var(--space-5);
+  padding: var(--space-4) var(--space-5);
   border-bottom: 1px solid var(--color-border-subtle);
 }
 .shortcuts-dialog__icon {
@@ -344,12 +380,17 @@
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
 }
+/* Two columns of groups when there is room; a group never splits across them. */
 .shortcuts-dialog__groups {
-  display: grid;
-  gap: var(--space-4);
-  padding: var(--space-4) var(--space-5) var(--space-5);
+  padding: var(--space-4) var(--space-5) 0;
+  column-gap: var(--space-6);
+  columns: 2 300px;
 }
-.shortcuts-dialog__group h3 {
+.shortcuts-dialog__group {
+  padding-bottom: var(--space-3);
+  break-inside: avoid;
+}
+.shortcuts-dialog h3 {
   margin-bottom: var(--space-1);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
@@ -357,7 +398,8 @@
   text-transform: uppercase;
   color: var(--color-text-muted);
 }
-.shortcuts-dialog__group dl {
+.shortcuts-dialog dl,
+.shortcuts-dialog dd {
   margin: 0;
 }
 .shortcuts-dialog__row {
@@ -365,7 +407,7 @@
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--space-3);
-  min-height: 32px;
+  min-height: 28px;
   font-size: var(--font-size-sm);
 }
 .shortcuts-dialog__row dt {
@@ -377,12 +419,35 @@
   color: var(--color-text-muted);
 }
 .shortcuts-dialog__keys,
-.shortcuts-dialog__key {
+.shortcuts-dialog__combo {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
 }
 .shortcuts-dialog__keys {
-  margin: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   color: var(--color-text-muted);
+}
+.shortcuts-dialog__or {
+  padding: 0 2px;
+  font-size: var(--font-size-xs);
+}
+
+.shortcuts-dialog__pointer {
+  padding: var(--space-3) var(--space-5) var(--space-5);
+  border-top: 1px solid var(--color-border-subtle);
+}
+.shortcuts-dialog__pointer dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--space-2) var(--space-6);
+  margin-top: var(--space-2);
+}
+.shortcuts-dialog__way {
+  font-size: var(--font-size-sm);
+}
+.shortcuts-dialog__way dd {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
 }

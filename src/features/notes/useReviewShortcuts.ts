@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
 import { isEditableTarget } from '@/lib/util';
+import { matches } from '../commands/keys';
+import { openShortcutsDialog } from '../navigation/ShortcutsDialog';
 import { focusAdjacentNote } from './reviewFocus';
 
 interface ReviewShortcuts {
@@ -7,23 +9,34 @@ interface ReviewShortcuts {
   onFocusSearch(): void;
 }
 
+/** In order of precedence: `/` is the filter here even on layouts that type it with Shift. */
+const REVIEW_SHORTCUTS = ['close-review', 'next-note', 'previous-note', 'filter-notes', 'help'] as const;
+
 /** Keyboard shortcuts for the review (the reader's own shortcuts are not mounted here). */
 export function useReviewShortcuts({ onExit, onFocusSearch }: ReviewShortcuts): void {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || event.isComposing || event.ctrlKey || event.metaKey || event.altKey)
-        return;
-      if (isEditableTarget(event.target)) return;
-
-      if (event.key === 'Escape' || (event.shiftKey && event.key.toLowerCase() === 'r')) {
-        event.preventDefault();
-        onExit();
-      } else if (event.key === 'j' || event.key === 'k') {
-        event.preventDefault();
-        focusAdjacentNote(event.key === 'j' ? 1 : -1);
-      } else if (event.key === '/') {
-        event.preventDefault();
-        onFocusSearch();
+      if (event.defaultPrevented || event.isComposing || isEditableTarget(event.target)) return;
+      if (document.querySelector('dialog:modal')) return;
+      const action = REVIEW_SHORTCUTS.find((id) => matches(event, id));
+      if (!action) return;
+      event.preventDefault();
+      switch (action) {
+        case 'close-review':
+          onExit();
+          break;
+        case 'next-note':
+          focusAdjacentNote(1);
+          break;
+        case 'previous-note':
+          focusAdjacentNote(-1);
+          break;
+        case 'filter-notes':
+          onFocusSearch();
+          break;
+        case 'help':
+          openShortcutsDialog();
+          break;
       }
     };
     window.addEventListener('keydown', onKeyDown);

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Focus } from 'lucide-react';
+import { keyLabel } from '../commands/keys';
 
 const HINT_MS = 5000;
 /** Outlasts the fade-out transition in focus.css. */
@@ -31,7 +32,8 @@ export function FocusHint() {
         ·
       </span>
       <span>
-        <kbd className="kbd">F</kbd> or <kbd className="kbd">Esc</kbd> to leave
+        <kbd className="kbd">{keyLabel('focus')}</kbd> or <kbd className="kbd">{keyLabel('dismiss')}</kbd> to
+        leave
       </span>
     </div>
   );

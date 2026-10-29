@@ -18,6 +18,21 @@ function contentsAt(outline: OutlineItem[], page: number) {
 
 afterEach(() => useReaderStore.setState({ outline: [], location: { page: 1, offset: 0 } }));
 
+describe('action hints', () => {
+  it('come from the shortcut registry', () => {
+    const hints = Object.fromEntries(buildCandidates().map((entry) => [entry.id, entry.hint]));
+    expect(hints).toMatchObject({
+      bookmark: 'B',
+      search: 'Ctrl+F',
+      review: 'Shift+R',
+      'zoom-out': '−',
+      fit: '0',
+      shortcuts: '?',
+    });
+    expect(hints.map).toBeUndefined();
+  });
+});
+
 describe('contents candidates', () => {
   it('suggests chapters and marks the current one, looking through a root entry', () => {
     const outline = [

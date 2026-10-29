@@ -1,5 +1,6 @@
 import { useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { BookOpen, Bookmark, FileText, Highlighter, NotebookPen, Search, Sparkles, X } from 'lucide-react';
+import { ariaKeyShortcuts, keyLabel } from '@/features/commands/keys';
 import { useHistoryStore } from '@/features/navigation/historyStore';
 import { formatPageRef } from '@/features/navigation/pageLabels';
 import { useReaderStore } from '@/features/reader/readerStore';
@@ -201,7 +202,7 @@ function PaletteContent({ dismiss }: { dismiss(): void }) {
         <input
           role="combobox"
           aria-label="Go to page, chapter, bookmark or note"
-          aria-keyshortcuts="G"
+          aria-keyshortcuts={ariaKeyShortcuts('go-to')}
           aria-autocomplete="list"
           aria-expanded="true"
           aria-controls="go-to-list"
@@ -279,7 +280,7 @@ function PaletteContent({ dismiss }: { dismiss(): void }) {
       </div>
       <footer className="go-to__footer">
         <span>
-          <kbd>G</kbd> opens Go to from anywhere in the book
+          <kbd>{keyLabel('go-to')}</kbd> opens Go to from anywhere in the book
         </span>
         <span>↑↓ move · Enter open · Esc close</span>
       </footer>

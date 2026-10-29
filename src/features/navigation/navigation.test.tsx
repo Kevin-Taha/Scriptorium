@@ -1,8 +1,7 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useReaderStore } from '../reader/readerStore';
-import { BookmarkRibbon } from './BookmarkRibbon';
-import { BookmarkToggle } from './BookmarkToggle';
+import { BookmarkRibbon, useRibbonReveal } from './BookmarkRibbon';
 import { BookmarksPanel } from './BookmarksPanel';
 import { useBookmarksStore } from './bookmarksStore';
 import { HistoryButtons } from './HistoryButtons';
@@ -209,24 +208,53 @@ describe('printed labels in navigation', () => {
   });
 });
 
-describe('bookmark indicator', () => {
-  it('reflects the current page in the toolbar and renders an accessible-hidden ribbon', () => {
+describe('bookmark ribbon', () => {
+  it('bookmarks and unbookmarks its own page, labelled by the printed page number', () => {
+    useReaderStore.setState({ pageLabels: ['i', 'ii', 'iii'] });
     useBookmarksStore.setState({ docId: 'd', bookmarks: [], loaded: true });
-    const { container } = render(
-      <>
-        <BookmarkToggle />
-        <BookmarkRibbon page={1} />
-      </>,
-    );
-    const button = screen.getByRole('button', { name: 'Bookmark page (B)' });
+    const { container } = render(<BookmarkRibbon page={2} />);
+    const button = screen.getByRole('button', { name: 'Bookmark page ii' });
     expect(button.getAttribute('aria-pressed')).toBe('false');
+    expect(button.getAttribute('aria-keyshortcuts')).toBe('B');
+    expect(button.getAttribute('data-tooltip')).toBe('Bookmark this page (B)');
+    expect(button.tabIndex).toBe(-1);
     expect(container.querySelector('.page-sheet__ribbon')).toBeNull();
     fireEvent.click(button);
+    expect(useBookmarksStore.getState().bookmarks.map((b) => b.page)).toEqual([2]);
     expect(button.getAttribute('aria-pressed')).toBe('true');
+    expect(button.getAttribute('data-tooltip')).toBe('Remove bookmark (B)');
     expect(container.querySelector('.page-sheet__ribbon')?.getAttribute('aria-hidden')).toBe('true');
     fireEvent.click(button);
+    expect(useBookmarksStore.getState().bookmarks).toEqual([]);
     expect(button.getAttribute('aria-pressed')).toBe('false');
     expect(container.querySelector('.page-sheet__ribbon')).toBeNull();
+  });
+
+  it('reveals the ghost ribbon only near the top-right corner, with no button held', () => {
+    function Host() {
+      useRibbonReveal();
+      return (
+        <div className="page-sheet">
+          <span className="text" />
+        </div>
+      );
+    }
+    const { container } = render(<Host />);
+    const sheet = container.querySelector('.page-sheet')!;
+    sheet.getBoundingClientRect = () => ({ top: 0, right: 700, bottom: 800, left: 100 }) as DOMRect;
+    const move = (clientX: number, clientY: number, buttons = 0) =>
+      fireEvent.pointerMove(sheet.firstChild!, { clientX, clientY, buttons });
+    move(650, 30);
+    expect(sheet.hasAttribute('data-ribbon-reveal')).toBe(true);
+    move(400, 30);
+    expect(sheet.hasAttribute('data-ribbon-reveal')).toBe(false);
+    move(650, 400);
+    expect(sheet.hasAttribute('data-ribbon-reveal')).toBe(false);
+    move(650, 30, 1);
+    expect(sheet.hasAttribute('data-ribbon-reveal')).toBe(false);
+    move(650, 30);
+    fireEvent.scroll(document);
+    expect(sheet.hasAttribute('data-ribbon-reveal')).toBe(false);
   });
 });
 

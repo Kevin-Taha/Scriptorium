@@ -2,6 +2,8 @@ import { useEffect } from 'react';
 import { navigate } from '@/app/router';
 import { useSettingsStore } from '@/app/settingsStore';
 import { isEditableTarget } from '@/lib/util';
+import type { CommandId } from '../commands/commands';
+import { type KeyEvent, matches } from '../commands/keys';
 import { exitFocusMode, toggleFocusMode, useFocusStore } from '../focus/focusStore';
 import { useNotesStore } from '../notes/notesStore';
 import { addNoteFromSelection } from '../notes/selectionNote';
@@ -12,57 +14,28 @@ import { useBookmarksStore } from './bookmarksStore';
 import { useHistoryStore } from './historyStore';
 import { openShortcutsDialog } from './ShortcutsDialog';
 
-export type ShortcutAction =
-  | 'bookmark'
-  | 'note'
-  | 'go-to'
-  | 'focus'
-  | 'ruler'
-  | 'sidebar'
-  | 'review'
-  | 'back'
-  | 'forward'
-  | 'zoom-in'
-  | 'zoom-out'
-  | 'fit-width'
-  | 'dismiss'
-  | 'help';
+/** The reader's single-key commands; search and highlighting have hooks of their own. */
+const READER_SHORTCUTS = [
+  'bookmark',
+  'note',
+  'go-to',
+  'focus',
+  'ruler',
+  'sidebar',
+  'review',
+  'back',
+  'forward',
+  'zoom-in',
+  'zoom-out',
+  'fit-width',
+  'dismiss',
+  'help',
+] as const satisfies readonly CommandId[];
 
-export function resolveShortcut(
-  event: Pick<KeyboardEvent, 'key' | 'ctrlKey' | 'metaKey' | 'altKey' | 'shiftKey'>,
-): ShortcutAction | null {
-  const { key, ctrlKey, metaKey, altKey, shiftKey } = event;
-  if (ctrlKey || metaKey) return null;
-  if (altKey) {
-    if (shiftKey) return null;
-    if (key === 'ArrowLeft') return 'back';
-    if (key === 'ArrowRight') return 'forward';
-    return null;
-  }
-  if (key === 'Escape' && !shiftKey) return 'dismiss';
-  if (key === '+' || (key === '=' && !shiftKey)) return 'zoom-in';
-  if (key === '?' || (key === '/' && shiftKey)) return 'help';
-  if (shiftKey) return key.toLowerCase() === 'r' ? 'review' : null;
-  switch (key.toLowerCase()) {
-    case 'b':
-      return 'bookmark';
-    case 'n':
-      return 'note';
-    case 'g':
-      return 'go-to';
-    case 'f':
-      return 'focus';
-    case 'r':
-      return 'ruler';
-    case '[':
-      return 'sidebar';
-    case '-':
-      return 'zoom-out';
-    case '0':
-      return 'fit-width';
-    default:
-      return null;
-  }
+export type ShortcutAction = (typeof READER_SHORTCUTS)[number];
+
+export function resolveShortcut(event: KeyEvent): ShortcutAction | null {
+  return READER_SHORTCUTS.find((id) => matches(event, id)) ?? null;
 }
 
 export function useKeyboardShortcuts(): void {

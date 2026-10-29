@@ -1,5 +1,7 @@
 import { navigate } from '@/app/router';
 import { useSettingsStore } from '@/app/settingsStore';
+import type { CommandId } from '@/features/commands/commands';
+import { keyLabel } from '@/features/commands/keys';
 import { toggleFocusMode, useFocusStore } from '@/features/focus/focusStore';
 import { useBookmarksStore } from '@/features/navigation/bookmarksStore';
 import { useHistoryStore } from '@/features/navigation/historyStore';
@@ -89,8 +91,8 @@ export function buildCandidates(): Candidate[] {
     });
   }
 
-  const action = (id: string, title: string, run: () => void, hint?: string, suggested = false) =>
-    add({ id, group: 'Actions', title, icon: 'action', run, hint, suggested });
+  const action = (id: string, title: string, run: () => void, command?: CommandId, suggested = false) =>
+    add({ id, group: 'Actions', title, icon: 'action', run, hint: command && keyLabel(command), suggested });
   const marked = bookmarks.some((bookmark) => bookmark.page === reader.location.page);
   action(
     'bookmark',
@@ -98,7 +100,7 @@ export function buildCandidates(): Candidate[] {
     () => {
       useBookmarksStore.getState().toggle(useReaderStore.getState().location.page);
     },
-    'B',
+    'bookmark',
     true,
   );
   action(
@@ -113,24 +115,24 @@ export function buildCandidates(): Candidate[] {
         store.addNote({ page: center.page, y: center.offset });
       }
     },
-    'N',
+    'note',
     true,
   );
   action(
     'focus',
     useFocusStore.getState().active ? 'Exit focus mode' : 'Enter focus mode',
     toggleFocusMode,
-    'F',
+    'focus',
     true,
   );
   action(
     'ruler',
     settings.readingRuler ? 'Hide reading ruler' : 'Show reading ruler',
     () => useSettingsStore.getState().toggle('readingRuler'),
-    'R',
+    'ruler',
     true,
   );
-  action('search', 'Search the book', () => openBookSearch(), 'Ctrl+F', true);
+  action('search', 'Search the book', () => openBookSearch(), 'search', true);
   action(
     'review',
     'Review notes',
@@ -138,7 +140,7 @@ export function buildCandidates(): Candidate[] {
       const docId = useReaderStore.getState().docId;
       if (docId) navigate({ name: 'review', docId });
     },
-    'Shift+R',
+    'review',
     true,
   );
   action('map', settings.bookMap ? 'Hide book map' : 'Show book map', () =>
@@ -151,11 +153,11 @@ export function buildCandidates(): Candidate[] {
     'sidebar',
     reader.sidebarOpen ? 'Hide sidebar' : 'Show sidebar',
     () => useReaderStore.getState().toggleSidebar(),
-    '[',
+    'sidebar',
   );
-  action('zoom-in', 'Zoom in', zoomIn, '+');
-  action('zoom-out', 'Zoom out', zoomOut, '−');
-  action('fit', 'Fit width', () => setZoomMode('fit-width'), '0');
+  action('zoom-in', 'Zoom in', zoomIn, 'zoom-in');
+  action('zoom-out', 'Zoom out', zoomOut, 'zoom-out');
+  action('fit', 'Fit width', () => setZoomMode('fit-width'), 'fit-width');
   action('light', 'Theme: Light', () => useSettingsStore.getState().setTheme('light'));
   action('sepia', 'Theme: Sepia', () => useSettingsStore.getState().setTheme('sepia'));
   action('dark', 'Theme: Dark', () => useSettingsStore.getState().setTheme('dark'));
@@ -163,12 +165,12 @@ export function buildCandidates(): Candidate[] {
     action('invert', settings.invertPagesInDark ? 'Restore page colours' : 'Invert page colours', () =>
       useSettingsStore.getState().toggle('invertPagesInDark'),
     );
-  action('shortcuts', 'Keyboard shortcuts', openShortcutsDialog, '?');
+  action('shortcuts', 'Keyboard shortcuts', openShortcutsDialog, 'help');
   action('storage', 'Library & storage', () => openLibraryStorageDialog());
   action('library', 'Back to library', () => navigate({ name: 'library' }));
   if (useHistoryStore.getState().back.length)
-    action('back', 'Go back', () => useHistoryStore.getState().goBack(), 'Alt+←');
+    action('back', 'Go back', () => useHistoryStore.getState().goBack(), 'back');
   if (useHistoryStore.getState().forward.length)
-    action('forward', 'Go forward', () => useHistoryStore.getState().goForward(), 'Alt+→');
+    action('forward', 'Go forward', () => useHistoryStore.getState().goForward(), 'forward');
   return items;
 }

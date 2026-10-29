@@ -1,5 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Coffee, HardDrive, Moon, Palette, Sun } from 'lucide-react';
+import type { CommandId } from '@/features/commands/commands';
+import { ariaKeyShortcuts, keyLabel } from '@/features/commands/keys';
 import { openLibraryStorageDialog } from '@/features/settings/storageDialogStore';
 import type { Theme } from '@/lib/types';
 import { type SettingSwitch, useSettingsStore } from './settingsStore';
@@ -10,8 +12,8 @@ const THEMES: { id: Theme; label: string; Icon: typeof Sun }[] = [
   { id: 'dark', label: 'Dark', Icon: Moon },
 ];
 
-const READING_SWITCHES: { key: SettingSwitch; label: string; detail: string; shortcut?: string }[] = [
-  { key: 'readingRuler', label: 'Reading ruler', detail: 'Keeps your place on the line', shortcut: 'R' },
+const READING_SWITCHES: { key: SettingSwitch; label: string; detail: string; command?: CommandId }[] = [
+  { key: 'readingRuler', label: 'Reading ruler', detail: 'Keeps your place on the line', command: 'ruler' },
   { key: 'bookMap', label: 'Book map', detail: 'The whole book along the right edge' },
   {
     key: 'chapterProgress',
@@ -99,14 +101,14 @@ export function AppearanceMenu() {
           </label>
           <hr className="divider appearance-menu__divider" />
           <div className="appearance-menu__label">Reading</div>
-          {READING_SWITCHES.map(({ key, label, detail, shortcut }) => (
+          {READING_SWITCHES.map(({ key, label, detail, command }) => (
             <label className="appearance-menu__switch" key={key}>
               <span>
                 {label}
-                {shortcut && (
+                {command && (
                   // biome-ignore lint/a11y/noAriaHiddenOnFocusable: <kbd> is not focusable; the shortcut is in the shortcuts dialog
                   <kbd className="kbd appearance-menu__kbd" aria-hidden="true">
-                    {shortcut}
+                    {keyLabel(command)}
                   </kbd>
                 )}
                 <small>{detail}</small>
@@ -116,6 +118,7 @@ export function AppearanceMenu() {
                 // biome-ignore lint/a11y/useAriaPropsForRole: the native checkbox already exposes its checked state
                 role="switch"
                 checked={settings[key]}
+                aria-keyshortcuts={command && ariaKeyShortcuts(command)}
                 onChange={(e) => settings.setSwitch(key, e.target.checked)}
               />
             </label>

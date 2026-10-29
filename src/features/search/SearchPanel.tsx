@@ -10,6 +10,7 @@ import {
 } from 'react';
 import { CaseSensitive, ChevronDown, ChevronUp, Search, SearchX, WholeWord, X } from 'lucide-react';
 import { sectionForPage } from '@/lib/pdf/outline';
+import { keyCaps, withShortcut } from '../commands/keys';
 import { useReaderStore } from '../reader/readerStore';
 import type { Snippet } from './matcher';
 import { focusViewport, SEARCH_INPUT_ID } from './searchDom';
@@ -216,7 +217,7 @@ function SearchSummary({ onPrev, onNext }: { onPrev(): void; onNext(): void }) {
             type="button"
             className="btn btn--ghost btn--icon btn--sm"
             aria-label="Previous result"
-            title="Previous result (Shift+Enter)"
+            title={withShortcut('Previous result', 'previous-result')}
             disabled={hitCount === 0}
             onClick={onPrev}
           >
@@ -226,7 +227,7 @@ function SearchSummary({ onPrev, onNext }: { onPrev(): void; onNext(): void }) {
             type="button"
             className="btn btn--ghost btn--icon btn--sm"
             aria-label="Next result"
-            title="Next result (Enter)"
+            title={withShortcut('Next result', 'next-result')}
             disabled={hitCount === 0}
             onClick={onNext}
           >
@@ -434,7 +435,6 @@ const ResultRow = memo(function ResultRow({
 });
 
 function SearchHint() {
-  const modifier = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl';
   return (
     <div className="empty-state search__empty">
       <span className="empty-state__icon">
@@ -445,28 +445,28 @@ function SearchHint() {
         Find a word or phrase on any page. Results stay here while you read, and Return takes you back.
       </p>
       <ul className="search__keys">
-        <li>
-          <span>Search</span>
-          <span className="search__caps">
-            <kbd className="kbd">{modifier}</kbd>
-            <kbd className="kbd">F</kbd>
-          </span>
-        </li>
-        <li>
-          <span>Next result</span>
-          <kbd className="kbd">Enter</kbd>
-        </li>
-        <li>
-          <span>Previous result</span>
-          <span className="search__caps">
-            <kbd className="kbd">Shift</kbd>
-            <kbd className="kbd">Enter</kbd>
-          </span>
-        </li>
+        {HINT_KEYS.map(([label, id]) => (
+          <li key={id}>
+            <span>{label}</span>
+            <span className="search__caps">
+              {keyCaps(id)[0].map((cap) => (
+                <kbd className="kbd" key={cap.text}>
+                  {cap.text}
+                </kbd>
+              ))}
+            </span>
+          </li>
+        ))}
       </ul>
     </div>
   );
 }
+
+const HINT_KEYS = [
+  ['Search', 'search'],
+  ['Next result', 'next-result'],
+  ['Previous result', 'previous-result'],
+] as const;
 
 function NoResultsHelp() {
   const strict = useSearchStore((s) => s.options.matchCase || s.options.wholeWord);

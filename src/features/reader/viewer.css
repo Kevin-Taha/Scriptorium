@@ -81,7 +81,8 @@
 
 /* Deliberately no z-index: the overlay then paints with the canvas (beneath the text layer, so
    selections show over highlights) and does not isolate its children, which lets highlights
-   multiply with the page. Its content never takes pointer events. */
+   multiply with the page. Its content takes no pointer events; the one exception, the bookmark
+   ribbon, opts back in and stacks itself above the text layer (navigation.css). */
 .page-sheet__overlay {
   position: absolute;
   inset: 0;

@@ -6,10 +6,11 @@ import {
   useRef,
   useState,
 } from 'react';
+import { ariaKeyShortcuts, matches } from '../commands/keys';
 import { noteContent, readNoteContent } from './noteContent';
 import './notes.css';
 
-const FORMAT_KEYS: Partial<Record<string, 'bold' | 'italic'>> = { b: 'bold', i: 'italic' };
+const FORMAT_KEYS = `${ariaKeyShortcuts('bold')} ${ariaKeyShortcuts('italic')}`;
 
 interface NoteTextFieldProps {
   /** Text to start from. The field owns its content from then on. */
@@ -91,7 +92,7 @@ export function NoteTextField({ text, label, className, onChange, onCommit }: No
       onCommit();
       return;
     }
-    const format = mod && !event.altKey && !event.shiftKey ? FORMAT_KEYS[event.key.toLowerCase()] : undefined;
+    const format = matches(event, 'bold') ? 'bold' : matches(event, 'italic') ? 'italic' : undefined;
     if (format) {
       event.preventDefault();
       document.execCommand(format);
@@ -127,7 +128,7 @@ export function NoteTextField({ text, label, className, onChange, onCommit }: No
       aria-multiline="true"
       aria-label={label}
       aria-placeholder="Write a note…"
-      aria-keyshortcuts="Control+B Meta+B Control+I Meta+I"
+      aria-keyshortcuts={FORMAT_KEYS}
       data-empty={empty || undefined}
       spellCheck
       onInput={sync}

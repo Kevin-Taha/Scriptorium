@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Highlighter, MessageSquarePlus } from 'lucide-react';
 import { NOTE_COLORS } from '@/lib/types';
+import { ariaKeyShortcuts, keyLabel, withShortcut } from '../commands/keys';
 import { useFloatingPosition, type FloatingAnchor } from './floatingPosition';
 import { highlightSelection } from './highlightActions';
 import { HighlightPopover } from './HighlightPopover';
@@ -106,9 +107,13 @@ function SelectionToolbar() {
             type="button"
             className={`selection-popover__swatch tooltip${color === lastColor ? ' is-last' : ''}`}
             data-note-color={color}
-            data-tooltip={`Highlight ${NOTE_COLOR_LABELS[color].toLowerCase()}`}
+            data-tooltip={
+              color === lastColor
+                ? withShortcut(`Highlight ${NOTE_COLOR_LABELS[color].toLowerCase()}`, 'highlight')
+                : `Highlight ${NOTE_COLOR_LABELS[color].toLowerCase()}`
+            }
             aria-label={`Highlight ${NOTE_COLOR_LABELS[color]}`}
-            aria-keyshortcuts={color === lastColor ? 'H' : undefined}
+            aria-keyshortcuts={color === lastColor ? ariaKeyShortcuts('highlight') : undefined}
             // Pressing a button must not clear the text selection it is about to use.
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => {
@@ -119,13 +124,14 @@ function SelectionToolbar() {
         ))}
         {/* biome-ignore lint/a11y/noAriaHiddenOnFocusable: <kbd> is not focusable; the hint is redundant for screen readers */}
         <kbd className="kbd" aria-hidden="true">
-          H
+          {keyLabel('highlight')}
         </kbd>
       </div>
       <span className="selection-popover__divider" aria-hidden="true" />
       <button
         type="button"
         className="selection-popover__action"
+        aria-keyshortcuts={ariaKeyShortcuts('note')}
         onMouseDown={(e) => e.preventDefault()}
         onClick={() => {
           addNoteFromSelection();
@@ -134,7 +140,7 @@ function SelectionToolbar() {
       >
         <MessageSquarePlus aria-hidden="true" />
         Add margin note
-        <kbd className="kbd">N</kbd>
+        <kbd className="kbd">{keyLabel('note')}</kbd>
       </button>
     </div>
   );

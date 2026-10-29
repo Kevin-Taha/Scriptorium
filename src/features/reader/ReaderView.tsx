@@ -5,19 +5,19 @@ import { navigate } from '@/app/router';
 import { usePagesInverted, useSettingsStore } from '@/app/settingsStore';
 import { sectionForPage } from '@/lib/pdf/outline';
 import { BookMap } from '../bookmap/BookMap';
+import { ariaKeyShortcuts, keyLabel, withShortcut } from '../commands/keys';
 import { FocusMode } from '../focus/FocusMode';
 import { FocusModeButton } from '../focus/FocusModeButton';
 import { ReadingRuler } from '../focus/ReadingRuler';
-import { BookmarkRibbon } from '../navigation/BookmarkRibbon';
+import { BookmarkRibbon, useRibbonReveal } from '../navigation/BookmarkRibbon';
 import { BookmarksPanel } from '../navigation/BookmarksPanel';
-import { BookmarkToggle } from '../navigation/BookmarkToggle';
 import { ChapterProgress } from '../navigation/ChapterProgress';
 import { HistoryButtons } from '../navigation/HistoryButtons';
 import { useHistoryStore } from '../navigation/historyStore';
 import { OutlinePanel } from '../navigation/OutlinePanel';
 import { PageIndicator } from '../navigation/PageIndicator';
 import { ReturnPill } from '../navigation/ReturnPill';
-import { openShortcutsDialog, ShortcutsDialog } from '../navigation/ShortcutsDialog';
+import { openShortcutsDialog, ShortcutsButton } from '../navigation/ShortcutsDialog';
 import { useKeyboardShortcuts } from '../navigation/useKeyboardShortcuts';
 import { MarginColumn } from '../notes/MarginColumn';
 import { NotesPanel } from '../notes/NotesPanel';
@@ -55,6 +55,7 @@ export function ReaderView() {
   const readingRuler = useSettingsStore((s) => s.readingRuler);
   useKeyboardShortcuts();
   useSearchShortcut();
+  useRibbonReveal();
 
   return (
     <div className={`reader${inverted ? ' invert-pages' : ''}`} data-sidebar-open={sidebarOpen}>
@@ -77,7 +78,6 @@ export function ReaderView() {
       </div>
       <FocusMode />
       <GoToPalette />
-      <ShortcutsDialog />
     </div>
   );
 }
@@ -106,8 +106,9 @@ function ReaderToolbar() {
         <button
           type="button"
           className="btn btn--ghost btn--icon tooltip tooltip--below"
-          data-tooltip="Sidebar ( [ )"
+          data-tooltip={withShortcut('Sidebar', 'sidebar')}
           aria-label="Toggle sidebar"
+          aria-keyshortcuts={ariaKeyShortcuts('sidebar')}
           aria-pressed={sidebarOpen}
           onClick={toggleSidebar}
         >
@@ -127,9 +128,9 @@ function ReaderToolbar() {
               <button
                 type="button"
                 className="reader__section tooltip tooltip--below"
-                data-tooltip="Go to… (G)"
+                data-tooltip={withShortcut('Go to…', 'go-to')}
                 aria-label={`${section}. Go to a page, chapter or note`}
-                aria-keyshortcuts="G"
+                aria-keyshortcuts={ariaKeyShortcuts('go-to')}
                 onClick={() => openGoTo()}
               >
                 <span>{section}</span>
@@ -144,14 +145,15 @@ function ReaderToolbar() {
         <span className="divider divider--vertical" aria-hidden="true" />
         <ZoomControls />
         <span className="divider divider--vertical" aria-hidden="true" />
-        <BookmarkToggle />
+        <ShortcutsButton />
         <FocusModeButton />
         <AppearanceMenu />
         <button
           type="button"
           className="btn btn--sm reader__review-btn tooltip tooltip--below"
-          data-tooltip="Review all notes (Shift+R)"
+          data-tooltip={withShortcut('Review all notes', 'review')}
           aria-label={`Review notes (${noteCount})`}
+          aria-keyshortcuts={ariaKeyShortcuts('review')}
           onClick={() => docId && navigate({ name: 'review', docId })}
         >
           <NotebookText />
@@ -214,8 +216,9 @@ function ReaderSidebar() {
             className={`segmented__item${t.Icon ? ' sidebar__tab--icon' : ''}`}
             aria-selected={tab === t.id}
             aria-controls="sidebar-panel"
-            aria-label={t.Icon ? `${t.label} (Ctrl+F)` : undefined}
-            title={t.Icon ? `${t.label} (Ctrl+F)` : undefined}
+            aria-label={t.Icon ? withShortcut(t.label, 'search', { spoken: true }) : undefined}
+            aria-keyshortcuts={t.Icon ? ariaKeyShortcuts('search') : undefined}
+            title={t.Icon ? withShortcut(t.label, 'search') : undefined}
             tabIndex={tab === t.id ? 0 : -1}
             onClick={() => setTab(t.id)}
           >
@@ -238,15 +241,16 @@ function ReaderSidebar() {
         <button
           type="button"
           className="btn btn--ghost sidebar__shortcuts tooltip"
-          data-tooltip="Keyboard shortcuts (?)"
+          data-tooltip={withShortcut('Keyboard shortcuts', 'help')}
           aria-label="Keyboard shortcuts"
+          aria-keyshortcuts={ariaKeyShortcuts('help')}
           onClick={openShortcutsDialog}
         >
           <Keyboard aria-hidden="true" />
           <span>Keyboard shortcuts</span>
           {/* biome-ignore lint/a11y/noAriaHiddenOnFocusable: <kbd> is not focusable; the hint is redundant for screen readers */}
           <kbd className="kbd" aria-hidden="true">
-            ?
+            {keyLabel('help')}
           </kbd>
         </button>
       </div>

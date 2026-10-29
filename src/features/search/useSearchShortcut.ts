@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { isEditableTarget } from '@/lib/util';
+import { type KeyEvent, matches } from '../commands/keys';
 import { useReaderStore } from '../reader/readerStore';
 import { focusSearchInput, SEARCH_INPUT_ID } from './searchDom';
 import { useSearchStore } from './searchStore';
@@ -8,22 +9,15 @@ type SearchShortcut = 'open' | 'next' | 'prev';
 
 /** Maps a key press to a search action, or null. `typing` is true while focus is in a text field. */
 export function resolveSearchShortcut(
-  event: Pick<KeyboardEvent, 'key' | 'ctrlKey' | 'metaKey' | 'altKey' | 'shiftKey'>,
+  event: KeyEvent,
   context: { typing: boolean; inSearchField: boolean; hasQuery: boolean },
 ): SearchShortcut | null {
-  const { key, ctrlKey, metaKey, altKey, shiftKey } = event;
-  if (altKey) return null;
-  const modifier = ctrlKey || metaKey;
-  const letter = key.toLowerCase();
-
-  if (modifier && letter === 'f') return 'open';
+  // Ctrl/⌘+F works from any field; `/` would type itself there.
+  if (matches(event, 'search') && (!context.typing || event.ctrlKey || event.metaKey)) return 'open';
   if (context.typing && !context.inSearchField) return null;
-
-  if (context.hasQuery) {
-    if (key === 'F3' && !modifier) return shiftKey ? 'prev' : 'next';
-    if (modifier && letter === 'g') return shiftKey ? 'prev' : 'next';
-  }
-  if (key === '/' && !modifier && !shiftKey && !context.typing) return 'open';
+  if (!context.hasQuery) return null;
+  if (matches(event, 'next-result')) return 'next';
+  if (matches(event, 'previous-result')) return 'prev';
   return null;
 }
 
