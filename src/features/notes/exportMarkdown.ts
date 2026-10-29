@@ -3,6 +3,7 @@ import type { Highlight, MarginNote, OutlineItem } from '@/lib/types';
 import { pageLabelFor } from '../navigation/pageLabels';
 import { buildAnnotations, groupAnnotationsByPage, type AnnotationItem } from './annotations';
 import { NOTE_COLOR_LABELS } from './noteColors';
+import { markdownNoteText } from './noteFormat';
 
 export interface MarkdownExportInput {
   title: string;
@@ -64,11 +65,11 @@ export function escapeMarkdownInline(text: string): string {
 const BLOCK_MARKER = /^( {0,3})(#{1,6}(?=\s|$)|[-*_=]{3,}\s*$)/;
 
 /**
- * Keeps note text from creating headings or rules of its own, which would break
- * the page structure of the exported document.
+ * Note text as Markdown, kept from creating headings or rules of its own, which would
+ * break the page structure of the exported document.
  */
-function neutralizeBlockMarkers(text: string): string {
-  return text
+function noteMarkdown(text: string): string {
+  return markdownNoteText(text)
     .split('\n')
     .map((line) => line.replace(BLOCK_MARKER, '$1\\$2'))
     .join('\n');
@@ -94,7 +95,7 @@ function renderNote(note: MarginNote): string {
   const parts: string[] = [];
   if (note.quote?.trim()) parts.push(toBlockquote(note.quote));
   const text = normalizeLineEndings(note.text).trim();
-  if (text) parts.push(neutralizeBlockMarkers(text));
+  if (text) parts.push(noteMarkdown(text));
   return parts.join('\n\n');
 }
 
@@ -109,9 +110,7 @@ function renderItem(item: AnnotationItem): string {
   if (!item.highlight) return renderNote(item.note);
   // The note's own quote is the highlight's text: show the passage once, then the note under it.
   const text = normalizeLineEndings(item.note.text).trim();
-  return [renderHighlight(item.highlight), text ? neutralizeBlockMarkers(text) : '']
-    .filter(Boolean)
-    .join('\n\n');
+  return [renderHighlight(item.highlight), text ? noteMarkdown(text) : ''].filter(Boolean).join('\n\n');
 }
 
 /**

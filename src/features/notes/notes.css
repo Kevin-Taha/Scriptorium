@@ -276,7 +276,6 @@
 }
 
 .margin-note__text,
-.margin-note__editor::after,
 .margin-note__input {
   overflow-wrap: break-word;
   white-space: pre-wrap;
@@ -376,41 +375,28 @@
 }
 
 /* ---- Editing ---------------------------------------------------------------------- */
-/* The textarea grows with its text: a hidden mirror of the value sizes the grid cell. */
-.margin-note__editor {
-  display: grid;
-  min-height: calc(var(--note-line) * 2);
+/* The editable text (`.note-field`, shared with the review): an element with the same
+   metrics as the text it replaces, growing with its content. Bold and italic inside it
+   use the same `b`/`i` weights as `strong`/`em` in the read-only text. */
+.note-field {
+  position: relative;
+  outline: none;
+  cursor: text;
 }
 
-.margin-note__editor::after,
-.margin-note__input {
-  grid-area: 1 / 1;
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-  font: inherit;
-  letter-spacing: inherit;
-  line-height: inherit;
-  border: 0;
-}
-
-.margin-note__editor::after {
-  content: attr(data-replicated);
-  visibility: hidden;
+.note-field[data-empty]::before {
+  content: attr(aria-placeholder) / '';
+  position: absolute;
+  top: 0;
+  left: 0;
   pointer-events: none;
 }
 
 .margin-note__input {
-  width: 100%;
-  overflow: hidden;
-  color: inherit;
-  background: transparent;
-  border-radius: 0;
-  outline: none;
-  resize: none;
+  min-height: calc(var(--note-line) * 2);
 }
 
-.margin-note__input::placeholder {
+.margin-note__input[data-empty]::before {
   color: color-mix(in srgb, var(--note-text) 80%, transparent);
 }
 

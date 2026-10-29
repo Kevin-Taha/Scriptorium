@@ -12,6 +12,7 @@ import { useHighlightUiStore } from './highlightUi';
 import { useHighlightsStore } from './highlightsStore';
 import { NOTE_COLOR_LABELS } from './noteColors';
 import { useNoteFocusStore } from './noteFocus';
+import { plainNoteText } from './noteFormat';
 import { useNotesStore } from './notesStore';
 import './notes.css';
 
@@ -123,7 +124,7 @@ function NotesPanelItem({ item }: { item: AnnotationItem }) {
   }
 
   const { note } = item;
-  const text = note.text.trim();
+  const text = plainNoteText(note.text).trim();
   const excerpt = text || note.quote;
   const modifier = text ? '' : note.quote ? ' notes-panel__excerpt--quote' : ' notes-panel__excerpt--empty';
 
