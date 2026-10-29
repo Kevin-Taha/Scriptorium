@@ -35,10 +35,13 @@ where you left off — days later.
   <kbd>R</kbd> adds a band that keeps your place on the line.
 - **Search the whole book.** <kbd>Ctrl</kbd>+<kbd>F</kbd> searches every page with results grouped
   by section, highlights on the page, and a single *Return* back to where you started.
-- **Bookmarks and contents.** Bookmark pages with <kbd>B</kbd>; labels default to the chapter
+- **Bookmarks and contents.** Click the ribbon at a page's top-right corner (or press <kbd>B</kbd>) to
+  bookmark it; labels default to the chapter
   they're in. The table of contents tracks the section you're reading.
 - **Real page numbers.** Printed page labels (roman-numeral front matter, offset numbering) are
   shown and accepted everywhere, so "p. 142" means the book's page 142.
+- **Start a book over.** *Reset progress…* in a book's menu in the library clears its reading
+  position, notes, highlights and bookmarks (on every device that shares its folder), keeping the book.
 - **Built for long books.** Virtualized rendering keeps 1,000-page textbooks fast and smooth.
 - **Easy on the eyes.** Light, sepia, and dark themes, with optional page inversion for night reading.
 - **Your library, on every device.** Link a folder of PDFs — on your computer, or inside OneDrive,
@@ -50,6 +53,9 @@ where you left off — days later.
   you choose. See [`docs/DATA.md`](docs/DATA.md).
 
 ## Keyboard shortcuts
+
+Press <kbd>?</kbd> anywhere (or the help button in the toolbar) to see every shortcut, and how to do
+each thing without the keyboard. The most used:
 
 | Shortcut | Action |
 | --- | --- |
