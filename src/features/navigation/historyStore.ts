@@ -16,6 +16,11 @@ interface HistoryState {
    * onto the back stack so the reader can return in one action.
    */
   jumpTo(target: ReadingLocation): void;
+  /**
+   * Records a jump that has already happened (e.g. a scrub along the book map) from
+   * `from` to the current place, without scrolling.
+   */
+  recordJump(from: ReadingLocation): void;
   goBack(): void;
   goForward(): void;
   dismissReturn(): void;
@@ -38,54 +43,60 @@ export function isSamePlace(a: ReadingLocation, b: ReadingLocation): boolean {
   return a.page === b.page && Math.abs(a.offset - b.offset) < 0.05;
 }
 
-export const useHistoryStore = create<HistoryState>()((set, get) => ({
-  back: [],
-  forward: [],
-  returnTarget: null,
-
-  jumpTo(target) {
-    const from = currentLocation();
-    if (isSamePlace(from, target)) {
-      scrollTo(target);
-      return;
-    }
+export const useHistoryStore = create<HistoryState>()((set, get) => {
+  /** Remembers `from` as the place a jump left, clearing the forward branch. */
+  const leave = (from: ReadingLocation) =>
     set((s) => ({
       back: [...s.back, from].slice(-MAX_HISTORY),
       forward: [],
       returnTarget: from,
     }));
-    scrollTo(target);
-  },
 
-  goBack() {
-    const { back } = get();
-    const target = back.at(-1);
-    if (!target) return;
-    const from = currentLocation();
-    set((s) => ({
-      back: s.back.slice(0, -1),
-      forward: [...s.forward, from].slice(-MAX_HISTORY),
-      returnTarget: null,
-    }));
-    scrollTo(target);
-  },
+  return {
+    back: [],
+    forward: [],
+    returnTarget: null,
 
-  goForward() {
-    const { forward } = get();
-    const target = forward.at(-1);
-    if (!target) return;
-    const from = currentLocation();
-    set((s) => ({
-      forward: s.forward.slice(0, -1),
-      back: [...s.back, from].slice(-MAX_HISTORY),
-      returnTarget: from,
-    }));
-    scrollTo(target);
-  },
+    jumpTo(target) {
+      const from = currentLocation();
+      if (!isSamePlace(from, target)) leave(from);
+      scrollTo(target);
+    },
 
-  dismissReturn: () => set({ returnTarget: null }),
-  reset: () => set({ back: [], forward: [], returnTarget: null }),
-}));
+    recordJump(from) {
+      if (!isSamePlace(from, currentLocation())) leave(from);
+    },
+
+    goBack() {
+      const { back } = get();
+      const target = back.at(-1);
+      if (!target) return;
+      const from = currentLocation();
+      set((s) => ({
+        back: s.back.slice(0, -1),
+        forward: [...s.forward, from].slice(-MAX_HISTORY),
+        returnTarget: null,
+      }));
+      scrollTo(target);
+    },
+
+    goForward() {
+      const { forward } = get();
+      const target = forward.at(-1);
+      if (!target) return;
+      const from = currentLocation();
+      set((s) => ({
+        forward: s.forward.slice(0, -1),
+        back: [...s.back, from].slice(-MAX_HISTORY),
+        returnTarget: from,
+      }));
+      scrollTo(target);
+    },
+
+    dismissReturn: () => set({ returnTarget: null }),
+    reset: () => set({ back: [], forward: [], returnTarget: null }),
+  };
+});
 
 useReaderStore.subscribe((state, prev) => {
   if (state.docId !== prev.docId) useHistoryStore.getState().reset();

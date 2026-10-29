@@ -68,8 +68,9 @@ export function ReaderView() {
             renderMargin={renderMargin}
             renderPageOverlay={renderPageOverlay}
           />
-          {bookMap && <BookMap />}
+          {/* Mounted after the ruler so the map (and its preview card) paint above the ruler's veil. */}
           {readingRuler && <ReadingRuler />}
+          {bookMap && <BookMap />}
           <ReturnPill />
           <SelectionNotePopover />
         </main>
