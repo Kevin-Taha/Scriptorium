@@ -128,7 +128,10 @@ Ctrl/Cmd+F for in-book search). Press `?` in the reader to see them all.
 | --- | --- |
 | `B` | Toggle bookmark on the current page |
 | `N` | Create a margin note at the middle of the visible part of the current page (quoting selected text, if any) |
-| `G` | Focus the go-to-page field (accepts printed page labels; `#N` for a PDF page number) |
+| `G` | Go to: a page (printed labels work; `#N` for a PDF page number), chapter, bookmark, note or action |
+| `F` | Focus mode (`Esc` also leaves) |
+| `R` | Reading ruler |
+| `Ctrl+B` / `Cmd+B`, `Ctrl+I` / `Cmd+I` | Bold / italic while writing a note |
 | `Ctrl+F` / `Cmd+F` or `/` | Search the book |
 | `Enter` / `Shift+Enter` (or `F3` / `Shift+F3`) | Next / previous search result |
 | `[` | Toggle the sidebar |
@@ -139,7 +142,7 @@ Ctrl/Cmd+F for in-book search). Press `?` in the reader to see them all.
 | `-` | Zoom out |
 | `0` | Fit page width |
 | `?` | Show keyboard shortcuts |
-| `Esc` | Close an open dialog or dismiss a transient reader control |
+| `Esc` | Leave focus mode, close an open dialog or dismiss a transient reader control |
 
 Browser zoom shortcuts are not repurposed.
 
@@ -154,17 +157,20 @@ builds on the dependable local reading and note-taking loop.
 - ✅ **Page labels:** show and navigate printed page labels, including Roman numerals and offsets, alongside PDF page numbers.
 - ✅ **Link peek:** preview a figure, equation, or reference in a popover without leaving the current page.
 - ✅ **Highlights:** add colored text highlights and link them to margin notes.
-- **Pinned reference pane:** keep a page, figure, or appendix visible beside the current reading location.
+- ✅ **Go to:** one box (<kbd>G</kbd>) for pages, chapters, bookmarks, notes and reader actions.
+- ✅ **Book map:** the whole book along the reader's edge — chapters, annotations, hover previews, snapping to notes and bookmarks.
+- **Pinned reference pane:** keep a page, figure, or appendix visible beside the current reading location ([#8](https://github.com/Kevin-Taha/Scriptorium/issues/8)).
 - **Narrow layouts:** collapse the margin column to a rail of note markers on small windows and tablets.
 - **Accessibility:** strengthen screen-reader semantics, focus management, contrast, and keyboard navigation throughout.
 
 ### M3 — Study and review
 
-- **Chapter progress:** show progress within outline sections as well as across the book.
-- **Reading insights:** offer optional reading statistics and time-left estimates.
-- **Focus mode:** reduce interface chrome while preserving essential navigation.
-- **Rich notes:** support Markdown and LaTeX in note content.
-- **Flashcards:** create spaced-repetition cards from notes for a later review session.
+- ✅ **Chapter progress:** show progress within outline sections as well as across the book (pages and percentages — no time estimates).
+- **Reading insights:** offer optional reading statistics.
+- ✅ **Focus mode:** reduce interface chrome while preserving essential navigation; with an optional reading ruler.
+- **Rich notes:** ✅ bold and italic (<kbd>Ctrl</kbd>+<kbd>B</kbd> / <kbd>Ctrl</kbd>+<kbd>I</kbd>); Markdown and LaTeX if readers need more.
+- **Flashcards:** create spaced-repetition cards from notes for a later review session ([#6](https://github.com/Kevin-Taha/Scriptorium/issues/6)).
+- **Read aloud:** listen with a high-quality, local voice while the current sentence is highlighted ([#7](https://github.com/Kevin-Taha/Scriptorium/issues/7)).
 - **Ink notes:** support handwriting and drawing with pen devices.
 - **Annotated PDF export:** export compatible notes and highlights into a copy of the PDF.
 

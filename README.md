@@ -10,7 +10,8 @@ where you left off — days later.
 
 - **Margin notes, per page.** Every page has a margin column. Click beside a passage to jot a
   note anchored at that spot, or select text and choose *Add margin note* to keep the quote.
-  Notes never overlap, come in five colours, and save as you type.
+  Notes never overlap, come in five colours, take <kbd>Ctrl</kbd>+<kbd>B</kbd> bold and
+  <kbd>Ctrl</kbd>+<kbd>I</kbd> italics, and save as you type.
 - **Highlights linked to notes.** Select text and pick a colour (or press <kbd>H</kbd>) to
   highlight it like a marker. Click a highlight to recolour it, delete it, or write a note
   that stays attached to the passage. Highlights appear in the review and the Markdown export.
@@ -23,6 +24,15 @@ where you left off — days later.
   (<kbd>Alt</kbd>+<kbd>←</kbd>/<kbd>→</kbd>) take you straight back.
 - **Peek at references.** Hover a link like *"see Figure 3.2"* to preview the figure in a card
   without leaving the page; jump there only if you want to.
+- **Go to anything.** Press <kbd>G</kbd> (or click the section name in the toolbar) and type a page
+  number, a chapter, a bookmark or words from a note — or an action like *dark* or *focus*.
+- **A map of the whole book.** A slim fore-edge along the right of the reader shows chapters, notes,
+  highlights and bookmarks. Hover to preview a page, click or drag to travel; it snaps to your notes and
+  bookmarks so they're easy to land on.
+- **Know where you are in the chapter.** A hairline under the toolbar splits the book into chapters and
+  fills as you read; hover it for pages left.
+- **Focus mode and a reading ruler.** <kbd>F</kbd> clears the chrome away so only the page remains;
+  <kbd>R</kbd> adds a band that keeps your place on the line.
 - **Search the whole book.** <kbd>Ctrl</kbd>+<kbd>F</kbd> searches every page with results grouped
   by section, highlights on the page, and a single *Return* back to where you started.
 - **Bookmarks and contents.** Bookmark pages with <kbd>B</kbd>; labels default to the chapter
@@ -46,14 +56,17 @@ where you left off — days later.
 | <kbd>B</kbd> | Toggle bookmark on the current page |
 | <kbd>N</kbd> | New margin note on the current page (uses the selected text as a quote) |
 | <kbd>H</kbd> | Highlight the selected text in the colour used last |
-| <kbd>G</kbd> | Go to page (printed labels work; `#N` for a PDF page number) |
+| <kbd>G</kbd> | Go to a page, chapter, bookmark or note — or run an action (printed labels work; `#N` for a PDF page number) |
+| <kbd>F</kbd> | Focus mode (<kbd>Esc</kbd> also leaves) |
+| <kbd>R</kbd> | Reading ruler |
+| <kbd>Ctrl</kbd>+<kbd>B</kbd> / <kbd>Ctrl</kbd>+<kbd>I</kbd> | Bold / italic while writing a note |
 | <kbd>Ctrl</kbd>+<kbd>F</kbd> or <kbd>/</kbd> | Search the book; <kbd>Enter</kbd> / <kbd>Shift</kbd>+<kbd>Enter</kbd> step through results |
 | <kbd>[</kbd> | Toggle the sidebar |
 | <kbd>Shift</kbd>+<kbd>R</kbd> | Open or close the notes review |
 | <kbd>Alt</kbd>+<kbd>←</kbd> / <kbd>Alt</kbd>+<kbd>→</kbd> | Back / forward through jumps |
 | <kbd>+</kbd> / <kbd>-</kbd> / <kbd>0</kbd> | Zoom in / zoom out / fit width |
 | <kbd>?</kbd> | Show all keyboard shortcuts |
-| <kbd>Esc</kbd> | Dismiss the return pill or close a menu |
+| <kbd>Esc</kbd> | Leave focus mode, dismiss the return pill or close a menu |
 
 ## Getting started
 
@@ -110,8 +123,11 @@ src/
   features/
     library/    Library screen and PDF import
     reader/     Reader shell, viewer engine, zoom, link peek
-    navigation/ Jump history, return pill, bookmarks, outline, page labels, shortcuts
-    notes/      Margin notes, collated review, Markdown export
+    navigation/ Jump history, return pill, bookmarks, outline, page labels, chapter progress, shortcuts
+    palette/    Go to: pages, chapters, bookmarks, notes and actions in one box
+    bookmap/    The book map along the reader's right edge
+    focus/      Focus mode and the reading ruler
+    notes/      Margin notes (bold/italic editing), collated review, Markdown export
     search/     Full-text index, search panel and in-page highlights
   lib/
     pdf/        pdf.js loading, destinations and outline, thumbnails
