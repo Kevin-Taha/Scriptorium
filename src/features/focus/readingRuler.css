@@ -1,0 +1,35 @@
+/* Reading ruler: a clear band at the pointer with the document above and below it dimmed.
+   The two veils are full-height and only move (compositor-only); ReadingRuler sets --ruler-y and
+   --ruler-band, and keeps clear of the scrollbars with `right` and `bottom`. */
+.reading-ruler {
+  --ruler-y: 40%;
+  --ruler-feather: 14px;
+  --ruler-veil-opacity: 0.6;
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-sticky);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Near-black inverted pages have nothing to darken but their text, so the veil is stronger there. */
+[data-theme='dark'] .invert-pages .reading-ruler {
+  --ruler-veil-opacity: 0.85;
+}
+
+.reading-ruler__veil {
+  position: absolute;
+  inset: 0;
+  opacity: var(--ruler-veil-opacity);
+  will-change: transform;
+}
+
+.reading-ruler__veil--above {
+  background: linear-gradient(to bottom, var(--color-scrim) calc(100% - var(--ruler-feather)), transparent);
+  transform: translateY(calc(var(--ruler-y) - var(--ruler-band) / 2 - 100%));
+}
+
+.reading-ruler__veil--below {
+  background: linear-gradient(to bottom, transparent, var(--color-scrim) var(--ruler-feather));
+  transform: translateY(calc(var(--ruler-y) + var(--ruler-band) / 2));
+}

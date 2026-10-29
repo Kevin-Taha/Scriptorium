@@ -70,7 +70,10 @@ function SelectionToolbar() {
       schedule();
     };
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') hide();
+      if (e.key !== 'Escape') return;
+      // Esc closes only the toolbar when it is showing, not focus mode or the Return pill too.
+      if (popoverRef.current) e.preventDefault();
+      hide();
     };
 
     document.addEventListener('selectionchange', schedule);
