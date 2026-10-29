@@ -69,6 +69,16 @@ describe('navigation history', () => {
     expect(scrollTo).toHaveBeenCalledWith(loc(9, 0.7));
   });
 
+  it('records a jump that already happened without scrolling, unless it went nowhere', () => {
+    useReaderStore.setState({ location: loc(12, 0.5) });
+    const history = useHistoryStore.getState();
+    history.recordJump(loc(12, 0.52));
+    expect(useHistoryStore.getState().back).toEqual([]);
+    history.recordJump(loc(3, 0.1));
+    expect(useHistoryStore.getState()).toMatchObject({ back: [loc(3, 0.1)], returnTarget: loc(3, 0.1) });
+    expect(useReaderStore.getState().location).toEqual(loc(12, 0.5));
+  });
+
   it('treats nearby offsets on the same page as the same place', () => {
     expect(isSamePlace(loc(1, 0), loc(1, 0.049))).toBe(true);
     expect(isSamePlace(loc(1, 0), loc(1, 0.05))).toBe(false);

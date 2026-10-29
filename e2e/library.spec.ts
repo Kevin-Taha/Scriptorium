@@ -52,6 +52,22 @@ test('import, progress, duplicate import, and confirmed removal', async ({ page 
   await expect(page.getByRole('heading', { name: 'Begin your library' })).toBeVisible();
 });
 
+test('Now reading names the chapter and section you left off in', async ({ page }) => {
+  await importFixture(page);
+  await goToPage(page, 14);
+  await waitForProgressSave(page);
+  await backToLibrary(page);
+  const nowReading = page.getByRole('region', { name: 'Pick up where you left off' });
+  await expect(nowReading.getByRole('heading', { name: TITLE })).toBeVisible();
+  await expect(nowReading).toContainText("Chapter 2: Newton's Laws");
+  await expect(nowReading).toContainText('2.2 The Second Law');
+  await expect(nowReading).toContainText('Chapter 2 of 5');
+  await expect(nowReading).toContainText('Page 14 of 36');
+
+  await nowReading.getByRole('button', { name: 'Continue reading' }).click();
+  await expect(page.locator('#page-field')).toHaveValue('14');
+});
+
 test('dropping a PDF imports and opens it', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Begin your library' })).toBeVisible();

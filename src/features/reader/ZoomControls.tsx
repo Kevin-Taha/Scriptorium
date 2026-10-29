@@ -1,6 +1,8 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { Check, Minus, Plus } from 'lucide-react';
 import type { ZoomState } from '@/lib/types';
+import type { CommandId } from '../commands/commands';
+import { ariaKeyShortcuts, keyLabel, withShortcut } from '../commands/keys';
 import { useReaderStore } from './readerStore';
 import { formatZoom, nextZoomStep, setZoomMode, zoomIn, zoomOut } from './zoom';
 import './viewer.css';
@@ -8,11 +10,12 @@ import './viewer.css';
 interface ZoomOption {
   label: string;
   zoom: ZoomState;
+  command?: CommandId;
 }
 
 const ZOOM_OPTIONS: ZoomOption[][] = [
   [
-    { label: 'Fit width', zoom: { mode: 'fit-width', scale: 0 } },
+    { label: 'Fit width', zoom: { mode: 'fit-width', scale: 0 }, command: 'fit-width' },
     { label: 'Fit page', zoom: { mode: 'fit-page', scale: 0 } },
   ],
   [0.5, 0.75, 1, 1.25, 1.5, 2].map((scale) => ({
@@ -104,8 +107,9 @@ export function ZoomControls() {
       <button
         type="button"
         className="btn btn--ghost btn--icon btn--sm tooltip tooltip--below"
-        data-tooltip="Zoom out"
+        data-tooltip={withShortcut('Zoom out', 'zoom-out')}
         aria-label="Zoom out"
+        aria-keyshortcuts={ariaKeyShortcuts('zoom-out')}
         aria-disabled={!canZoomOut}
         onClick={() => canZoomOut && zoomOut()}
       >
@@ -146,11 +150,23 @@ export function ZoomControls() {
                       key={option.label}
                       role="menuitemradio"
                       aria-checked={selected}
+                      aria-keyshortcuts={option.command && ariaKeyShortcuts(option.command)}
                       tabIndex={-1}
                       className="zoom-menu__item"
                       onClick={() => choose(option)}
                     >
-                      <span>{option.label}</span>
+                      <span>
+                        {option.label}
+                        {option.command && (
+                          <>
+                            {' '}
+                            {/* biome-ignore lint/a11y/noAriaHiddenOnFocusable: <kbd> is not focusable; the item carries aria-keyshortcuts */}
+                            <kbd className="kbd" aria-hidden="true">
+                              {keyLabel(option.command)}
+                            </kbd>
+                          </>
+                        )}
+                      </span>
                       {selected && <Check aria-hidden="true" />}
                     </button>
                   );
@@ -164,8 +180,9 @@ export function ZoomControls() {
       <button
         type="button"
         className="btn btn--ghost btn--icon btn--sm tooltip tooltip--below"
-        data-tooltip="Zoom in"
+        data-tooltip={withShortcut('Zoom in', 'zoom-in')}
         aria-label="Zoom in"
+        aria-keyshortcuts={ariaKeyShortcuts('zoom-in')}
         aria-disabled={!canZoomIn}
         onClick={() => canZoomIn && zoomIn()}
       >

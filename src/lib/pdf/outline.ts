@@ -74,6 +74,43 @@ export function flattenOutline(items: OutlineItem[], depth = 0): (OutlineItem & 
   ]);
 }
 
+export interface ChapterEntry {
+  /** Trimmed and never empty. */
+  title: string;
+  location: ReadingLocation;
+  /** The entry's own outline children: its sections. */
+  children: OutlineItem[];
+}
+
+/**
+ * The outline's chapter level, in page order with one entry per start page.
+ * A lone root entry (usually the book title) is looked through, and an entry
+ * without a destination or title (a "Part" heading) gives way to its children.
+ * Starts outside `1…pageCount` are ignored when a page count is given.
+ */
+export function chapterEntries(outline: readonly OutlineItem[], pageCount = Infinity): ChapterEntry[] {
+  let level = outline;
+  while (level.length === 1 && level[0].children.length > 0) level = level[0].children;
+
+  const found: ChapterEntry[] = [];
+  const collect = (items: readonly OutlineItem[]) => {
+    for (const item of items) {
+      const title = item.title.trim();
+      const page = item.location?.page ?? 0;
+      if (item.location && title) {
+        if (Number.isInteger(page) && page >= 1 && page <= pageCount)
+          found.push({ title, location: item.location, children: item.children });
+      } else {
+        collect(item.children);
+      }
+    }
+  };
+  collect(level);
+  return found
+    .sort((a, b) => a.location.page - b.location.page)
+    .filter((entry, i, all) => i === 0 || entry.location.page !== all[i - 1].location.page);
+}
+
 /**
  * Title of the deepest outline section containing `page`, e.g. to auto-label
  * bookmarks ("Chapter 3: Kinematics") or group notes in the review view.

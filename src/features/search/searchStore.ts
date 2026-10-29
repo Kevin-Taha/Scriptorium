@@ -1,29 +1,15 @@
 import { create } from 'zustand';
 import type { ReadingLocation } from '@/lib/types';
-import { clamp, debounce } from '@/lib/util';
+import { clamp } from '@/lib/util';
 import { useHistoryStore } from '../navigation/historyStore';
 import { useReaderStore } from '../reader/readerStore';
-import { createMatcher, DEFAULT_OPTIONS, type Matcher, type SearchOptions } from './matcher';
-import { cleanText, type PageText } from './pageText';
-import { viewportHeight } from './searchDom';
-import {
-  countHits,
-  flatIndexOf,
-  hitAt,
-  matchTop,
-  nearestHit,
-  searchPage,
-  type HitRef,
-  type PageResult,
-  type SearchPhase,
-} from './searchResults';
+import { createMatcher, findMatches, type Matcher, type MatchRange } from './matcher';
+import { cleanText, rangeRects, type PageText } from './pageText';
 import { getTextIndex, pauseTextIndex, yieldToMain, type TextIndex } from './textIndex';
 
-/** Typing pauses this long before the query is applied. */
-const QUERY_DEBOUNCE_MS = 150;
-/** Results are published to the UI at most this often while pages stream in. */
+/** Results are published at most this often while pages stream in. */
 const FLUSH_INTERVAL_MS = 100;
-/** Main-thread time spent matching before yielding, when scanning pages that are already indexed. */
+/** Main-thread time spent matching already indexed pages before yielding. */
 const SCAN_SLICE_MS = 8;
 /** Matching stops here; beyond it a query is too common to be useful. */
 const MAX_HITS = 10_000;
@@ -32,128 +18,166 @@ const LANDING_POSITION = 1 / 3;
 /** Landing offset (share of a page) used when the viewer's size is unknown. */
 const FALLBACK_LEAD = 0.12;
 
-interface SearchState {
-  /** What the search field holds right now. */
-  query: string;
-  options: SearchOptions;
-  /** The cleaned query the results belong to (`query` once its debounce has passed). */
-  appliedQuery: string;
-  /** Changes whenever a new search starts; lets the UI reset per-search state. */
-  runId: number;
-  results: PageResult[];
-  byPage: ReadonlyMap<number, PageResult>;
-  hitCount: number;
-  /** True when matching stopped at {@link MAX_HITS}. */
-  capped: boolean;
-  phase: SearchPhase;
-  /** Pages whose text has been extracted, of `total`. */
-  indexed: number;
-  total: number;
-  /** False once every page is indexed and none had any text (a scanned book). */
-  hasText: boolean;
-  active: HitRef | null;
-  /** Position of the active match among all matches, or -1. */
-  activeIndex: number;
-
-  setQuery(query: string): void;
-  /** Applies a pending (debounced) query right away. */
-  commitQuery(): void;
-  setOptions(patch: Partial<SearchOptions>): void;
-  next(): void;
-  prev(): void;
-  /** Makes `hit` the active match and goes to it. */
-  activate(hit: HitRef): void;
-  clear(): void;
-  /** Starts extracting the book's text in the background, ahead of the first search. */
-  prepare(): void;
-  /** Ends a stepping session: the next jump is recorded in history again. */
-  endSession(): void;
-  reset(): void;
+/** All matches on one page; `text` is kept for snippets and highlight rectangles. */
+export interface PageResult {
+  page: number;
+  text: PageText;
+  matches: MatchRange[];
 }
 
-const NO_RESULTS = {
-  results: [] as PageResult[],
-  byPage: new Map<number, PageResult>() as ReadonlyMap<number, PageResult>,
-  hitCount: 0,
+/** One match: its page and its position among that page's matches. */
+export interface HitRef {
+  page: number;
+  index: number;
+}
+
+export interface SearchState {
+  /** The cleaned query being searched for; empty when no search is live. */
+  query: string;
+  /** Pages with matches, in page order. */
+  results: PageResult[];
+  hits: number;
+  /** Matching stopped at {@link MAX_HITS}. */
+  capped: boolean;
+  /** Pages are still being indexed. */
+  searching: boolean;
+  indexed: number;
+  total: number;
+  /** False once every page is indexed and none had text (a scanned book). */
+  hasText: boolean;
+  /** The chosen match; F3 steps on from it. */
+  active: HitRef | null;
+}
+
+const IDLE: SearchState = {
+  query: '',
+  results: [],
+  hits: 0,
   capped: false,
-  phase: 'idle' as SearchPhase,
+  searching: false,
   indexed: 0,
   total: 0,
   hasText: true,
-  active: null as HitRef | null,
-  activeIndex: -1,
+  active: null,
 };
 
-export const useSearchStore = create<SearchState>()((set, get) => ({
-  query: '',
-  options: DEFAULT_OPTIONS,
-  appliedQuery: '',
-  runId: 0,
-  ...NO_RESULTS,
+export const useSearchStore = create<SearchState>()(() => IDLE);
 
-  setQuery(query) {
-    set({ query });
-    if (cleanText(query) === '') {
-      applyQuery.cancel();
-      beginRun();
-    } else {
-      applyQuery();
+/**
+ * Searches the open book, matching pages already indexed and then each page as the
+ * background index reaches it. Searching for the live query again changes nothing.
+ */
+export function searchBook(rawQuery: string): void {
+  const query = cleanText(rawQuery);
+  if (query !== '' && query === useSearchStore.getState().query) return;
+  endRun();
+  const matcher = createMatcher(query);
+  const index = matcher && currentIndex();
+  if (!matcher || !index) {
+    useSearchStore.setState(IDLE);
+    return;
+  }
+  const { pdf } = useReaderStore.getState();
+  // Extraction starts at the page being read, so the first results are the ones nearest the reader.
+  if (pdf) index.start(pdf, readingLocation().page);
+  const current: Run = {
+    cancelled: false,
+    matcher,
+    index,
+    pages: new Map(),
+    hits: 0,
+    capped: false,
+    scanning: true,
+    lastFlush: 0,
+    timer: null,
+    unsubscribe: () => {},
+  };
+  run = current;
+  current.unsubscribe = index.subscribe((page) => matchPage(current, page));
+  useSearchStore.setState({
+    ...IDLE,
+    query: matcher.query,
+    searching: true,
+    indexed: index.indexed,
+    total: index.total,
+  });
+  void scan(current);
+}
+
+export function clearSearch(): void {
+  endRun();
+  useSearchStore.setState(IDLE);
+}
+
+/** Makes `hit` the current match and jumps to it, recorded in history so Return comes back. */
+export function chooseMatch(hit: HitRef): void {
+  const target = landing(hit);
+  if (!target) return;
+  useSearchStore.setState({ active: hit });
+  useHistoryStore.getState().jumpTo(target);
+}
+
+/** Steps to the next or previous match, wrapping around the book. Only scrolls: no history. */
+export function stepMatch(direction: 1 | -1): void {
+  const { results, hits, active } = useSearchStore.getState();
+  const at = flatIndexOf(results, active);
+  if (at === -1) return;
+  const [next] = sliceHits(results, (at + direction + hits) % hits, 1);
+  const target = next && landing(next);
+  if (!target) return;
+  useSearchStore.setState({ active: next });
+  const { controller, setLocation } = useReaderStore.getState();
+  if (controller) controller.scrollTo(target);
+  else setLocation(target);
+}
+
+/** Position of `hit` among all matches in page order, or -1. */
+export function flatIndexOf(results: readonly PageResult[], hit: HitRef | null): number {
+  if (!hit) return -1;
+  let before = 0;
+  for (const result of results) {
+    if (result.page === hit.page) return hit.index < result.matches.length ? before + hit.index : -1;
+    before += result.matches.length;
+  }
+  return -1;
+}
+
+/** Up to `count` matches in page order, starting at position `from`. */
+export function sliceHits(results: readonly PageResult[], from: number, count: number): HitRef[] {
+  const hits: HitRef[] = [];
+  let before = 0;
+  for (const { page, matches } of results) {
+    for (let index = Math.max(0, from - before); index < matches.length && hits.length < count; index++) {
+      hits.push({ page, index });
     }
-  },
+    before += matches.length;
+  }
+  return hits;
+}
 
-  commitQuery: () => applyQuery.flush(),
-
-  setOptions(patch) {
-    set((state) => ({ options: { ...state.options, ...patch } }));
-    applyQuery.cancel();
-    if (cleanText(get().query) !== '') beginRun();
-  },
-
-  next: () => step(1),
-  prev: () => step(-1),
-  activate: (hit) => activateHit(hit),
-
-  clear() {
-    applyQuery.cancel();
-    set({ query: '' });
-    beginRun();
-  },
-
-  prepare() {
-    const index = currentIndex();
-    if (index) warmIndex(index);
-  },
-
-  endSession() {
-    anchored = false;
-  },
-
-  reset() {
-    applyQuery.cancel();
-    endRun();
-    anchored = false;
-    pendingStep = null;
-    set({ query: '', appliedQuery: '', runId: get().runId + 1, ...NO_RESULTS });
-  },
-}));
-
-const applyQuery = debounce(() => {
-  const { query, appliedQuery } = useSearchStore.getState();
-  if (appliedQuery === '' || cleanText(query) !== appliedQuery) beginRun();
-}, QUERY_DEBOUNCE_MS);
+/** Where to scroll so the match sits a third of the way down the viewport. */
+function landing(hit: HitRef): ReadingLocation | null {
+  const result = useSearchStore.getState().results.find((candidate) => candidate.page === hit.page);
+  const match = result?.matches[hit.index];
+  if (!result || !match) return null;
+  const pageHeight = useReaderStore.getState().controller?.getPageSize(hit.page)?.height;
+  const viewportHeight = document.querySelector<HTMLElement>('.reader__viewport')?.clientHeight;
+  const lead =
+    pageHeight && viewportHeight ? (viewportHeight * LANDING_POSITION) / pageHeight : FALLBACK_LEAD;
+  const top = rangeRects(result.text, match.start, match.end)[0]?.y ?? 0;
+  return { page: hit.page, offset: clamp(top - lead, 0, 1) };
+}
 
 // ------------------------------------------------------------------- a run
 
-/** One search of the book: matches pages already indexed, then each page as it is indexed. */
 interface Run {
   cancelled: boolean;
   matcher: Matcher;
   index: TextIndex;
   pages: Map<number, PageResult>;
-  seen: Set<number>;
   hits: number;
   capped: boolean;
-  /** Still working through pages that were indexed when the run began. */
+  /** Still working through the pages that were indexed when the run began. */
   scanning: boolean;
   lastFlush: number;
   timer: ReturnType<typeof setTimeout> | null;
@@ -161,10 +185,6 @@ interface Run {
 }
 
 let run: Run | null = null;
-/** Whether this search session has already recorded a jump in the navigation history. */
-let anchored = false;
-/** A next/prev asked for before any result existed; carried out when the first one arrives. */
-let pendingStep: 1 | -1 | null = null;
 
 function currentIndex(): TextIndex | null {
   const { docId, pdf, doc } = useReaderStore.getState();
@@ -177,57 +197,12 @@ function readingLocation(): ReadingLocation {
   return controller?.getLocation() ?? location;
 }
 
-/** Extraction starts at the page being read, so the first results are the ones nearest the reader. */
-function warmIndex(index: TextIndex): void {
-  const { pdf } = useReaderStore.getState();
-  if (pdf) index.start(pdf, readingLocation().page);
-}
-
 function endRun(): void {
   if (!run) return;
   run.cancelled = true;
   run.unsubscribe();
   if (run.timer) clearTimeout(run.timer);
   run = null;
-}
-
-function beginRun(): void {
-  endRun();
-  anchored = false;
-  pendingStep = null;
-  const { query, options, runId } = useSearchStore.getState();
-  const matcher = createMatcher(query, options);
-  const index = matcher ? currentIndex() : null;
-  if (!matcher || !index) {
-    useSearchStore.setState({ appliedQuery: '', runId: runId + 1, ...NO_RESULTS });
-    return;
-  }
-
-  warmIndex(index);
-  const current: Run = {
-    cancelled: false,
-    matcher,
-    index,
-    pages: new Map(),
-    seen: new Set(),
-    hits: 0,
-    capped: false,
-    scanning: true,
-    lastFlush: 0,
-    timer: null,
-    unsubscribe: () => {},
-  };
-  run = current;
-  current.unsubscribe = index.subscribe((page) => matchPage(current, page));
-  useSearchStore.setState({
-    appliedQuery: matcher.query,
-    runId: runId + 1,
-    ...NO_RESULTS,
-    phase: 'searching',
-    indexed: index.indexed,
-    total: index.total,
-  });
-  void scan(current);
 }
 
 async function scan(current: Run): Promise<void> {
@@ -246,23 +221,18 @@ async function scan(current: Run): Promise<void> {
   flush(current);
 }
 
-function matchPage(current: Run, pageText: PageText): void {
-  if (current.cancelled || current.seen.has(pageText.page)) return;
-  current.seen.add(pageText.page);
-  if (current.capped) return;
-  const result = searchPage(pageText, current.matcher, MAX_HITS - current.hits);
-  if (result) {
-    current.pages.set(result.page, result);
-    current.hits += result.matches.length;
+function matchPage(current: Run, text: PageText): void {
+  if (current.cancelled || current.capped) return;
+  const matches = findMatches(text, current.matcher, MAX_HITS - current.hits);
+  if (matches.length > 0) {
+    current.pages.set(text.page, { page: text.page, text, matches });
+    current.hits += matches.length;
     current.capped = current.hits >= MAX_HITS;
   }
-  scheduleFlush(current);
-}
-
-function scheduleFlush(current: Run): void {
-  if (current.timer) return;
-  const wait = Math.max(0, FLUSH_INTERVAL_MS - (performance.now() - current.lastFlush));
-  current.timer = setTimeout(() => flush(current), wait);
+  if (!current.timer) {
+    const wait = Math.max(0, FLUSH_INTERVAL_MS - (performance.now() - current.lastFlush));
+    current.timer = setTimeout(() => flush(current), wait);
+  }
 }
 
 /** Publishes what the run has found so far. */
@@ -271,87 +241,22 @@ function flush(current: Run): void {
   if (current.timer) clearTimeout(current.timer);
   current.timer = null;
   current.lastFlush = performance.now();
-
-  const results = [...current.pages.values()].sort((a, b) => a.page - b.page);
-  const finished = current.capped || (!current.scanning && current.index.complete);
-  if (finished) current.unsubscribe();
-  useSearchStore.setState((state) => ({
-    results,
-    byPage: new Map(results.map((result) => [result.page, result])),
-    hitCount: current.hits,
+  const { index } = current;
+  const searching = !current.capped && (current.scanning || !index.complete);
+  if (!searching) current.unsubscribe();
+  useSearchStore.setState({
+    results: [...current.pages.values()].sort((a, b) => a.page - b.page),
+    hits: current.hits,
     capped: current.capped,
-    phase: finished ? 'done' : 'searching',
-    indexed: current.index.indexed,
-    total: current.index.total,
-    hasText: !current.index.complete || current.index.hasText,
-    activeIndex: flatIndexOf(results, state.active),
-  }));
-
-  if (pendingStep !== null && current.hits > 0) {
-    const direction = pendingStep;
-    pendingStep = null;
-    step(direction);
-  }
+    searching,
+    indexed: index.indexed,
+    total: index.total,
+    hasText: !index.complete || index.hasText,
+  });
 }
-
-// --------------------------------------------------------------- stepping
-
-function step(direction: 1 | -1): void {
-  useSearchStore.getState().commitQuery();
-  const { results, active, phase } = useSearchStore.getState();
-  const total = countHits(results);
-  if (total === 0) {
-    if (phase === 'searching') pendingStep = direction;
-    return;
-  }
-  const current = flatIndexOf(results, active);
-  const target =
-    current === -1
-      ? nearestHit(results, readingLocation(), direction)
-      : hitAt(results, (current + direction + total) % total);
-  if (target) activateHit(target);
-}
-
-function activateHit(hit: HitRef): void {
-  const { results } = useSearchStore.getState();
-  const result = results.find((candidate) => candidate.page === hit.page);
-  if (!result?.matches[hit.index]) return;
-  useSearchStore.setState({ active: hit, activeIndex: flatIndexOf(results, hit) });
-  goTo(result, hit.index);
-}
-
-/**
- * Brings a match into view about a third of the way down the viewport. Only the
- * first jump of a search session is a deliberate jump (recorded, so Return works);
- * stepping through the other matches just scrolls.
- */
-function goTo(result: PageResult, index: number): void {
-  const reader = useReaderStore.getState();
-  const pageHeight = reader.controller?.getPageSize(result.page)?.height;
-  const visibleHeight = viewportHeight();
-  const lead = pageHeight && visibleHeight ? (visibleHeight * LANDING_POSITION) / pageHeight : FALLBACK_LEAD;
-  const target: ReadingLocation = {
-    page: result.page,
-    offset: clamp(matchTop(result, index) - lead, 0, 1),
-  };
-
-  if (!anchored) {
-    const history = useHistoryStore.getState();
-    const before = history.back;
-    history.jumpTo(target);
-    // A match on the spot the reader already occupies records nothing; keep trying.
-    anchored = useHistoryStore.getState().back !== before;
-  } else if (reader.controller) {
-    reader.controller.scrollTo(target);
-  } else {
-    reader.setLocation(target);
-  }
-}
-
-// --------------------------------------------------------- document changes
 
 useReaderStore.subscribe((state, previous) => {
   if (state.docId === previous.docId && state.pdf === previous.pdf) return;
   if (previous.docId) pauseTextIndex(previous.docId);
-  useSearchStore.getState().reset();
+  clearSearch();
 });

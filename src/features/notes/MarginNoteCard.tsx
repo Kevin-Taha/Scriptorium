@@ -18,6 +18,8 @@ import { NOTE_COLOR_LABELS } from './noteColors';
 import { deleteNoteWithUndo, isEmptyNote } from './noteActions';
 import { useIsNotePulsing } from './noteFocus';
 import { NoteSwatches } from './NoteSwatches';
+import { NoteText } from './NoteText';
+import { NoteTextField } from './NoteTextField';
 import { useNotesStore } from './notesStore';
 import './highlights.css';
 
@@ -59,7 +61,6 @@ export const MarginNoteCard = memo(function MarginNoteCard({
   const cardRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
   const paletteTriggerRef = useRef<HTMLButtonElement>(null);
 
   const compact = placement.compact && !editing;
@@ -100,14 +101,9 @@ export const MarginNoteCard = memo(function MarginNoteCard({
     return () => observer.disconnect();
   }, [showsText]);
 
-  // Entering edit mode: focus the editor with the caret at the end and keep the card on screen.
+  // Entering edit mode (the editor focuses itself, caret at the end): keep the card on screen.
   useEffect(() => {
     if (!editing) return;
-    const input = inputRef.current;
-    if (input) {
-      input.focus({ preventScroll: true });
-      input.setSelectionRange(input.value.length, input.value.length);
-    }
     const frame = requestAnimationFrame(() => cardRef.current?.scrollIntoView({ block: 'nearest' }));
     return () => cancelAnimationFrame(frame);
   }, [editing]);
@@ -169,17 +165,13 @@ export const MarginNoteCard = memo(function MarginNoteCard({
     }
   };
 
-  const onInputKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    const commit = e.key === 'Escape' || (e.key === 'Enter' && (e.ctrlKey || e.metaKey));
-    if (!commit) return;
-    e.preventDefault();
-    e.stopPropagation();
+  const commit = () => {
     finishEditing();
     cardRef.current?.focus();
   };
 
   const onCardClick = (e: MouseEvent<HTMLDivElement>) => {
-    if (editing || (e.target as Element).closest('button, textarea')) return;
+    if (editing || (e.target as Element).closest('button, .note-field')) return;
     if (compact) {
       onExpand(note.id);
       return;
@@ -191,7 +183,7 @@ export const MarginNoteCard = memo(function MarginNoteCard({
 
   // In edit mode, presses on the card chrome must not steal focus from the editor.
   const onCardMouseDown = (e: MouseEvent<HTMLDivElement>) => {
-    if (editing && !(e.target as Element).closest('textarea, button')) e.preventDefault();
+    if (editing && !(e.target as Element).closest('.note-field, button')) e.preventDefault();
   };
 
   const setColor = (color: NoteColor) => {
@@ -252,7 +244,11 @@ export const MarginNoteCard = memo(function MarginNoteCard({
         onPointerEnter={() => highlight && useHighlightUiStore.getState().setLinkedHover(highlight.id)}
         onPointerLeave={() => highlight && useHighlightUiStore.getState().setLinkedHover(null)}
       >
-        {compact && <span className="margin-note__preview">{note.text || note.quote}</span>}
+        {compact && (
+          <span className="margin-note__preview">
+            {note.text ? <NoteText text={note.text} /> : note.quote}
+          </span>
+        )}
 
         <div ref={contentRef} className="margin-note__content">
           {!editing && (
@@ -295,19 +291,13 @@ export const MarginNoteCard = memo(function MarginNoteCard({
 
           {editing ? (
             <>
-              <div className="margin-note__editor" data-replicated={`${note.text} `}>
-                <textarea
-                  ref={inputRef}
-                  className="margin-note__input"
-                  rows={1}
-                  value={note.text}
-                  placeholder="Write a note…"
-                  aria-label={`Note text, page ${note.page}`}
-                  spellCheck
-                  onChange={(e) => useNotesStore.getState().updateNote(note.id, { text: e.target.value })}
-                  onKeyDown={onInputKeyDown}
-                />
-              </div>
+              <NoteTextField
+                className="margin-note__input"
+                text={note.text}
+                label={`Note text, page ${note.page}`}
+                onChange={(text) => useNotesStore.getState().updateNote(note.id, { text })}
+                onCommit={commit}
+              />
               <div className="margin-note__footer">
                 <NoteSwatches value={note.color} onChange={setColor} />
                 <button
@@ -330,7 +320,7 @@ export const MarginNoteCard = memo(function MarginNoteCard({
                   style={bodyStyle}
                 >
                   <div ref={textRef} className="margin-note__text">
-                    {note.text}
+                    <NoteText text={note.text} />
                   </div>
                 </div>
                 {clamped && !bodyExpanded && (

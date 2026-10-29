@@ -1,8 +1,9 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Coffee, HardDrive, Moon, Palette, Sun } from 'lucide-react';
+import { keyLabel } from '@/features/commands/keys';
 import { openLibraryStorageDialog } from '@/features/settings/storageDialogStore';
 import type { Theme } from '@/lib/types';
-import { useSettingsStore } from './settingsStore';
+import { type SettingSwitch, useSettingsStore } from './settingsStore';
 
 const THEMES: { id: Theme; label: string; Icon: typeof Sun }[] = [
   { id: 'light', label: 'Light', Icon: Sun },
@@ -10,16 +11,28 @@ const THEMES: { id: Theme; label: string; Icon: typeof Sun }[] = [
   { id: 'dark', label: 'Dark', Icon: Moon },
 ];
 
-/** Toolbar popover with the theme switcher and the dark-mode page inversion toggle. */
+const READING_SWITCHES: { key: SettingSwitch; label: string; detail: string }[] = [
+  {
+    key: 'readingRuler',
+    label: 'Reading ruler',
+    detail: `Keeps your place on the line (${keyLabel('ruler')})`,
+  },
+  { key: 'bookMap', label: 'Book map', detail: 'The whole book along the right edge' },
+  {
+    key: 'chapterProgress',
+    label: 'Chapter progress',
+    detail: 'Your place in each chapter, under the toolbar',
+  },
+];
+
+/** Toolbar popover with the theme, page inversion and reading aids. */
 export function AppearanceMenu() {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelId = useId();
-  const theme = useSettingsStore((s) => s.theme);
-  const invert = useSettingsStore((s) => s.invertPagesInDark);
-  const setTheme = useSettingsStore((s) => s.setTheme);
-  const setInvert = useSettingsStore((s) => s.setInvertPagesInDark);
+  const settings = useSettingsStore();
+  const { theme } = settings;
 
   useEffect(() => {
     if (!open) return;
@@ -66,7 +79,7 @@ export function AppearanceMenu() {
                 role="radio"
                 className="segmented__item"
                 aria-checked={theme === id}
-                onClick={() => setTheme(id)}
+                onClick={() => settings.setTheme(id)}
               >
                 <Icon /> {label}
               </button>
@@ -81,11 +94,28 @@ export function AppearanceMenu() {
               type="checkbox"
               // biome-ignore lint/a11y/useAriaPropsForRole: the native checkbox already exposes its checked state
               role="switch"
-              checked={invert}
+              checked={settings.invertPagesInDark}
               disabled={theme !== 'dark'}
-              onChange={(e) => setInvert(e.target.checked)}
+              onChange={(e) => settings.setInvertPagesInDark(e.target.checked)}
             />
           </label>
+          <hr className="divider appearance-menu__divider" />
+          <div className="appearance-menu__label">Reading</div>
+          {READING_SWITCHES.map(({ key, label, detail }) => (
+            <label className="appearance-menu__switch" key={key}>
+              <span>
+                {label}
+                <small>{detail}</small>
+              </span>
+              <input
+                type="checkbox"
+                // biome-ignore lint/a11y/useAriaPropsForRole: the native checkbox already exposes its checked state
+                role="switch"
+                checked={settings[key]}
+                onChange={() => settings.toggle(key)}
+              />
+            </label>
+          ))}
           <hr className="divider appearance-menu__divider" />
           <button
             type="button"

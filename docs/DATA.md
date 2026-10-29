@@ -94,6 +94,13 @@ Device clocks decide "most recent"; a device whose clock is far off can win or l
 shouldn't. Removing a book from the library on one device does not delete its notes from the
 folder (re-adding the PDF brings them back).
 
+**Reset progress** (a book's menu in the library) does reach other devices: it deletes the book's
+notes, highlights and bookmarks with tombstones, and replaces the reading position with a newer one at
+the start of the book (deleting it would let an older position from another device win). A position at
+the very start doesn't count as "reading" when another device syncs it, so a reset book doesn't jump
+back into anyone's *Now reading*. An edit made on a device after the reset still wins, as with any
+deletion.
+
 If browser data is cleared, the browser becomes a new device: linking the same folder again
 restores the books, notes and progress from the folder.
 

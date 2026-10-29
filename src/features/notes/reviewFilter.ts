@@ -1,5 +1,6 @@
 import { NOTE_COLORS, type MarginNote, type NoteColor } from '@/lib/types';
 import { annotationColors, type AnnotationItem } from './annotations';
+import { type NoteRun, plainNoteText } from './noteFormat';
 
 export interface ReviewFilters {
   query: string;
@@ -31,10 +32,12 @@ export function searchTerms(query: string): string[] {
 
 const searchableCache = new WeakMap<MarginNote, string>();
 
+/** The note's words as the filter sees them: folded, without formatting markers. */
 function searchableText(note: MarginNote): string {
   let text = searchableCache.get(note);
   if (text === undefined) {
-    text = foldText(note.quote ? `${note.text}\n${note.quote}` : note.text);
+    const noteText = plainNoteText(note.text);
+    text = foldText(note.quote ? `${noteText}\n${note.quote}` : noteText);
     searchableCache.set(note, text);
   }
   return text;
@@ -169,6 +172,33 @@ export function highlightSegments(text: string, terms: string[]): TextSegment[] 
   }
   if (cursor < text.length) segments.push({ text: text.slice(cursor), match: false });
   return segments;
+}
+
+export interface MarkedRun extends NoteRun {
+  match: boolean;
+}
+
+/** Formatted note text split where the search terms match, so marks can sit inside bold or italic. */
+export function markRuns(runs: readonly NoteRun[], terms: string[]): MarkedRun[] {
+  if (terms.length === 0) return runs.map((run) => ({ ...run, match: false }));
+  const marked: MarkedRun[] = [];
+  let index = 0;
+  let offset = 0;
+  for (const segment of highlightSegments(runs.map((run) => run.text).join(''), terms)) {
+    let remaining = segment.text.length;
+    while (remaining > 0) {
+      const run = runs[index];
+      const take = Math.min(remaining, run.text.length - offset);
+      marked.push({ ...run, text: run.text.slice(offset, offset + take), match: segment.match });
+      remaining -= take;
+      offset += take;
+      if (offset === run.text.length) {
+        index++;
+        offset = 0;
+      }
+    }
+  }
+  return marked;
 }
 
 /** True when both lists hold exactly the same note objects, in the same order. */

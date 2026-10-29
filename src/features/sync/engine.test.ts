@@ -12,6 +12,8 @@ import {
   putDocument,
   putNote,
   putReadingState,
+  resetBookProgress,
+  updateDocument,
 } from '@/lib/storage/repository';
 import type { BookData } from '@/lib/storage/repository';
 import { onBookDataMerged } from '@/lib/sync/apply';
@@ -481,6 +483,63 @@ describe('other devices’ files', () => {
     expect((await ownFile(root, id))?.data.tombstones).toEqual([]);
   });
 
+  it('apply a reset made there without treating it as reading', async () => {
+    const root = await textbooks('Mechanics.pdf');
+    const { engine } = await linkedEngine(root);
+    const id = await idOf('Mechanics.pdf');
+    await putNote(note('n1', id, 10));
+    await putNote(note('n2', id, 10));
+    await putReadingState(progress(id, 12, 3_000, (await getDevice()).id));
+    await updateDocument(id, { lastOpenedAt: 3_000 });
+
+    const start = { ...progress(id, 1, 9_000, LAPTOP.id), location: { page: 1, offset: 0 } };
+    await writeDeviceFile(root, id, {
+      tombstones: ['n1', 'n2'].map((noteId) => ({ id: noteId, kind: 'note', docId: id, deletedAt: 9_000 })),
+      progress: start,
+    });
+    await engine.sync();
+    expect(await listNotes(id)).toEqual([]);
+    expect(await getReadingState(id)).toEqual(start);
+    expect((await getDocument(id))?.lastOpenedAt).toBe(3_000);
+
+    // Reading from the same device afterwards does bring the book up again.
+    await writeDeviceFile(root, id, { progress: progress(id, 5, 12_000, LAPTOP.id) });
+    await engine.sync();
+    expect((await getDocument(id))?.lastOpenedAt).toBe(12_000);
+  });
+
+  it('keep a book reset here reset, whatever older copies other devices still hold', async () => {
+    const root = await textbooks('Mechanics.pdf');
+    const { engine } = await linkedEngine(root);
+    const id = await idOf('Mechanics.pdf');
+    const device = await getDevice();
+    const stale = {
+      notes: [note('n1', id, 10, 'Old thought')],
+      progress: progress(id, 12, 5_000, LAPTOP.id),
+    };
+    await putNote(stale.notes[0]);
+    await putReadingState(progress(id, 12, 5_000, device.id));
+    await writeDeviceFile(root, id, stale);
+    await engine.sync();
+
+    await resetBookProgress(id, device.id);
+    await engine.sync();
+    expect(await ownFile(root, id)).toMatchObject({
+      data: {
+        notes: [],
+        tombstones: [{ id: 'n1', kind: 'note', docId: id }],
+        progress: { location: { page: 1, offset: 0 }, deviceId: device.id },
+      },
+    });
+
+    // The other device is slow to notice and writes its old data again.
+    await writeDeviceFile(root, id, stale, LAPTOP, Date.now() + 1_000);
+    await engine.sync();
+    expect(await listNotes(id)).toEqual([]);
+    expect((await getReadingState(id))?.location).toEqual({ page: 1, offset: 0 });
+    expect((await getDocument(id))?.lastOpenedAt).toBe(0);
+  });
+
   it('are only read again once they change', async () => {
     const root = await textbooks('Mechanics.pdf');
     const { engine } = await linkedEngine(root);
@@ -574,6 +633,19 @@ describe('restoring and unlinking', () => {
     const doc = await getDocument(id);
     expect(doc?.source).toEqual({ kind: 'folder', path: 'Mechanics.pdf' });
     expect(doc?.lastOpenedAt).toBe(7_000);
+  });
+
+  it('restores a book that was reset as not opened yet', async () => {
+    const root = await textbooks('Mechanics.pdf');
+    const id = await idOf('Mechanics.pdf');
+    await writeDeviceFile(root, id, {
+      tombstones: [{ id: 'n1', kind: 'note', docId: id, deletedAt: 9_000 }],
+      progress: { ...progress(id, 1, 9_000, LAPTOP.id), location: { page: 1, offset: 0 } },
+    });
+
+    await linkedEngine(root);
+    expect((await getReadingState(id))?.location).toEqual({ page: 1, offset: 0 });
+    expect((await getDocument(id))?.lastOpenedAt).toBe(0);
   });
 
   it('unlinking removes folder books but keeps their notes; linking again restores them', async () => {

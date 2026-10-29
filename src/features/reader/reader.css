@@ -61,19 +61,35 @@
   white-space: nowrap;
 }
 
-.reader__section {
-  flex: 0 10 auto;
-  min-width: 0;
-  overflow: hidden;
+.reader__section-dot {
+  flex: none;
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
+}
+
+/* The current section doubles as the way into Go to (G). */
+.reader__section {
+  display: flex;
+  flex: 0 10 auto;
+  min-width: 0;
+  margin: 0 calc(-1 * var(--space-1));
+  padding: 2px var(--space-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  border-radius: var(--radius-xs);
+  transition: var(--transition-colors);
+}
+
+.reader__section > span {
+  min-width: 0;
+  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.reader__section::before {
-  content: '·';
-  margin-right: var(--space-2);
+.reader__section:hover {
+  color: var(--color-text);
+  background: var(--color-hover);
 }
 
 .reader__review-btn {
@@ -134,11 +150,6 @@
 }
 
 /* The search tab is a compact icon so the three text tabs keep their room. */
-.sidebar__tabs .sidebar__tab--icon {
-  flex: 0 0 36px;
-  padding: 0;
-}
-
 .sidebar__panel {
   flex: 1;
   min-height: 0;
@@ -155,6 +166,7 @@
 
 @media (max-width: 1100px) {
   .reader__section,
+  .reader__section-dot,
   .reader__review-btn > span:not(.reader__count) {
     display: none;
   }

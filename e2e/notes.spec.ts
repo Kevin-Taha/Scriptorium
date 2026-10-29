@@ -85,8 +85,8 @@ test('reader shortcuts do not fire while typing in note or page field', async ({
   const editor = page.getByRole('textbox', { name: /Note text, page/ });
   await expect(editor).toBeFocused();
   await editor.pressSequentially('bng[0');
-  await expect(editor).toHaveValue('bng[0');
-  await expect(page.getByRole('button', { name: 'Bookmark page (B)' })).toHaveAttribute(
+  await expect(editor).toHaveText('bng[0');
+  await expect(page.getByRole('button', { name: 'Bookmark page 1' })).toHaveAttribute(
     'aria-pressed',
     'false',
   );
@@ -97,7 +97,7 @@ test('reader shortcuts do not fire while typing in note or page field', async ({
   await page.locator('#page-field').pressSequentially('bng');
   await expect(page.locator('#page-field')).toHaveValue('bng');
   await expect(page.locator('.margin-note')).toHaveCount(1);
-  await expect(page.getByRole('button', { name: 'Bookmark page (B)' })).toHaveAttribute(
+  await expect(page.getByRole('button', { name: 'Bookmark page 1' })).toHaveAttribute(
     'aria-pressed',
     'false',
   );

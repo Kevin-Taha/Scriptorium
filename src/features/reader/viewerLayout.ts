@@ -37,7 +37,8 @@ export const DEFAULT_METRICS: LayoutMetrics = {
   pageGap: 24,
   marginWidth: 280,
   sidePadding: 24,
-  minSidePadding: 0,
+  // Never let a page touch the sidebar: a row too wide for the viewport keeps this much room and scrolls.
+  minSidePadding: 12,
   anchorInset: 12,
 };
 

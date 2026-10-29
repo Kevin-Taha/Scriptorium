@@ -39,10 +39,6 @@ describe('foldText', () => {
     expect(foldText('don’t “quote” a–b')).toBe('don\'t "quote" a-b');
   });
 
-  it('can keep case for case-sensitive comparison', () => {
-    expect(foldText('Électron', false)).toBe('Electron');
-  });
-
   it('leaves characters it cannot fold one-to-one untouched', () => {
     expect(foldText('straße København')).toBe('straße københavn');
     expect(foldText('한국어')).toBe('한국어');

@@ -1,6 +1,9 @@
-import { useEffect, useRef } from 'react';
-import { Keyboard, X } from 'lucide-react';
+import { Fragment, useEffect, useRef } from 'react';
+import { CircleHelp, Keyboard, X } from 'lucide-react';
 import { create } from 'zustand';
+import { isEditableTarget } from '@/lib/util';
+import { COMMANDS, GROUPS, type Command, type CommandId } from '../commands/commands';
+import { ariaKeyShortcuts, keyCaps, matches, withShortcut } from '../commands/keys';
 import './navigation.css';
 
 const useShortcutsDialogStore = create<{ open: boolean }>(() => ({ open: false }));
@@ -12,44 +15,78 @@ export function openShortcutsDialog(): void {
   useShortcutsDialogStore.setState({ open: true });
 }
 
-const groups = [
-  {
-    title: 'Navigate',
-    shortcuts: [
-      { label: 'Go to page', detail: 'Enter a printed label, or # for a PDF page number', keys: ['G'] },
-      { label: 'Go back', keys: ['Alt', '←'] },
-      { label: 'Go forward', keys: ['Alt', '→'] },
-      { label: 'Dismiss a control', keys: ['Esc'] },
-    ],
-  },
-  {
-    title: 'Search',
-    shortcuts: [
-      { label: 'Search the book', detail: 'Or press / · ⌘F on macOS', keys: ['Ctrl', 'F'] },
-      { label: 'Next result', detail: 'Also F3', keys: ['Enter'] },
-      { label: 'Previous result', detail: 'Also Shift+F3', keys: ['Shift', 'Enter'] },
-    ],
-  },
-  {
-    title: 'Read',
-    shortcuts: [
-      { label: 'Zoom in', keys: ['+', '='], alternatives: true },
-      { label: 'Zoom out', keys: ['−'] },
-      { label: 'Fit page width', keys: ['0'] },
-      { label: 'Toggle sidebar', keys: ['['] },
-    ],
-  },
-  {
-    title: 'Annotate',
-    shortcuts: [
-      { label: 'Toggle bookmark', keys: ['B'] },
-      { label: 'New margin note', detail: 'Select text to include a quote', keys: ['N'] },
-      { label: 'Highlight selected text', detail: 'In the colour used last', keys: ['H'] },
-      { label: 'Review notes', keys: ['Shift', 'R'] },
-    ],
-  },
-];
+/** `?` for screens without key handling of their own (the library); the reader and review handle it. */
+export function useHelpShortcut(enabled: boolean): void {
+  useEffect(() => {
+    if (!enabled) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || isEditableTarget(event.target) || document.querySelector('dialog:modal'))
+        return;
+      if (!matches(event, 'help')) return;
+      event.preventDefault();
+      openShortcutsDialog();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [enabled]);
+}
 
+/** Toolbar icon button that opens the dialog. */
+export function ShortcutsButton({ className = '' }: { className?: string }) {
+  return (
+    <button
+      type="button"
+      className={`btn btn--ghost btn--icon tooltip tooltip--below ${className}`.trim()}
+      data-tooltip={withShortcut('Keyboard shortcuts', 'help')}
+      aria-label="Keyboard shortcuts"
+      aria-keyshortcuts={ariaKeyShortcuts('help')}
+      onClick={openShortcutsDialog}
+    >
+      <CircleHelp />
+    </button>
+  );
+}
+
+const SECTIONS = GROUPS.map((group) => ({
+  group,
+  ids: (Object.keys(COMMANDS) as CommandId[]).filter((id) => COMMANDS[id].group === group),
+}));
+
+/** What the keys do, reached by pointer instead. */
+const POINTER_WAYS = [
+  ['Add a note', 'Click the margin beside a page'],
+  ['Highlight or quote', 'Select text, then pick a colour or “Add margin note”'],
+  ['Bookmark a page', 'Click the ribbon at its top-right corner'],
+  ['Go to a page or chapter', 'Click the section name in the toolbar'],
+  ['Ruler, book map, chapter progress', 'Appearance → Reading'],
+  ['Review all notes', 'Review notes, at the end of the toolbar'],
+] as const;
+
+function Keys({ id }: { id: CommandId }) {
+  return (
+    <dd className="shortcuts-dialog__keys">
+      {keyCaps(id).map((combo, index) => (
+        <Fragment key={combo.map((cap) => cap.text).join('+')}>
+          {index > 0 && <span className="shortcuts-dialog__or">or</span>}
+          {combo.map((cap) => (
+            <kbd className="kbd" key={cap.text}>
+              {cap.text === cap.spoken ? (
+                cap.text
+              ) : (
+                <>
+                  <span aria-hidden="true">{cap.text}</span>
+                  <span className="visually-hidden">{cap.spoken}</span>
+                </>
+              )}
+            </kbd>
+          ))}
+        </Fragment>
+      ))}
+    </dd>
+  );
+}
+
+/** Every shortcut, from the command registry, and the pointer ways to the same features. Mounted once in the app shell. */
 export function ShortcutsDialog() {
   const dialog = useRef<HTMLDialogElement>(null);
   const pendingCloseEvents = useRef(0);
@@ -104,7 +141,7 @@ export function ShortcutsDialog() {
         </span>
         <div className="shortcuts-dialog__heading">
           <h2 id="shortcuts-dialog-title">Keyboard shortcuts</h2>
-          <p>Find your way around the reader.</p>
+          <p>Every key in Scriptorium, and where to click instead.</p>
         </div>
         <button
           type="button"
@@ -118,39 +155,37 @@ export function ShortcutsDialog() {
         </button>
       </header>
       <div className="shortcuts-dialog__groups">
-        {groups.map((group) => (
-          <section className="shortcuts-dialog__group" key={group.title} aria-label={group.title}>
-            <h3>{group.title}</h3>
+        {SECTIONS.map(({ group, ids }) => (
+          <section className="shortcuts-dialog__group" key={group} aria-label={group}>
+            <h3>{group}</h3>
             <dl>
-              {group.shortcuts.map((shortcut) => (
-                <div className="shortcuts-dialog__row" key={shortcut.label}>
-                  <dt>
-                    {shortcut.label}
-                    {'detail' in shortcut && (
-                      <span className="shortcuts-dialog__detail">{shortcut.detail}</span>
-                    )}
-                  </dt>
-                  <dd className="shortcuts-dialog__keys">
-                    {shortcut.keys.map((key, index) => (
-                      <span className="shortcuts-dialog__key" key={key}>
-                        {index > 0 && (
-                          <span aria-hidden="true">{'alternatives' in shortcut ? '/' : '+'}</span>
-                        )}
-                        <kbd
-                          className="kbd"
-                          aria-label={key === '←' ? 'Left arrow' : key === '→' ? 'Right arrow' : undefined}
-                        >
-                          {key}
-                        </kbd>
-                      </span>
-                    ))}
-                  </dd>
-                </div>
-              ))}
+              {ids.map((id) => {
+                const { label, detail }: Command = COMMANDS[id];
+                return (
+                  <div className="shortcuts-dialog__row" key={id}>
+                    <dt>
+                      {label}
+                      {detail && <span className="shortcuts-dialog__detail">{detail}</span>}
+                    </dt>
+                    <Keys id={id} />
+                  </div>
+                );
+              })}
             </dl>
           </section>
         ))}
       </div>
+      <section className="shortcuts-dialog__pointer" aria-label="Without the keyboard">
+        <h3>Without the keyboard</h3>
+        <dl>
+          {POINTER_WAYS.map(([what, how]) => (
+            <div className="shortcuts-dialog__way" key={what}>
+              <dt>{what}</dt>
+              <dd>{how}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
     </dialog>
   );
 }

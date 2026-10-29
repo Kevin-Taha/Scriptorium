@@ -1,6 +1,7 @@
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { openShortcutsDialog, ShortcutsDialog } from './ShortcutsDialog';
+import { COMMANDS, GROUPS } from '../commands/commands';
+import { openShortcutsDialog, ShortcutsDialog, useHelpShortcut } from './ShortcutsDialog';
 import { useKeyboardShortcuts } from './useKeyboardShortcuts';
 
 const originalShowModal = Object.getOwnPropertyDescriptor(HTMLDialogElement.prototype, 'showModal');
@@ -46,6 +47,16 @@ function DialogHost() {
   );
 }
 
+function LibraryHost({ enabled }: { enabled: boolean }) {
+  useHelpShortcut(enabled);
+  return (
+    <>
+      <input aria-label="Editing" />
+      <ShortcutsDialog />
+    </>
+  );
+}
+
 describe('keyboard shortcuts dialog', () => {
   it('opens from the exported action and restores focus after closing', () => {
     render(<DialogHost />);
@@ -54,13 +65,38 @@ describe('keyboard shortcuts dialog', () => {
     fireEvent.click(opener);
     const dialog = screen.getByRole('dialog', { name: 'Keyboard shortcuts' });
     expect(dialog.hasAttribute('open')).toBe(true);
-    expect(screen.getByRole('heading', { name: 'Navigate' })).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'Read' })).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'Annotate' })).toBeTruthy();
+    for (const group of GROUPS) expect(screen.getByRole('heading', { name: group })).toBeTruthy();
     expect(screen.getByText('Select text to include a quote')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Close keyboard shortcuts' }));
     expect(dialog.hasAttribute('open')).toBe(false);
     expect(document.activeElement).toBe(opener);
+  });
+
+  it('lists every command in the registry with its keys, then the pointer ways', () => {
+    render(<DialogHost />);
+    act(() => openShortcutsDialog());
+    for (const command of Object.values(COMMANDS)) {
+      const row = screen.getByText(command.label).closest('.shortcuts-dialog__row') as HTMLElement;
+      expect(row.closest('section')?.getAttribute('aria-label')).toBe(command.group);
+      expect(row.querySelectorAll('kbd').length).toBeGreaterThan(0);
+    }
+    const zoom = screen.getByText('Zoom in').closest('.shortcuts-dialog__row') as HTMLElement;
+    expect(zoom.querySelector('dd')?.textContent).toBe('+or=');
+    const back = screen.getByText('Go back').closest('.shortcuts-dialog__row') as HTMLElement;
+    expect(within(back).getByText('Left').className).toBe('visually-hidden');
+    const pointer = screen.getByRole('region', { name: 'Without the keyboard' });
+    expect(within(pointer).getByText('Click the margin beside a page')).toBeTruthy();
+  });
+
+  it('opens with ? on screens that use the shell shortcut, unless switched off or typing', () => {
+    const { rerender } = render(<LibraryHost enabled={false} />);
+    fireEvent.keyDown(window, { key: '?', shiftKey: true });
+    expect(screen.queryByRole('dialog')).toBeNull();
+    rerender(<LibraryHost enabled />);
+    fireEvent.keyDown(screen.getByRole('textbox', { name: 'Editing' }), { key: '?', shiftKey: true });
+    expect(screen.queryByRole('dialog')).toBeNull();
+    fireEvent.keyDown(window, { key: '?', shiftKey: true });
+    expect(screen.getByRole('dialog', { name: 'Keyboard shortcuts' })).toBeTruthy();
   });
 
   it('opens with question mark, but not from editable or modified key events', () => {
@@ -78,7 +114,7 @@ describe('keyboard shortcuts dialog', () => {
     expect(document.activeElement).toBe(opener);
   });
 
-  it('resets the dialog state when the reader unmounts', () => {
+  it('resets the dialog state when the app shell unmounts', () => {
     const { unmount } = render(<DialogHost />);
     act(() => openShortcutsDialog());
     expect(screen.getByRole('dialog')).toBeTruthy();

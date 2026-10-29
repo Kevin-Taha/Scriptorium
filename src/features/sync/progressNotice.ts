@@ -3,6 +3,7 @@ import { getReadingState } from '@/lib/storage/repository';
 import { onBookDataMerged } from '@/lib/sync/apply';
 import { currentDeviceId } from '@/lib/sync/device';
 import type { DocId, ReadingLocation, ReadingState } from '@/lib/types';
+import { isAtStart } from '@/lib/util';
 import { isSamePlace, useHistoryStore } from '../navigation/historyStore';
 import { formatPageRef } from '../navigation/pageLabels';
 import { useReaderStore } from '../reader/readerStore';
@@ -19,8 +20,6 @@ export function deviceName(id: string): string {
 export function isFromAnotherDevice(progress: ReadingState | undefined, ownId: string | undefined): boolean {
   return !!progress?.deviceId && progress.deviceId !== ownId;
 }
-
-const isAtStart = (location: ReadingLocation) => location.page <= 1 && location.offset < 0.02;
 
 function currentLocation(): ReadingLocation {
   const { controller, location } = useReaderStore.getState();
