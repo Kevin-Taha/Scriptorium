@@ -12,11 +12,7 @@ export function NoteText({ text, terms = NO_TERMS }: { text: string; terms?: str
     if (run.match) node = <mark className="review-mark">{node}</mark>;
     if (run.italic) node = <em>{node}</em>;
     if (run.bold) node = <strong>{node}</strong>;
-    return typeof node === 'string' ? (
-      node
-    ) : (
-      // biome-ignore lint/suspicious/noArrayIndexKey: runs have no identity and are rebuilt as a whole
-      <Fragment key={i}>{node}</Fragment>
-    );
+    // biome-ignore lint/suspicious/noArrayIndexKey: runs have no identity and are rebuilt as a whole
+    return <Fragment key={i}>{node}</Fragment>;
   });
 }

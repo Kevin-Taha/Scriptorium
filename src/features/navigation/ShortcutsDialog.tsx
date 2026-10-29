@@ -56,9 +56,7 @@ const SECTIONS = GROUPS.map((group) => ({
 const POINTER_WAYS = [
   ['Add a note', 'Click the margin beside a page'],
   ['Highlight or quote', 'Select text, then pick a colour or “Add margin note”'],
-  ['Bookmark a page', 'Hover its top-right corner and click the ribbon'],
-  ['Preview a reference', 'Hover a link'],
-  ['Travel through the book', 'Hover or drag the book map on the right'],
+  ['Bookmark a page', 'Click the ribbon at its top-right corner'],
   ['Go to a page or chapter', 'Click the section name in the toolbar'],
   ['Ruler, book map, chapter progress', 'Appearance → Reading'],
   ['Review all notes', 'Review notes, at the end of the toolbar'],
@@ -70,23 +68,18 @@ function Keys({ id }: { id: CommandId }) {
       {keyCaps(id).map((combo, index) => (
         <Fragment key={combo.map((cap) => cap.text).join('+')}>
           {index > 0 && <span className="shortcuts-dialog__or">or</span>}
-          <span className="shortcuts-dialog__combo">
-            {combo.map((cap, capIndex) => (
-              <Fragment key={cap.text}>
-                {capIndex > 0 && <span aria-hidden="true">+</span>}
-                <kbd className="kbd">
-                  {cap.text === cap.spoken ? (
-                    cap.text
-                  ) : (
-                    <>
-                      <span aria-hidden="true">{cap.text}</span>
-                      <span className="visually-hidden">{cap.spoken}</span>
-                    </>
-                  )}
-                </kbd>
-              </Fragment>
-            ))}
-          </span>
+          {combo.map((cap) => (
+            <kbd className="kbd" key={cap.text}>
+              {cap.text === cap.spoken ? (
+                cap.text
+              ) : (
+                <>
+                  <span aria-hidden="true">{cap.text}</span>
+                  <span className="visually-hidden">{cap.spoken}</span>
+                </>
+              )}
+            </kbd>
+          ))}
         </Fragment>
       ))}
     </dd>

@@ -45,10 +45,9 @@ function cornerSheet(event: PointerEvent): Element | null {
 }
 
 /**
- * Reveals the ghost ribbon of the page whose corner the pointer is near, by marking its sheet.
- * One listener serves every page and takes no pointer events, so text stays selectable. Nothing
- * is revealed while a button is held (selecting, dragging), while text is selected, or once the
- * document scrolls.
+ * Reveals the ghost ribbon of the page whose corner the pointer is near, by marking its sheet. One
+ * listener serves every page, so text stays selectable; nothing shows while a button is held, text
+ * is selected, or the document scrolls.
  */
 export function useRibbonReveal(): void {
   useEffect(() => {

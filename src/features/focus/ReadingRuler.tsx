@@ -1,11 +1,11 @@
 import { type CSSProperties, useEffect, useRef } from 'react';
+import { clamp } from '@/lib/util';
 import { useReaderStore } from '../reader/readerStore';
-import { rulerBandHeight } from './focusLogic';
 import './readingRuler.css';
 
 /**
  * A band that follows the pointer to keep your place on the line (R), with the page above and below it
- * softly dimmed. Mounted only while on; it never takes pointer events, so text stays selectable.
+ * softly dimmed. It never takes pointer events, so text stays selectable.
  */
 export function ReadingRuler() {
   const zoomScale = useReaderStore((s) => s.zoom.scale);
@@ -18,8 +18,8 @@ export function ReadingRuler() {
     let pointerY: number | null = null;
     let frame = 0;
 
-    // Positioned from the screen position of the pointer, so it stays under it when the toolbar
-    // slides away and the document area grows.
+    // Placed from the pointer's screen position, so it stays under the pointer when the toolbar slides
+    // away and the document area grows.
     const place = () => {
       frame = 0;
       if (pointerY !== null) {
@@ -53,11 +53,13 @@ export function ReadingRuler() {
     };
   }, []);
 
+  // About two text lines, growing with the zoom level.
+  const band = Math.round(clamp(38 * zoomScale, 30, 170));
   return (
     <div
       ref={rootRef}
       className="reading-ruler"
-      style={{ '--ruler-band': `${rulerBandHeight(zoomScale)}px` } as CSSProperties}
+      style={{ '--ruler-band': `${band}px` } as CSSProperties}
       aria-hidden="true"
     >
       <div className="reading-ruler__veil reading-ruler__veil--above" />

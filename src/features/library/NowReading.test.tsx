@@ -33,45 +33,30 @@ describe('NowReading', () => {
   it('says where you are in the book and carries on from there', () => {
     const onContinue = vi.fn();
     render(<NowReading doc={doc()} reading={reading(14)} onContinue={onContinue} />);
-    expect(screen.getByText('NOW READING')).toBeTruthy();
-    expect(screen.getByText('Opened 28 minutes ago')).toBeTruthy();
+    expect(screen.getByText(/^NOW READING/).textContent).toContain('Opened 28 minutes ago');
     expect(screen.getByRole('heading', { name: 'Classical Mechanics' })).toBeTruthy();
-    expect(screen.getByText(/^Chapter 2: Newton’s Laws/)).toBeTruthy();
-    expect(screen.getByText('2.2 The Second Law')).toBeTruthy();
-    expect(screen.getByText('Chapter 2 of 3')).toBeTruthy();
-    expect(screen.getByText('Page 14 of 36')).toBeTruthy();
-    expect(screen.getByText(/^36%/)).toBeTruthy();
+    expect(screen.getByText('Chapter 2: Newton’s Laws / 2.2 The Second Law')).toBeTruthy();
+    expect(screen.getByText('Chapter 2 of 3 · Page 14 of 36 · 36%')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Continue reading' }));
     expect(onContinue).toHaveBeenCalledTimes(1);
   });
 
-  it('lets the cover be clicked without adding a second button to the page', () => {
-    const onContinue = vi.fn();
-    const { container } = render(<NowReading doc={doc()} reading={reading(14)} onContinue={onContinue} />);
-    expect(screen.getAllByRole('button')).toHaveLength(1);
-    fireEvent.click(container.querySelector('.now-reading__cover') as HTMLElement);
-    expect(onContinue).toHaveBeenCalledTimes(1);
-  });
-
-  it('shows just the page and a plain bar for a book without contents', () => {
+  it('shows just the page and one plain bar for a book without contents', () => {
     const { container } = render(
       <NowReading doc={doc({ contents: undefined })} reading={reading(14)} onContinue={vi.fn()} />,
     );
-    expect(screen.getByText('Page 14 of 36')).toBeTruthy();
-    expect(screen.queryByText(/Chapter/)).toBeNull();
-    expect(container.querySelectorAll('.now-reading__segment')).toHaveLength(1);
+    expect(screen.getByText('Page 14 of 36 · 36%')).toBeTruthy();
+    expect(container.querySelectorAll('.now-reading__bar > span')).toHaveLength(1);
   });
 
-  it('starts at page 1 when no position was saved', () => {
-    render(<NowReading doc={doc()} onContinue={vi.fn()} />);
+  it('starts at page 1, and shows only the page while the page count is unknown', () => {
+    const { unmount } = render(<NowReading doc={doc()} onContinue={vi.fn()} />);
     expect(screen.getByText('Front matter')).toBeTruthy();
-    expect(screen.getByText('Page 1 of 36')).toBeTruthy();
-    expect(screen.queryByText(/^Chapter \d+ of/)).toBeNull();
-  });
+    expect(screen.getByText('Page 1 of 36 · 0%')).toBeTruthy();
+    unmount();
 
-  it('shows only the page while the page count is unknown', () => {
     render(<NowReading doc={doc({ pageCount: 0 })} reading={reading(14)} onContinue={vi.fn()} />);
-    expect(screen.getByText('Page 14')).toBeTruthy();
+    expect(screen.getByText('Page 14 · 0%')).toBeTruthy();
   });
 });

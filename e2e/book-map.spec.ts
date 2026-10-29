@@ -22,7 +22,7 @@ test('hovering the map previews the page under the pointer', async ({ page }) =>
   await expect(card).toContainText('p. 22');
   await expect(card).toContainText('of 36');
   await expect(card).toContainText('3.2 Kinetic and Potential Energy');
-  await expect(card.locator('.book-map-card__image')).toBeVisible();
+  await expect(card.locator('img')).toBeVisible();
   await expect(page.locator('.book-map__tab')).toHaveText(['1', '2', '3', '4', 'A']);
 
   await page.mouse.move(600, 400);
@@ -69,18 +69,17 @@ test('the pointer snaps to a nearby note; a click lands on the note and flashes 
   const track = (await page.locator('.book-map__track').boundingBox())!;
   const x = track.x + track.width - 12;
 
-  // Close to the mark the card describes the note and a ring shows what a click lands on.
+  // Close to the mark the card shows the note: that's what a click lands on.
   await page.mouse.move(x, track.y + markY + 4);
-  const card = page.locator('.book-map-card');
-  await expect(card.locator('.book-map-card__item--note')).toHaveText('Energy is conserved here');
-  await expect(page.locator('.book-map__lens')).toBeVisible();
+  const items = page.locator('.book-map-card__items li');
+  await expect(items).toHaveText(['Energy is conserved here']);
   // Farther away it lets go and previews pages again.
   await page.mouse.move(x, track.y + markY + 12);
-  await expect(page.locator('.book-map__lens')).toHaveCount(0);
-  await expect(card.locator('.book-map-card__item--note')).toHaveCount(0);
+  await expect(page.locator('.book-map-card')).toContainText('of 36');
+  await expect(items).toHaveCount(0);
 
   await page.mouse.move(x, track.y + markY - 4);
-  await expect(page.locator('.book-map__lens')).toBeVisible();
+  await expect(items).toHaveCount(1);
   await page.mouse.down();
   await page.mouse.up();
   await expect(pageField(page)).toHaveValue('25');

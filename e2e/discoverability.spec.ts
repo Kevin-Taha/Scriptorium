@@ -25,7 +25,7 @@ test('? opens every shortcut, grouped, and the pointer ways, from the library', 
   await expect(dialog(page)).toBeHidden();
 });
 
-test('the reader toolbar, the sidebar footer and the review all open the shortcuts', async ({ page }) => {
+test('the reader toolbar and the review both open the shortcuts', async ({ page }) => {
   await importFixture(page);
   const toolbarButton = page
     .getByRole('toolbar', { name: 'Reader' })
@@ -35,9 +35,6 @@ test('the reader toolbar, the sidebar footer and the review all open the shortcu
   await toolbarButton.click();
   await expectDialogOpensAndCloses(page);
   await expect(toolbarButton).toBeFocused();
-
-  await page.locator('.sidebar__footer').getByRole('button', { name: 'Keyboard shortcuts' }).click();
-  await expectDialogOpensAndCloses(page);
 
   await page.locator('.reader__viewport').focus();
   await page.keyboard.press('[');

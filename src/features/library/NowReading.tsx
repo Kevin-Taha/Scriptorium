@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import type { LibraryDocument, ReadingState } from '@/lib/types';
 import { BookCover } from './BookCard';
 import { bookProgress } from './bookProgress';
@@ -14,68 +13,37 @@ export function NowReading({
   reading?: ReadingState;
   onContinue(): void;
 }) {
-  const progress = useMemo(() => bookProgress(doc, reading?.location), [doc, reading]);
-  const { chapter, section } = progress;
+  const { chapter, section, segments, page, percent } = bookProgress(doc, reading?.location);
+  const stats = [
+    chapter?.number != null && `Chapter ${chapter.number} of ${chapter.count}`,
+    doc.pageCount > 0 ? `Page ${page} of ${doc.pageCount}` : `Page ${page}`,
+    `${percent}%`,
+  ];
   return (
     <div className="now-reading card">
-      <button
-        type="button"
-        className="now-reading__cover"
-        tabIndex={-1}
-        aria-hidden="true"
-        onClick={onContinue}
-      >
-        <BookCover doc={doc} />
-      </button>
-      <div className="now-reading__head">
+      <BookCover doc={doc} className="now-reading__cover" />
+      <div className="now-reading__body">
         <p className="now-reading__eyebrow">
-          <span>NOW READING</span>
-          <span aria-hidden="true">·</span>
-          <span className="now-reading__when">{formatOpened(doc.lastOpenedAt)}</span>
+          NOW READING <span>· {formatOpened(doc.lastOpenedAt)}</span>
         </p>
         <h3 className="now-reading__title">{doc.title}</h3>
         {chapter && (
-          <p className="now-reading__where">
-            {chapter.title}
-            {section && (
-              <>
-                {' '}
-                <span className="now-reading__divider" aria-hidden="true">
-                  /
-                </span>{' '}
-                <span className="now-reading__section">{section}</span>
-              </>
-            )}
-          </p>
+          <p className="now-reading__where">{section ? `${chapter.title} / ${section}` : chapter.title}</p>
         )}
-      </div>
-      <div className="now-reading__progress">
         <div className="now-reading__bar" aria-hidden="true">
-          {progress.segments.map((segment, index) => (
+          {segments.map(({ start, end, fill }) => (
             <span
-              key={segment.start}
-              className={`now-reading__segment ${index === progress.current ? 'is-current' : ''}`}
-              style={{ flexGrow: segment.end - segment.start + 1 }}
+              key={start}
+              className={start <= page && page <= end ? 'is-current' : undefined}
+              style={{ flexGrow: end - start + 1 }}
             >
-              <span style={{ width: `${segment.fill * 100}%` }} />
+              <span style={{ width: `${fill * 100}%` }} />
             </span>
           ))}
         </div>
-        <p className="now-reading__stats">
-          {chapter?.number != null && (
-            <span>
-              Chapter {chapter.number} of {chapter.count}
-            </span>
-          )}
-          <span>
-            {doc.pageCount > 0 ? `Page ${progress.page} of ${doc.pageCount}` : `Page ${progress.page}`}
-          </span>
-          <span>
-            {progress.percent}%<span className="visually-hidden"> read</span>
-          </span>
-        </p>
+        <p className="now-reading__stats">{stats.filter(Boolean).join(' · ')}</p>
       </div>
-      <button type="button" className="btn btn--primary now-reading__continue" onClick={onContinue}>
+      <button type="button" className="btn btn--primary" onClick={onContinue}>
         Continue reading
       </button>
     </div>

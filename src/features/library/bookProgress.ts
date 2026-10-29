@@ -37,25 +37,21 @@ export function sameContents(saved: ContentsEntry[] | undefined, next: ContentsE
   );
 }
 
+/** A stretch of pages (a chapter, or the front matter) and how much of it has been read, 0…1. */
 export interface Segment {
-  /** First and last page covered. */
   start: number;
   end: number;
-  /** How much has been read, 0…1. */
   fill: number;
 }
 
 export interface BookProgress {
-  /** The page being read, within the book. */
   page: number;
   percent: number;
   /** Where in the contents you are; `number` is null before the first chapter. Null without contents. */
   chapter: { title: string; number: number | null; count: number } | null;
   section: string | null;
-  /** One segment per chapter (plus any front matter), or a single one when there is nothing to split. */
+  /** One per chapter (plus any front matter), or a single one when there is nothing to split. */
   segments: Segment[];
-  /** The segment holding the current page. */
-  current: number;
 }
 
 export function bookProgress(
@@ -80,9 +76,8 @@ export function bookProgress(
     }
   }
 
-  const frontMatter = chapters.length > 0 && chapters[0].page > 1;
   const starts = chapters.length > MAX_SEGMENTS ? [] : chapters.map((chapter) => chapter.page);
-  if (starts.length === 0 || frontMatter) starts.unshift(1);
+  if (starts[0] !== 1) starts.unshift(1);
   const segments = starts.map((start, i) => {
     const end = Math.max(start, (starts[i + 1] ?? pageCount + 1) - 1);
     return {
@@ -101,6 +96,5 @@ export function bookProgress(
       : null,
     section: chapterIndex < 0 ? null : section,
     segments,
-    current: starts.length === 1 ? 0 : Math.max(0, chapterIndex + (frontMatter ? 1 : 0)),
   };
 }

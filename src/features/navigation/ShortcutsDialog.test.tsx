@@ -1,7 +1,7 @@
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { COMMANDS, GROUPS } from '../commands/commands';
-import { openShortcutsDialog, ShortcutsButton, ShortcutsDialog, useHelpShortcut } from './ShortcutsDialog';
+import { openShortcutsDialog, ShortcutsDialog, useHelpShortcut } from './ShortcutsDialog';
 import { useKeyboardShortcuts } from './useKeyboardShortcuts';
 
 const originalShowModal = Object.getOwnPropertyDescriptor(HTMLDialogElement.prototype, 'showModal');
@@ -70,27 +70,12 @@ describe('keyboard shortcuts dialog', () => {
       expect(row.closest('section')?.getAttribute('aria-label')).toBe(command.group);
       expect(row.querySelectorAll('kbd').length).toBeGreaterThan(0);
     }
-    const search = screen.getByText('Search the book').closest('.shortcuts-dialog__row') as HTMLElement;
-    expect(search.querySelector('dd')?.textContent).toBe('Ctrl+For/');
+    const zoom = screen.getByText('Zoom in').closest('.shortcuts-dialog__row') as HTMLElement;
+    expect(zoom.querySelector('dd')?.textContent).toBe('+or=');
     const back = screen.getByText('Go back').closest('.shortcuts-dialog__row') as HTMLElement;
     expect(within(back).getByText('Left').className).toBe('visually-hidden');
     const pointer = screen.getByRole('region', { name: 'Without the keyboard' });
     expect(within(pointer).getByText('Click the margin beside a page')).toBeTruthy();
-    expect(within(pointer).getByText('Hover its top-right corner and click the ribbon')).toBeTruthy();
-  });
-
-  it('opens from the toolbar button, which advertises its key', () => {
-    render(
-      <>
-        <ShortcutsButton />
-        <ShortcutsDialog />
-      </>,
-    );
-    const button = screen.getByRole('button', { name: 'Keyboard shortcuts' });
-    expect(button.getAttribute('data-tooltip')).toBe('Keyboard shortcuts (?)');
-    expect(button.getAttribute('aria-keyshortcuts')).toBe('?');
-    fireEvent.click(button);
-    expect(screen.getByRole('dialog', { name: 'Keyboard shortcuts' }).hasAttribute('open')).toBe(true);
   });
 
   it('opens with ? on screens that use the shell shortcut, unless switched off or typing', () => {

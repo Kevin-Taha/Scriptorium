@@ -100,11 +100,6 @@
   opacity: 0.55;
 }
 
-.appearance-menu__kbd {
-  margin-left: var(--space-2);
-  vertical-align: 1px;
-}
-
 .appearance-menu__divider {
   margin: 0;
 }

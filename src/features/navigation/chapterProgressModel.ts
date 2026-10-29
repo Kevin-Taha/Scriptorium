@@ -1,5 +1,6 @@
 import { chapterEntries } from '@/lib/pdf/outline';
 import type { OutlineItem, ReadingLocation } from '@/lib/types';
+import { clamp } from '@/lib/util';
 
 /** One-based, half-open page interval. */
 export interface ChapterSpan {
@@ -10,17 +11,16 @@ export interface ChapterSpan {
 }
 
 export function buildChapterSpans(outline: readonly OutlineItem[], pageCount: number): ChapterSpan[] {
-  const count = Number.isFinite(pageCount) ? Math.max(0, Math.floor(pageCount)) : 0;
-  if (!count) return [];
+  if (pageCount < 1) return [];
 
-  const starts = chapterEntries(outline, count);
+  const starts = chapterEntries(outline, pageCount);
   if (!starts.length) {
-    return [{ title: 'Book', startPage: 1, endPage: count + 1, location: { page: 1, offset: 0 } }];
+    return [{ title: 'Book', startPage: 1, endPage: pageCount + 1, location: { page: 1, offset: 0 } }];
   }
   const spans = starts.map((entry, index) => ({
     title: entry.title,
     startPage: entry.location.page,
-    endPage: starts[index + 1]?.location.page ?? count + 1,
+    endPage: starts[index + 1]?.location.page ?? pageCount + 1,
     location: entry.location,
   }));
   if (spans[0].startPage > 1) {
@@ -34,34 +34,11 @@ export function buildChapterSpans(outline: readonly OutlineItem[], pageCount: nu
   return spans;
 }
 
-export function findCurrentChapter(spans: readonly ChapterSpan[], page: number): ChapterSpan | null {
-  if (!spans.length) return null;
-  return (
-    spans.find((span) => page >= span.startPage && page < span.endPage) ??
-    (page < spans[0].startPage ? spans[0] : spans[spans.length - 1])
-  );
+/** The chapter holding `page`; the spans cover the whole book, so a stray page lands on the nearest end. */
+export function findCurrentChapter(spans: readonly ChapterSpan[], page: number): ChapterSpan {
+  return spans.findLast((span) => span.startPage <= page) ?? spans[0];
 }
 
 export function chapterProgress(span: ChapterSpan, page: number): number {
-  return Math.max(0, Math.min(1, (page - span.startPage) / (span.endPage - span.startPage)));
-}
-
-export function pagesLeft(span: ChapterSpan, page: number): number {
-  return Math.max(0, Math.min(span.endPage - span.startPage, span.endPage - 1 - page));
-}
-
-/** The segment a key moves the strip's focus to from `index` among `count` segments, or null for other keys. */
-export function stepSegment(key: string, index: number, count: number): number | null {
-  switch (key) {
-    case 'ArrowLeft':
-      return Math.max(0, index - 1);
-    case 'ArrowRight':
-      return Math.min(count - 1, index + 1);
-    case 'Home':
-      return 0;
-    case 'End':
-      return count - 1;
-    default:
-      return null;
-  }
+  return clamp((page - span.startPage) / (span.endPage - span.startPage), 0, 1);
 }

@@ -58,7 +58,7 @@ export function NoteTextField({ text, label, className, onChange, onCommit }: No
 
   useLayoutEffect(() => {
     const field = ref.current!;
-    field.replaceChildren(noteContent(document, written.current));
+    field.replaceChildren(noteContent(written.current));
     field.focus({ preventScroll: true });
     placeCaretAtEnd(field);
 

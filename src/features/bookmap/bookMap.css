@@ -1,15 +1,10 @@
-/* ==========================================================================
-   Book map — the whole book as a fore-edge along the reader's right side.
-   Chapters are thumb-index tabs, notes and highlights are marks on the edge,
-   bookmarks are ribbons tucked into it, and the accent window is where you are.
-   ========================================================================== */
+/* Book map: the whole book as a fore-edge along the reader's right side. */
 
-/* The map stands in for the viewport's vertical scrollbar. */
+/* It stands in for the viewport's vertical scrollbar; the horizontal one stays for pages zoomed past the window. */
 html.has-book-map .reader__viewport {
   scrollbar-width: none;
 }
 
-/* Where scrollbars can be styled per axis, the horizontal one stays for pages zoomed past the window. */
 @supports selector(::-webkit-scrollbar) {
   html.has-book-map .reader__viewport {
     scrollbar-width: auto;
@@ -28,30 +23,27 @@ html.has-book-map .reader__viewport {
   }
 }
 
+/* Opens after a beat of hover intent and lingers a moment after the pointer leaves. */
 .book-map {
-  --book-map-rest: 24px;
-  --book-map-open: 52px;
-  /* The rail opens after a beat of hover intent and lingers a moment after the pointer leaves. */
-  --book-map-open-delay: 60ms;
-  --book-map-close-delay: 240ms;
-  --book-map-paper: var(--page-sheet-bg);
-  --book-map-edge: color-mix(in srgb, var(--color-text) 18%, transparent);
-  --book-map-rule: color-mix(in srgb, var(--color-text) 6%, transparent);
-
   position: absolute;
   top: 0;
   right: 0;
   bottom: 0;
   z-index: var(--z-sticky);
-  width: var(--book-map-rest);
-  transition:
-    width var(--duration-base) var(--ease-out) var(--book-map-close-delay),
-    opacity var(--duration-base) var(--ease-standard);
+  width: 24px;
+  border-left: 1px solid transparent;
+  transition-property: width, background-color, border-color, box-shadow, opacity;
+  transition-duration: var(--duration-base);
+  transition-timing-function: var(--ease-out);
+  transition-delay: 240ms, 240ms, 240ms, 240ms, 0s;
 }
 
 .book-map:is(:hover, .is-dragging, .is-keyboard) {
-  width: var(--book-map-open);
-  transition-delay: var(--book-map-open-delay), 0s;
+  width: 52px;
+  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+  border-left-color: var(--color-border-subtle);
+  box-shadow: var(--shadow-md);
+  transition-delay: 60ms, 60ms, 60ms, 60ms, 0s;
 }
 
 /* In focus mode the map recedes until you reach for it. */
@@ -59,13 +51,6 @@ html.focus-mode .book-map:not(:hover, .is-dragging, .is-keyboard) {
   opacity: 0.35;
 }
 
-/* In dark the edge is a quiet raised strip: dimmed paper at full strength would glare at the window edge. */
-[data-theme='dark'] .book-map {
-  --book-map-paper: var(--color-surface-raised);
-  --book-map-edge: color-mix(in srgb, var(--color-text) 22%, transparent);
-}
-
-/* ---- Rail ------------------------------------------------------------------ */
 .book-map__rail {
   position: absolute;
   inset: 0;
@@ -73,23 +58,9 @@ html.focus-mode .book-map:not(:hover, .is-dragging, .is-keyboard) {
   cursor: pointer;
   touch-action: none;
   user-select: none;
-  -webkit-user-select: none;
-  border-left: 1px solid transparent;
-  transition:
-    background-color var(--duration-base) var(--ease-standard) var(--book-map-close-delay),
-    border-color var(--duration-base) var(--ease-standard) var(--book-map-close-delay),
-    box-shadow var(--duration-base) var(--ease-standard) var(--book-map-close-delay);
-}
-
-.book-map:is(:hover, .is-dragging, .is-keyboard) .book-map__rail {
-  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
-  border-left-color: var(--color-border-subtle);
-  box-shadow: var(--shadow-md);
-  transition-delay: var(--book-map-open-delay);
 }
 
 .book-map__rail:focus-visible {
-  outline: 2px solid var(--color-focus-ring);
   outline-offset: -2px;
 }
 
@@ -102,39 +73,24 @@ html.focus-mode .book-map:not(:hover, .is-dragging, .is-keyboard) {
   inset: 10px 0;
 }
 
-/* ---- The fore-edge (SVG) ----------------------------------------------------- */
 .book-map__edge {
   position: absolute;
-  top: 0;
   right: 0;
   max-width: none;
   overflow: visible;
-  pointer-events: none;
 }
 
-.book-map__paper {
-  fill: var(--book-map-paper);
+.book-map__strip {
+  fill: var(--color-surface-raised);
 }
 
-.book-map__rules,
+.book-map__strip,
 .book-map__dividers {
-  fill: none;
-  stroke-width: 1;
+  stroke: color-mix(in srgb, var(--color-text) 20%, transparent);
+}
+
+.book-map__dividers {
   shape-rendering: crispEdges;
-}
-
-.book-map__rules {
-  stroke: var(--book-map-rule);
-}
-
-.book-map__dividers,
-.book-map__outline {
-  stroke: var(--book-map-edge);
-}
-
-.book-map__outline {
-  fill: none;
-  stroke-width: 1;
 }
 
 .book-map__highlight {
@@ -144,7 +100,7 @@ html.focus-mode .book-map:not(:hover, .is-dragging, .is-keyboard) {
 
 .book-map__note {
   fill: var(--note-dot);
-  stroke: var(--book-map-paper);
+  stroke: var(--color-surface-raised);
   stroke-width: 1.25;
 }
 
@@ -152,61 +108,20 @@ html.focus-mode .book-map:not(:hover, .is-dragging, .is-keyboard) {
   fill: var(--color-bookmark);
 }
 
-/* ---- Where you are, where you're pointing, and what has caught the pointer ---- */
+/* Where you are. */
 .book-map__window {
   position: absolute;
   top: 0;
   right: 4px;
   width: 16px;
-  height: 0;
   border: 1.5px solid var(--color-accent);
   border-radius: 3px;
   background: color-mix(in srgb, var(--color-accent) 12%, transparent);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-bg-app) 85%, transparent);
-  pointer-events: none;
   will-change: transform;
 }
 
-.book-map.is-dragging .book-map__window {
-  background: color-mix(in srgb, var(--color-accent) 22%, transparent);
-}
-
-.book-map__probe {
-  position: absolute;
-  right: 6px;
-  width: 12px;
-  background: color-mix(in srgb, var(--color-text) 20%, transparent);
-  border-radius: 1px;
-  pointer-events: none;
-}
-
-/* A ring around the snapped mark: a click lands on it. Sized around the mark's extent. */
-.book-map__lens {
-  position: absolute;
-  right: 3px;
-  box-sizing: content-box;
-  width: 15px;
-  margin-top: -7px;
-  padding-block: 5.5px;
-  border: 1.5px solid var(--color-text);
-  border-radius: var(--radius-full);
-  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--color-surface) 80%, transparent);
-  pointer-events: none;
-  animation: book-map-lens-in var(--duration-fast) var(--ease-out);
-}
-
-@keyframes book-map-lens-in {
-  from {
-    opacity: 0;
-    scale: 1.6;
-  }
-}
-
-/* ---- Chapter tabs (thumb index), revealed when the rail opens ----------------- */
+/* Chapter tabs against the strip, like a printed thumb index, shown while the map is open. */
 .book-map__tabs {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
   opacity: 0;
   transition: opacity var(--duration-fast) var(--ease-standard);
 }
@@ -216,7 +131,6 @@ html.focus-mode .book-map:not(:hover, .is-dragging, .is-keyboard) {
   transition-delay: 160ms;
 }
 
-/* Tabs sit against the strip's edge, like a printed thumb index. */
 .book-map__tab {
   position: absolute;
   right: 17px;
@@ -241,56 +155,47 @@ html.focus-mode .book-map:not(:hover, .is-dragging, .is-keyboard) {
 /* ---- Preview card ---------------------------------------------------------- */
 .book-map-card {
   position: absolute;
-  top: 0;
   right: calc(100% + var(--space-3));
   z-index: var(--z-popover);
   width: 176px;
   padding: var(--space-2);
+  font-size: var(--font-size-xs);
+  line-height: var(--leading-snug);
+  color: var(--color-text-secondary);
   background: var(--color-surface-raised);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
   pointer-events: none;
-  animation: book-map-card-in var(--duration-fast) var(--ease-out);
-}
-
-/* Points at the spot on the rail. */
-.book-map-card::after {
-  content: '';
-  position: absolute;
-  top: var(--book-map-caret-y, 50%);
-  right: -6px;
-  width: 10px;
-  height: 10px;
-  background: var(--color-surface-raised);
-  border-top: 1px solid var(--color-border);
-  border-right: 1px solid var(--color-border);
-  border-top-right-radius: 2px;
-  transform: translateY(-50%) rotate(45deg);
-}
-
-@keyframes book-map-card-in {
-  from {
-    opacity: 0;
-    transform: translateX(6px);
-  }
 }
 
 .book-map-card.is-compact {
   width: auto;
   min-width: 132px;
   max-width: 220px;
-  padding: var(--space-2) var(--space-3);
+}
+
+/* The caret points at the spot on the rail. */
+.book-map-card::after {
+  content: '';
+  position: absolute;
+  top: var(--caret-y);
+  right: -6px;
+  width: 10px;
+  height: 10px;
+  background: inherit;
+  border: solid var(--color-border);
+  border-width: 1px 1px 0 0;
+  border-radius: 0 2px 0 0;
+  transform: translateY(-50%) rotate(45deg);
 }
 
 .book-map-card__sheet {
   position: relative;
-  width: 100%;
-  border-radius: 2px;
-  box-shadow: 0 0 0 1px var(--page-sheet-border);
+  margin-bottom: var(--space-2);
 }
 
-.book-map-card__image {
+.book-map-card__sheet img {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -298,56 +203,14 @@ html.focus-mode .book-map:not(:hover, .is-dragging, .is-keyboard) {
   border-radius: inherit;
   mix-blend-mode: var(--page-canvas-blend);
   filter: var(--page-canvas-filter);
-  animation: book-map-fade-in var(--duration-fast) var(--ease-out);
 }
 
-@keyframes book-map-fade-in {
-  from {
-    opacity: 0;
-  }
-}
-
-.book-map-card__placeholder {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  font-family: var(--font-serif);
-  font-size: var(--font-size-2xl);
-  font-variant-numeric: tabular-nums;
-  color: color-mix(in srgb, var(--color-text) 16%, transparent);
-}
-
-[data-theme='dark'] .book-map-card__placeholder {
-  color: color-mix(in srgb, var(--color-bg-app) 30%, transparent);
-}
-
-[data-theme='dark'] .invert-pages .book-map-card__placeholder {
-  color: color-mix(in srgb, var(--color-text) 22%, transparent);
-}
-
-/* Annotations on the thumbnail, as the page draws them. */
 .book-map-card__highlight {
   position: absolute;
-  background: var(--note-border);
-  border-radius: 1px;
-  mix-blend-mode: multiply;
+  background: color-mix(in srgb, var(--note-dot) 40%, transparent);
 }
 
-[data-theme='dark'] .book-map-card__highlight {
-  background: color-mix(in srgb, var(--note-dot) 52%, var(--page-sheet-bg));
-}
-
-[data-theme='dark'] .invert-pages .book-map-card__highlight {
-  background: color-mix(in srgb, var(--note-dot) 50%, transparent);
-  mix-blend-mode: screen;
-}
-
-.book-map-card__highlight.is-target {
-  box-shadow: 0 0 0 1px var(--note-dot);
-}
-
-.book-map-card__anchor {
+.book-map-card__dot {
   position: absolute;
   left: 100%;
   width: 8px;
@@ -355,79 +218,35 @@ html.focus-mode .book-map:not(:hover, .is-dragging, .is-keyboard) {
   background: var(--note-dot);
   border-radius: var(--radius-full);
   box-shadow: 0 0 0 2px var(--color-surface-raised);
-  transform: translate(-50%, -50%);
-}
-
-.book-map-card__anchor.is-target {
-  width: 10px;
-  height: 10px;
-  box-shadow:
-    0 0 0 2px var(--color-surface-raised),
-    0 0 0 3.5px var(--note-dot);
-}
-
-.book-map-card__ribbon {
-  position: absolute;
-  top: 0;
-  right: 12px;
-  width: 9px;
-  height: 15px;
-  background: var(--color-bookmark);
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%);
-}
-
-.book-map-card__meta {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: var(--space-2) var(--space-1) 0;
-}
-
-.book-map-card.is-compact .book-map-card__meta {
-  padding: 0;
+  translate: -50% -50%;
 }
 
 .book-map-card__page {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-1);
-  font-size: var(--font-size-sm);
-  line-height: var(--leading-snug);
-  color: var(--color-text);
   white-space: nowrap;
-}
-
-.book-map-card__page strong {
-  font-variant-numeric: tabular-nums;
-}
-
-.book-map-card__of {
-  font-size: var(--font-size-xs);
   font-variant-numeric: tabular-nums;
   color: var(--color-text-muted);
 }
 
-.book-map-card__here {
-  margin-left: auto;
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-accent);
+.book-map-card__page strong {
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
 }
 
-.book-map-card__section {
+.book-map-card__section,
+.book-map-card__items li {
   display: -webkit-box;
   overflow: hidden;
-  font-family: var(--font-serif);
-  font-size: var(--font-size-xs);
-  font-style: italic;
-  line-height: var(--leading-snug);
-  color: var(--color-text-secondary);
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2;
 }
 
-/* ---- What's on the page, or what the pointer has snapped to -------------------- */
+.book-map-card__section {
+  font-family: var(--font-serif);
+  font-style: italic;
+}
+
+/* What's on the page, or what the pointer has snapped to. */
 .book-map-card__summary,
 .book-map-card__items {
   margin-top: var(--space-1);
@@ -435,133 +254,23 @@ html.focus-mode .book-map:not(:hover, .is-dragging, .is-keyboard) {
   border-top: 1px solid var(--color-border-subtle);
 }
 
-.book-map-card__summary {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2px var(--space-2);
-  font-size: var(--font-size-xs);
-  line-height: 18px;
-  font-variant-numeric: tabular-nums;
-  color: var(--color-text-secondary);
-}
-
-.book-map-card__chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  white-space: nowrap;
-}
-
-.book-map-card :is(.book-map-card__chip--bookmark, .book-map-card__item--bookmark) .lucide {
-  width: 12px;
-  height: 12px;
-  color: var(--color-bookmark);
-  fill: var(--color-bookmark);
-}
-
-.book-map-card__swatches {
-  display: inline-flex;
-}
-
-.book-map-card__swatches > span {
-  background: var(--note-dot);
-}
-
-.book-map-card__swatches--dot > span {
-  width: 8px;
-  height: 8px;
-  border-radius: var(--radius-full);
-  box-shadow: 0 0 0 1.5px var(--color-surface-raised);
-}
-
-.book-map-card__swatches--dot > span + span {
-  margin-left: -3px;
-}
-
-.book-map-card__swatches--bar > span {
-  width: 3px;
-  height: 11px;
-  border-radius: 1px;
-}
-
-.book-map-card__swatches--bar > span + span {
-  margin-left: 2px;
-}
-
-.book-map-card__items {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  padding-top: var(--space-2);
-}
-
-.book-map-card__item {
-  display: grid;
-  grid-template-columns: 12px minmax(0, 1fr);
-  column-gap: 6px;
-  align-items: start;
-  font-size: var(--font-size-xs);
-  line-height: var(--leading-snug);
-  color: var(--color-text);
-}
-
-.book-map-card__item > :first-child {
-  justify-self: center;
-  margin-top: 2px;
-}
-
-.book-map-card__swatch {
-  background: var(--note-dot);
-}
-
-.book-map-card__item--note .book-map-card__swatch {
-  width: 8px;
-  height: 8px;
-  margin-top: 4px;
-  border-radius: var(--radius-full);
-}
-
-.book-map-card__item--highlight .book-map-card__swatch {
-  width: 3px;
-  height: 12px;
-  border-radius: 1px;
-}
-
-.book-map-card__text {
-  display: -webkit-box;
-  overflow: hidden;
-  overflow-wrap: anywhere;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-}
-
-.book-map-card__text--note,
-.book-map-card__text--quote {
+.book-map-card__items li {
+  position: relative;
+  padding-left: 14px;
   font-family: var(--font-serif);
   font-size: 12.5px;
   font-weight: var(--font-weight-note);
+  overflow-wrap: anywhere;
+  color: var(--color-text);
 }
 
-.book-map-card__text--quote {
-  font-style: italic;
-  color: var(--color-text-secondary);
-}
-
-.book-map-card__text--empty {
-  font-style: italic;
-  color: var(--color-text-muted);
-}
-
-.book-map-card__item-page {
-  grid-column: 2;
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-  color: var(--color-text-muted);
-}
-
-.book-map-card__more {
-  padding-left: 18px;
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+.book-map-card__items li::before {
+  content: '';
+  position: absolute;
+  top: 5px;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  background: var(--note-dot, var(--color-bookmark));
+  border-radius: var(--radius-full);
 }

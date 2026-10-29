@@ -1,10 +1,10 @@
 import { Focus } from 'lucide-react';
 import { ariaKeyShortcuts, withShortcut } from '../commands/keys';
-import { toggleFocusMode, useFocusMode } from './focusStore';
+import { toggleFocusMode, useFocusStore } from './focusStore';
 
 /** Toolbar toggle for focus mode. */
 export function FocusModeButton() {
-  const active = useFocusMode();
+  const active = useFocusStore((s) => s.active);
   return (
     <button
       type="button"

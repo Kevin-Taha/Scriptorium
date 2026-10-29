@@ -1,15 +1,10 @@
-/* ==========================================================================
-   Focus mode. While it is on, FocusMode puts `focus-mode` on <html> and every
-   rule here hangs off it, so nothing below matches outside focus mode.
-   ========================================================================== */
-
+/* Focus mode: FocusMode puts `focus-mode` on <html>, and every rule here hangs off it. */
 html.focus-mode {
   --focus-page-opacity: 0.45;
   --focus-note-opacity: 0.3;
 }
 
-/* ---- The toolbar recedes ----------------------------------------------------- */
-/* It leaves the grid and floats over the page, so bringing it back never moves the text. */
+/* The toolbar leaves the grid and floats over the page, so bringing it back never moves the text. */
 html.focus-mode .reader {
   position: relative;
   grid-template-rows: minmax(0, 1fr);
@@ -23,23 +18,17 @@ html.focus-mode .reader__toolbar {
   opacity: 0;
   transform: translateY(calc(-100% - 12px));
   transition:
-    transform var(--duration-base) var(--ease-in),
-    opacity var(--duration-fast) var(--ease-standard),
-    box-shadow var(--duration-base) var(--ease-standard);
+    transform var(--duration-base) var(--ease-out),
+    opacity var(--duration-fast) var(--ease-standard);
 }
 
-/* Back while the pointer is at the top edge (useToolbarReveal), or inside it with a menu open or
-   keyboard focus. */
+/* Back at the top edge (useToolbarReveal), or with keyboard focus inside or a menu open. */
 html.focus-mode.focus-toolbar .reader__toolbar,
 html.focus-mode .reader__toolbar:has(:focus-visible, [aria-expanded='true']) {
   pointer-events: auto;
   opacity: 1;
   transform: none;
   box-shadow: var(--shadow-md);
-  transition:
-    transform var(--duration-base) var(--ease-out),
-    opacity var(--duration-fast) var(--ease-standard),
-    box-shadow var(--duration-base) var(--ease-standard);
 }
 
 .focus-button[aria-pressed='true'] {
@@ -47,23 +36,17 @@ html.focus-mode .reader__toolbar:has(:focus-visible, [aria-expanded='true']) {
   background: var(--color-pressed);
 }
 
-/* ---- Pages: the one being read stays; useSpotlight dims the rest -------------------- */
+/* The page being read stays; useSpotlight dims the rest. */
 html.focus-mode .reader__page {
   transition: opacity var(--duration-slower) var(--ease-standard);
 }
 
-/* ---- Margin notes fade until their page is hovered or a note is focused -------------- */
-/* The anchor dots stay, so you can still see where notes are. */
+/* Margin notes fade until their page is hovered or a note is focused; the anchor dots stay. */
 html.focus-mode :is(.margin-note, .margin-note__leader, .margin-note__tether) {
   opacity: var(--focus-note-opacity);
-  transition:
-    opacity var(--duration-slow) var(--ease-standard),
-    box-shadow var(--duration-fast) var(--ease-standard),
-    background-color var(--duration-fast) var(--ease-standard);
 }
 
-/* notes.css glides notes to new slots once settled; that rule replaces `transition`, so it is
-   repeated here with the fade added. */
+/* notes.css glides settled notes to new slots with a `transition` that would replace the fade. */
 html.focus-mode
   .margin-column[data-settled]
   .margin-note-slot[data-ready]
@@ -71,10 +54,7 @@ html.focus-mode
   transition:
     top var(--duration-base) var(--ease-out),
     height var(--duration-base) var(--ease-out),
-    width var(--duration-fast) var(--ease-standard),
-    opacity var(--duration-slow) var(--ease-standard),
-    box-shadow var(--duration-fast) var(--ease-standard),
-    background-color var(--duration-fast) var(--ease-standard);
+    opacity var(--duration-slow) var(--ease-standard);
 }
 
 html.focus-mode
@@ -83,7 +63,7 @@ html.focus-mode
   opacity: 1;
 }
 
-/* ---- Entry hint -------------------------------------------------------------------- */
+/* The entry hint. */
 .focus-hint-region {
   position: absolute;
   inset: var(--space-4) 0 auto;
@@ -94,11 +74,7 @@ html.focus-mode
 }
 
 .focus-hint {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  height: 36px;
-  padding: 0 var(--space-4);
+  padding: var(--space-2) var(--space-4);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   white-space: nowrap;
@@ -108,38 +84,8 @@ html.focus-mode
   border-radius: var(--radius-full);
   box-shadow: var(--shadow-lg);
   transition: opacity var(--duration-slow) var(--ease-standard);
-  animation: focus-hint-in var(--duration-slow) var(--ease-out);
 }
 
 .focus-hint[data-fading] {
   opacity: 0;
-}
-
-.focus-hint .lucide {
-  width: 16px;
-  height: 16px;
-  color: var(--color-float-accent);
-}
-
-.focus-hint strong {
-  font-weight: var(--font-weight-semibold);
-}
-
-.focus-hint__sep {
-  opacity: 0.5;
-}
-
-.focus-hint .kbd {
-  height: 18px;
-  min-width: 18px;
-  color: var(--color-float-text);
-  background: transparent;
-  border-color: var(--color-float-border);
-}
-
-@keyframes focus-hint-in {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
 }

@@ -1,6 +1,5 @@
-/* Reading ruler: a clear band at the pointer with the document above and below it dimmed.
-   The two veils are full-height and only move (compositor-only); ReadingRuler sets --ruler-y and
-   --ruler-band, and keeps clear of the scrollbars with `right` and `bottom`. */
+/* Reading ruler: a clear band at the pointer, the page above and below it dimmed. ReadingRuler sets
+   --ruler-y and --ruler-band; the veils only move, so scrolling and pointer moves stay on the compositor. */
 .reading-ruler {
   --ruler-y: 40%;
   --ruler-feather: 14px;

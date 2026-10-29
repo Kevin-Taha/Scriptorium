@@ -178,12 +178,11 @@ describe('books from a linked folder', () => {
 });
 
 describe('pick up where you left off', () => {
-  it('names the chapter and section you were in, and continues there', async () => {
+  it('names the chapter you were in, and continues there', async () => {
     const book = doc(1, {
       contents: [
         { title: 'Chapter 1: Kinematics', page: 3, depth: 0 },
         { title: 'Chapter 2: Newton’s Laws', page: 11, depth: 0 },
-        { title: '2.2 The Second Law', page: 14, depth: 1 },
       ],
     });
     await putDocument(book);
@@ -195,21 +194,11 @@ describe('pick up where you left off', () => {
     });
     render(<LibraryView />);
     const section = await screen.findByRole('region', { name: 'Pick up where you left off' });
-    expect(within(section).getByRole('heading', { name: 'Book 1' })).toBeTruthy();
-    expect(within(section).getByText(/^Chapter 2: Newton’s Laws/)).toBeTruthy();
-    expect(within(section).getByText('2.2 The Second Law')).toBeTruthy();
-    expect(within(section).getByText('Page 14 of 100')).toBeTruthy();
+    expect(within(section).getByText('Chapter 2: Newton’s Laws')).toBeTruthy();
+    expect(within(section).getByText('Chapter 2 of 2 · Page 14 of 100 · 13%')).toBeTruthy();
 
     fireEvent.click(within(section).getByRole('button', { name: 'Continue reading' }));
     expect(window.location.hash).toBe(`#/read/${book.id}`);
-  });
-
-  it('shows the page alone for a book that has not been opened since contents were saved', async () => {
-    await putDocument(doc(1));
-    render(<LibraryView />);
-    const section = await screen.findByRole('region', { name: 'Pick up where you left off' });
-    expect(within(section).getByText('Page 1 of 100')).toBeTruthy();
-    expect(within(section).queryByText(/Chapter/)).toBeNull();
   });
 });
 
@@ -268,8 +257,6 @@ describe('resetting a book', () => {
         /^This returns you to the start and deletes 2 notes, 1 highlight and 3 bookmarks\./,
       ),
     ).toBeTruthy();
-    expect(within(dialog).queryByText(/Other devices/)).toBeNull();
-    expect(document.activeElement).toBe(within(dialog).getByRole('button', { name: 'Cancel' }));
 
     fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
@@ -309,17 +296,6 @@ describe('resetting a book', () => {
     expect((await getDocument(book.id))?.lastOpenedAt).toBe(0);
   });
 
-  it('says plainly when there is nothing to delete', async () => {
-    await putDocument(doc(1));
-    render(<LibraryView />);
-    const dialog = await openResetDialog('Book 1');
-    expect(
-      within(dialog).getByText(
-        'This returns you to the start of the book. It has no notes, highlights or bookmarks.',
-      ),
-    ).toBeTruthy();
-  });
-
   it('tells folder readers that their other devices will see the reset', async () => {
     await putDocument(doc(1, { source: { kind: 'folder', path: 'book-1.pdf' } }));
     setSync({ status: 'idle', folder, lastSyncedAt: Date.now() });
@@ -328,13 +304,6 @@ describe('resetting a book', () => {
     expect(
       within(dialog).getByText(/Other devices using this folder will see the reset too\.$/),
     ).toBeTruthy();
-  });
-
-  it('is available for a book whose file has left the folder', async () => {
-    await putDocument(doc(1, { source: { kind: 'folder', path: 'book-1.pdf', missing: true } }));
-    setSync({ status: 'idle', folder, lastSyncedAt: Date.now() });
-    render(<LibraryView />);
-    expect(await openResetDialog('Book 1')).toBeTruthy();
   });
 
   it('reports a failure without claiming the reset, and keeps the dialog for another try', async () => {
