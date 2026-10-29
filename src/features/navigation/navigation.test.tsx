@@ -231,15 +231,7 @@ describe('bookmark ribbon', () => {
   });
 
   it('reveals the ghost ribbon only near the top-right corner, with no button held', () => {
-    function Host() {
-      useRibbonReveal();
-      return (
-        <div className="page-sheet">
-          <span className="text" />
-        </div>
-      );
-    }
-    const { container } = render(<Host />);
+    const { container } = render(<RibbonRevealHost />);
     const sheet = container.querySelector('.page-sheet')!;
     sheet.getBoundingClientRect = () => ({ top: 0, right: 700, bottom: 800, left: 100 }) as DOMRect;
     const move = (clientX: number, clientY: number, buttons = 0) =>
@@ -257,6 +249,15 @@ describe('bookmark ribbon', () => {
     expect(sheet.hasAttribute('data-ribbon-reveal')).toBe(false);
   });
 });
+
+function RibbonRevealHost() {
+  useRibbonReveal();
+  return (
+    <div className="page-sheet">
+      <span className="text" />
+    </div>
+  );
+}
 
 function ShortcutHost() {
   useKeyboardShortcuts();

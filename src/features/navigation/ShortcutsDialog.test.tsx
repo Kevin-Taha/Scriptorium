@@ -47,6 +47,16 @@ function DialogHost() {
   );
 }
 
+function LibraryHost({ enabled }: { enabled: boolean }) {
+  useHelpShortcut(enabled);
+  return (
+    <>
+      <input aria-label="Editing" />
+      <ShortcutsDialog />
+    </>
+  );
+}
+
 describe('keyboard shortcuts dialog', () => {
   it('opens from the exported action and restores focus after closing', () => {
     render(<DialogHost />);
@@ -79,15 +89,6 @@ describe('keyboard shortcuts dialog', () => {
   });
 
   it('opens with ? on screens that use the shell shortcut, unless switched off or typing', () => {
-    function LibraryHost({ enabled }: { enabled: boolean }) {
-      useHelpShortcut(enabled);
-      return (
-        <>
-          <input aria-label="Editing" />
-          <ShortcutsDialog />
-        </>
-      );
-    }
     const { rerender } = render(<LibraryHost enabled={false} />);
     fireEvent.keyDown(window, { key: '?', shiftKey: true });
     expect(screen.queryByRole('dialog')).toBeNull();
