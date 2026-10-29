@@ -132,8 +132,8 @@ Ctrl/Cmd+F for in-book search). Press `?` in the reader to see them all.
 | `F` | Focus mode (`Esc` also leaves) |
 | `R` | Reading ruler |
 | `Ctrl+B` / `Cmd+B`, `Ctrl+I` / `Cmd+I` | Bold / italic while writing a note |
-| `Ctrl+F` / `Cmd+F` or `/` | Search the book |
-| `Enter` / `Shift+Enter` (or `F3` / `Shift+F3`) | Next / previous search result |
+| `Ctrl+F` / `Cmd+F` or `/` | Find in the book (opens Go to) |
+| `F3` / `Shift+F3` | Next / previous match |
 | `[` | Toggle the sidebar |
 | `Shift+R` | Open or close collated notes review |
 | `Alt+Left` | Go back in reader navigation history |
@@ -153,7 +153,7 @@ builds on the dependable local reading and note-taking loop.
 
 ### M2 — Find and navigate
 
-- ✅ **Full-text search:** search the book with a results list, page context, in-page highlights, and history-aware jumps.
+- ✅ **Full-text search:** search the book from Go to, with page context, in-page highlights, and history-aware jumps.
 - ✅ **Page labels:** show and navigate printed page labels, including Roman numerals and offsets, alongside PDF page numbers.
 - ✅ **Link peek:** preview a figure, equation, or reference in a popover without leaving the current page.
 - ✅ **Highlights:** add colored text highlights and link them to margin notes.

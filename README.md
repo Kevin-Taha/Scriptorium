@@ -24,20 +24,19 @@ where you left off — days later.
   (<kbd>Alt</kbd>+<kbd>←</kbd>/<kbd>→</kbd>) take you straight back.
 - **Peek at references.** Hover a link like *"see Figure 3.2"* to preview the figure in a card
   without leaving the page; jump there only if you want to.
-- **Go to anything.** Press <kbd>G</kbd> (or click the section name in the toolbar) and type a page
-  number, a chapter, a bookmark or words from a note — or an action like *dark* or *focus*.
+- **Go to anything.** Press <kbd>G</kbd> or <kbd>Ctrl</kbd>+<kbd>F</kbd> (or click the section name in
+  the toolbar) and type a page number, a chapter, a bookmark, words from a note or anything in the
+  book — or an action like *dark* or *focus*. Text matches stay highlighted; <kbd>F3</kbd> steps
+  through them.
 - **A map of the whole book.** A slim fore-edge along the right of the reader shows chapters, notes,
-  highlights and bookmarks. Hover to preview a page, click or drag to travel; it snaps to your notes and
-  bookmarks so they're easy to land on.
+  highlights and bookmarks. Hover to preview a page, click or drag to travel.
 - **Know where you are in the chapter.** A hairline under the toolbar splits the book into chapters and
-  fills as you read; hover it for pages left.
+  fills as you read.
 - **Focus mode and a reading ruler.** <kbd>F</kbd> clears the chrome away so only the page remains;
   <kbd>R</kbd> adds a band that keeps your place on the line.
-- **Search the whole book.** <kbd>Ctrl</kbd>+<kbd>F</kbd> searches every page with results grouped
-  by section, highlights on the page, and a single *Return* back to where you started.
 - **Bookmarks and contents.** Click the ribbon at a page's top-right corner (or press <kbd>B</kbd>) to
-  bookmark it; labels default to the chapter
-  they're in. The table of contents tracks the section you're reading.
+  bookmark it; labels default to the chapter they're in. The table of contents tracks the section
+  you're reading.
 - **Real page numbers.** Printed page labels (roman-numeral front matter, offset numbering) are
   shown and accepted everywhere, so "p. 142" means the book's page 142.
 - **Start a book over.** *Reset progress…* in a book's menu in the library clears its reading
@@ -66,7 +65,7 @@ each thing without the keyboard. The most used:
 | <kbd>F</kbd> | Focus mode (<kbd>Esc</kbd> also leaves) |
 | <kbd>R</kbd> | Reading ruler |
 | <kbd>Ctrl</kbd>+<kbd>B</kbd> / <kbd>Ctrl</kbd>+<kbd>I</kbd> | Bold / italic while writing a note |
-| <kbd>Ctrl</kbd>+<kbd>F</kbd> or <kbd>/</kbd> | Search the book; <kbd>Enter</kbd> / <kbd>Shift</kbd>+<kbd>Enter</kbd> step through results |
+| <kbd>Ctrl</kbd>+<kbd>F</kbd> or <kbd>/</kbd> | Find in the book (opens Go to); <kbd>F3</kbd> / <kbd>Shift</kbd>+<kbd>F3</kbd> step through matches |
 | <kbd>[</kbd> | Toggle the sidebar |
 | <kbd>Shift</kbd>+<kbd>R</kbd> | Open or close the notes review |
 | <kbd>Alt</kbd>+<kbd>←</kbd> / <kbd>Alt</kbd>+<kbd>→</kbd> | Back / forward through jumps |
@@ -134,7 +133,7 @@ src/
     bookmap/    The book map along the reader's right edge
     focus/      Focus mode and the reading ruler
     notes/      Margin notes (bold/italic editing), collated review, Markdown export
-    search/     Full-text index, search panel and in-page highlights
+    search/     Full-text index and in-page highlights
   lib/
     pdf/        pdf.js loading, destinations and outline, thumbnails
     storage/    IndexedDB schema and repository
