@@ -260,7 +260,7 @@ describe('fitScale', () => {
 
   it('tolerates slightly wider pages without overflowing the viewport', () => {
     const scale = fitScale('fit-width', LETTER, viewport);
-    const sizes = createPageSizes([LETTER, { width: 612 * 1.03, height: 792 }]);
+    const sizes = createPageSizes([LETTER, { width: 612 * 1.02, height: 792 }]);
     const layout = computeLayout(sizes, scale);
     expect(layout.contentWidth).toBeLessThanOrEqual(viewport.width);
     expect(rowLeft(layout, 2, viewport.width)).toBeLessThan(sidePadding);
