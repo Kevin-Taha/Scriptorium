@@ -1,13 +1,11 @@
 import { useEffect } from 'react';
 import { isEditableTarget } from '@/lib/util';
+import { type KeyEvent, matches } from '../commands/keys';
 import { highlightSelection } from './highlightActions';
 
-/** True for a bare `H` press (no modifiers, not auto-repeat). */
-export function isHighlightShortcut(
-  event: Pick<KeyboardEvent, 'key' | 'ctrlKey' | 'metaKey' | 'altKey' | 'shiftKey' | 'repeat'>,
-): boolean {
-  const { key, ctrlKey, metaKey, altKey, shiftKey, repeat } = event;
-  return key.toLowerCase() === 'h' && !ctrlKey && !metaKey && !altKey && !shiftKey && !repeat;
+/** True for the highlight key (`H`), unless auto-repeated. */
+export function isHighlightShortcut(event: KeyEvent & Pick<KeyboardEvent, 'repeat'>): boolean {
+  return matches(event, 'highlight') && !event.repeat;
 }
 
 /**

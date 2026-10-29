@@ -8,9 +8,10 @@ import { nextStamp } from '@/lib/sync/clock';
 import { currentDeviceId } from '@/lib/sync/device';
 import type { DocId, LibraryDocument, OutlineItem, ReadingLocation, ZoomState } from '@/lib/types';
 import { debounce } from '@/lib/util';
+import { contentsFromOutline, sameContents } from '../library/bookProgress';
 import { readBookBytes } from '../sync/bookBytes';
 
-export type SidebarTab = 'contents' | 'bookmarks' | 'notes' | 'search';
+export type SidebarTab = 'contents' | 'bookmarks' | 'notes';
 export type LoadStatus = 'idle' | 'loading' | 'ready' | 'error';
 
 /** Imperative handle the viewer registers while it is mounted. */
@@ -99,9 +100,12 @@ export const useReaderStore = create<ReaderState>()((set, get) => ({
         return;
       }
       const lastOpenedAt = Date.now();
+      const contents = contentsFromOutline(outline);
+      // Saved once per book, so the library can name the chapter without opening the PDF.
+      const patch = sameContents(doc.contents, contents) ? { lastOpenedAt } : { lastOpenedAt, contents };
       progressStamp = saved?.updatedAt ?? 0;
       set({
-        doc: { ...doc, lastOpenedAt },
+        doc: { ...doc, ...patch },
         pdf,
         outline,
         pageLabels,
@@ -109,7 +113,7 @@ export const useReaderStore = create<ReaderState>()((set, get) => ({
         location: saved?.location ?? START,
         zoom: saved?.zoom ?? DEFAULT_ZOOM,
       });
-      void updateDocument(docId, { lastOpenedAt });
+      void updateDocument(docId, patch);
     } catch (err) {
       if (token !== openToken) return;
       set({ status: 'error', error: err instanceof Error ? err.message : String(err) });

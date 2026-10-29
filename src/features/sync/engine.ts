@@ -30,7 +30,7 @@ import {
 import { getDevice } from '@/lib/sync/device';
 import { canonicalBookData, isEmptyBookData, mergeBookData, stableStringify } from '@/lib/sync/merge';
 import type { DocId, LibraryDocument } from '@/lib/types';
-import { debounce } from '@/lib/util';
+import { debounce, isAtStart } from '@/lib/util';
 import type { FolderAccess, FolderRoot } from './folderAccess';
 import {
   ensurePermission,
@@ -492,8 +492,9 @@ export class FolderSyncEngine implements FolderAccess {
       fileSize: size,
       pageCount: known?.pageCount ?? 0,
       addedAt: now,
-      // Never opened anywhere yet: 0 sorts it after books being read. Progress from another device counts.
-      lastOpenedAt: progress?.updatedAt ?? 0,
+      // Never opened anywhere yet: 0 sorts it after books being read. Reading from another device counts,
+      // but a position at the very start (such as after "Reset progress") means not started.
+      lastOpenedAt: progress && !isAtStart(progress.location) ? progress.updatedAt : 0,
       source: { kind: 'folder', path },
     };
     await putDocument(doc);
@@ -607,12 +608,21 @@ export class FolderSyncEngine implements FolderAccess {
     return merged;
   }
 
-  /** Lets books read on another device rise to the top of the library ("continue reading"). */
+  /**
+   * Lets books read on another device rise to the top of the library ("continue reading"). A position
+   * at the very start doesn't count: nothing was read, or the book was reset there.
+   */
   private async followRemoteProgress(merged: ReadonlySet<DocId>, ownId: string): Promise<void> {
     let changed = false;
     for (const id of merged) {
       const [doc, progress] = await Promise.all([getDocument(id), getReadingState(id)]);
-      if (doc && progress && progress.deviceId !== ownId && progress.updatedAt > doc.lastOpenedAt) {
+      if (
+        doc &&
+        progress &&
+        progress.deviceId !== ownId &&
+        progress.updatedAt > doc.lastOpenedAt &&
+        !isAtStart(progress.location)
+      ) {
         await updateDocument(id, { lastOpenedAt: progress.updatedAt });
         changed = true;
       }

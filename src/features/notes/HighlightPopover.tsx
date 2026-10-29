@@ -115,7 +115,10 @@ export function HighlightPopover() {
 
     const close = () => ui().closePopover();
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') close();
+      if (event.key !== 'Escape') return;
+      // Esc closes only the popover when one is open, not focus mode or the Return pill too.
+      if (ui().activeId !== null) event.preventDefault();
+      close();
     };
     const onSelectionChange = () => {
       if (window.getSelection()?.isCollapsed === false) close();

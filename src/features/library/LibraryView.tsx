@@ -12,23 +12,38 @@ import { navigate } from '@/app/router';
 import { InstallButton } from '@/app/pwa/InstallButton';
 import { ThemeMenu } from '@/app/ThemeMenu';
 import { showToast } from '@/components/Toast';
+import { ShortcutsButton } from '@/features/navigation/ShortcutsDialog';
 import { linkLibraryFolder } from '@/features/settings/folderActions';
 import { openLibraryStorageDialog } from '@/features/settings/storageDialogStore';
 import { requestPersistenceQuietly } from '@/features/settings/storageStatus';
 import { useSyncStore } from '@/features/sync/syncStore';
-import { deleteDocument, getReadingState, listDocuments } from '@/lib/storage/repository';
+import {
+  deleteDocument,
+  getBookData,
+  getReadingState,
+  listDocuments,
+  resetBookProgress,
+} from '@/lib/storage/repository';
 import { onBookDataMerged } from '@/lib/sync/apply';
+import { currentDeviceId } from '@/lib/sync/device';
 import type { LibraryDocument, ReadingState } from '@/lib/types';
-import { debounce, formatRelativeTime } from '@/lib/util';
-import { BookCard, BookCover, isMissingFromFolder } from './BookCard';
+import { debounce } from '@/lib/util';
+import { BookCard, isMissingFromFolder } from './BookCard';
 import { ConfirmDialog } from './ConfirmDialog';
 import { FolderStatusChip } from './FolderStatusChip';
 import { importPdfFile } from './importPdf';
+import { type AnnotationCounts, describeReset } from './libraryUtils';
+import { NowReading } from './NowReading';
 import './library.css';
 
 interface LibraryEntry {
   doc: LibraryDocument;
   reading?: ReadingState;
+}
+
+interface PendingReset {
+  doc: LibraryDocument;
+  counts: AnnotationCounts;
 }
 
 function isFileDrag(event: DragEvent): boolean {
@@ -42,12 +57,14 @@ export function LibraryView() {
   const [dragging, setDragging] = useState(false);
   const [removing, setRemoving] = useState<LibraryDocument | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [resetting, setResetting] = useState<PendingReset | null>(null);
+  const [resetBusy, setResetBusy] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const openButton = useRef<HTMLButtonElement>(null);
   const importLock = useRef(false);
   const dragDepth = useRef(0);
   const loadVersion = useRef(0);
-  const removalOpener = useRef<HTMLButtonElement | null>(null);
+  const dialogOpener = useRef<HTMLButtonElement | null>(null);
   const syncStatus = useSyncStore((s) => s.status);
   const folder = useSyncStore((s) => s.folder);
   const libraryRevision = useSyncStore((s) => s.libraryRevision);
@@ -195,7 +212,8 @@ export function LibraryView() {
 
   const closeDialog = () => {
     setRemoving(null);
-    requestAnimationFrame(() => removalOpener.current?.focus());
+    setResetting(null);
+    requestAnimationFrame(() => dialogOpener.current?.focus());
   };
   const confirmRemoval = async () => {
     if (!removing || deleting) return;
@@ -210,6 +228,34 @@ export function LibraryView() {
       showToast('Couldn’t remove this book. Please try again.', { tone: 'error' });
     } finally {
       setDeleting(false);
+    }
+  };
+  const askReset = async (doc: LibraryDocument, opener: HTMLButtonElement | null) => {
+    dialogOpener.current = opener;
+    try {
+      const { notes, highlights, bookmarks } = await getBookData(doc.id);
+      setResetting({
+        doc,
+        counts: { notes: notes.length, highlights: highlights.length, bookmarks: bookmarks.length },
+      });
+    } catch {
+      showToast('Couldn’t read this book’s notes. Please try again.', { tone: 'error' });
+    }
+  };
+  const confirmReset = async () => {
+    if (!resetting || resetBusy) return;
+    const { doc } = resetting;
+    setResetBusy(true);
+    try {
+      await resetBookProgress(doc.id, currentDeviceId());
+      setResetting(null);
+      await refresh();
+      requestAnimationFrame(() => dialogOpener.current?.focus());
+      showToast(`Reset “${doc.title}”`);
+    } catch {
+      showToast('Couldn’t reset this book. Please try again.', { tone: 'error' });
+    } finally {
+      setResetBusy(false);
     }
   };
   const openPicker = () => fileInput.current?.click();
@@ -240,6 +286,7 @@ export function LibraryView() {
         </div>
         <div className="library__topline-actions">
           <InstallButton />
+          <ShortcutsButton />
           <button
             type="button"
             className="btn btn--ghost btn--icon tooltip tooltip--below"
@@ -351,27 +398,11 @@ export function LibraryView() {
       {entries && entries.length > 0 && (
         <>
           {recent && (
-            <section aria-labelledby="continue-heading" className="library__continue-section">
+            <section aria-labelledby="continue-heading">
               <div className="library__section-heading">
                 <h2 id="continue-heading">Pick up where you left off</h2>
-                <span>LAST OPENED</span>
               </div>
-              <div className="card library__continue">
-                <BookCover doc={recent.doc} className="library__continue-cover" />
-                <div className="library__continue-info">
-                  <p className="library__continue-label">CONTINUE READING</p>
-                  <h3>{recent.doc.title}</h3>
-                  <p>
-                    {recent.doc.pageCount > 0
-                      ? `Page ${recent.reading?.location.page ?? 1} of ${recent.doc.pageCount}`
-                      : `Page ${recent.reading?.location.page ?? 1}`}{' '}
-                    <span aria-hidden="true">·</span> {formatRelativeTime(recent.doc.lastOpenedAt)}
-                  </p>
-                </div>
-                <button type="button" className="btn btn--primary" onClick={() => openBook(recent.doc)}>
-                  Continue reading
-                </button>
-              </div>
+              <NowReading doc={recent.doc} reading={recent.reading} onContinue={() => openBook(recent.doc)} />
             </section>
           )}
           <section aria-labelledby="books-heading" className="library__books">
@@ -388,8 +419,9 @@ export function LibraryView() {
                   doc={doc}
                   reading={reading}
                   onOpen={() => openBook(doc)}
+                  onReset={(opener) => void askReset(doc, opener)}
                   onRemove={(opener) => {
-                    removalOpener.current = opener;
+                    dialogOpener.current = opener;
                     setRemoving(doc);
                   }}
                 />
@@ -414,6 +446,17 @@ export function LibraryView() {
           busy={deleting}
           onCancel={closeDialog}
           onConfirm={() => void confirmRemoval()}
+        />
+      )}
+      {resetting && (
+        <ConfirmDialog
+          title={`Reset “${resetting.doc.title}”?`}
+          description={describeReset(resetting.counts, folderLinked)}
+          confirmLabel="Reset"
+          busyLabel="Resetting…"
+          busy={resetBusy}
+          onCancel={closeDialog}
+          onConfirm={() => void confirmReset()}
         />
       )}
       <span className="visually-hidden" aria-live="polite">

@@ -16,19 +16,46 @@ const doc = (overrides: Partial<LibraryDocument> = {}): LibraryDocument => ({
   ...overrides,
 });
 
-const renderCard = (document: LibraryDocument, onOpen = vi.fn(), onRemove = vi.fn()) => {
-  render(<BookCard doc={document} onOpen={onOpen} onRemove={onRemove} />);
-  return { onOpen, onRemove };
+const renderCard = (document: LibraryDocument, onOpen = vi.fn(), onRemove = vi.fn(), onReset = vi.fn()) => {
+  render(<BookCard doc={document} onOpen={onOpen} onReset={onReset} onRemove={onRemove} />);
+  return { onOpen, onRemove, onReset };
 };
+
+const openMenu = () =>
+  fireEvent.click(screen.getByRole('button', { name: 'More options for Classical Mechanics' }));
 
 describe('BookCard', () => {
   it('lets an imported book be removed from the library', () => {
     const { onRemove } = renderCard(doc());
-    fireEvent.click(screen.getByRole('button', { name: 'More options for Classical Mechanics' }));
+    openMenu();
     fireEvent.click(screen.getByRole('button', { name: 'Remove from library…' }));
     expect(onRemove).toHaveBeenCalledTimes(1);
     expect(screen.queryByTitle(/\.pdf$/)).toBeNull();
   });
+
+  it.each([
+    ['an imported book', {}],
+    ['a folder book', { source: { kind: 'folder', path: 'mechanics.pdf' } }],
+    [
+      'a folder book whose file is missing',
+      { source: { kind: 'folder', path: 'mechanics.pdf', missing: true } },
+    ],
+  ] as [string, Partial<LibraryDocument>][])(
+    'lets %s be reset, above the removal choice',
+    (_name, overrides) => {
+      const { onReset, onRemove } = renderCard(doc(overrides));
+      openMenu();
+      const items = screen.getAllByRole('button').filter((button) => button.closest('.book-card__popover'));
+      expect(items[0].textContent).toBe('Reset progress…');
+      fireEvent.click(items[0]);
+      expect(onReset).toHaveBeenCalledTimes(1);
+      expect(onReset.mock.calls[0][0]).toBe(
+        screen.getByRole('button', { name: 'More options for Classical Mechanics' }),
+      );
+      expect(onRemove).not.toHaveBeenCalled();
+      expect(screen.queryByRole('button', { name: 'Reset progress…' })).toBeNull();
+    },
+  );
 
   it('marks a folder book with its relative path', () => {
     renderCard(doc({ source: { kind: 'folder', path: 'Physics/mechanics.pdf' } }));
@@ -38,7 +65,7 @@ describe('BookCard', () => {
 
   it('explains how to remove a folder book instead of offering to', () => {
     renderCard(doc({ source: { kind: 'folder', path: 'mechanics.pdf' } }));
-    fireEvent.click(screen.getByRole('button', { name: 'More options for Classical Mechanics' }));
+    openMenu();
     expect(screen.getByText('Remove the file from the folder to remove this book.')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Remove from library…' })).toBeNull();
   });

@@ -1,41 +1,26 @@
 import { describe, expect, it } from 'vitest';
-import { buildSnippet, createMatcher, findMatches, type SearchOptions } from './matcher';
+import { buildSnippet, createMatcher, findMatches } from './matcher';
 import { makePage } from './testPages';
-
-const OFF: SearchOptions = { matchCase: false, wholeWord: false };
 
 const page = (...lines: string[]) => makePage(1, ...lines);
 
-function find(text: ReturnType<typeof page>, query: string, options = OFF) {
-  const matcher = createMatcher(query, options)!;
+function find(text: ReturnType<typeof page>, query: string) {
+  const matcher = createMatcher(query)!;
   return findMatches(text, matcher).map(({ start, end }) => text.text.slice(start, end));
 }
 
 describe('createMatcher', () => {
   it('ignores empty queries and tidies the rest', () => {
-    expect(createMatcher('   ', OFF)).toBeNull();
-    expect(createMatcher('  kinetic \t energy ', OFF)?.query).toBe('kinetic energy');
+    expect(createMatcher('   ')).toBeNull();
+    expect(createMatcher('  kinetic \t energy ')?.query).toBe('kinetic energy');
   });
 });
 
 describe('findMatches', () => {
   const text = page('Inertia and inertial frames.', 'The INERTIA of a body; Inertia again.');
 
-  it('ignores case by default', () => {
+  it('ignores case', () => {
     expect(find(text, 'inertia')).toEqual(['Inertia', 'inertia', 'INERTIA', 'Inertia']);
-  });
-
-  it('matches case when asked to', () => {
-    expect(find(text, 'Inertia', { matchCase: true, wholeWord: false })).toEqual(['Inertia', 'Inertia']);
-    expect(find(text, 'INERTIA', { matchCase: true, wholeWord: false })).toEqual(['INERTIA']);
-  });
-
-  it('matches whole words only when asked to', () => {
-    expect(find(text, 'inertia', { matchCase: false, wholeWord: true })).toEqual([
-      'Inertia',
-      'INERTIA',
-      'Inertia',
-    ]);
   });
 
   it('finds phrases across a line break', () => {
@@ -51,26 +36,15 @@ describe('findMatches', () => {
     expect(find(accented, "schrodinger's")).toEqual(['Schrödinger’s']);
   });
 
-  it('keeps case sensitivity when diacritics differ', () => {
-    const accented = page('Électron and électron');
-    expect(find(accented, 'Electron', { matchCase: true, wholeWord: false })).toEqual(['Électron']);
-  });
-
-  it('does not treat punctuation edges as word characters', () => {
-    const code = page('Use C++ or C# here, not C or Cobol.');
-    expect(find(code, 'c++', { matchCase: false, wholeWord: true })).toEqual(['C++']);
-    expect(find(code, 'c', { matchCase: false, wholeWord: true })).toEqual(['C', 'C', 'C']);
-  });
-
   it('returns non-overlapping matches and honours the limit', () => {
     const repeated = page('aaaa aa');
     expect(find(repeated, 'aa')).toHaveLength(3);
-    const matcher = createMatcher('aa', OFF)!;
+    const matcher = createMatcher('aa')!;
     expect(findMatches(repeated, matcher, 2)).toHaveLength(2);
   });
 
   it('reports offsets into the readable text', () => {
-    const [match] = findMatches(text, createMatcher('frames', OFF)!);
+    const [match] = findMatches(text, createMatcher('frames')!);
     expect(text.text.slice(match.start, match.end)).toBe('frames');
     expect(text.text.slice(match.start - 9, match.start)).toBe('inertial ');
   });

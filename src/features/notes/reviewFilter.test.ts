@@ -10,6 +10,7 @@ import {
   foldText,
   hasActiveFilters,
   highlightSegments,
+  markRuns,
   matchesFilters,
   matchesItemFilters,
   sameNotes,
@@ -66,6 +67,14 @@ describe('matchesFilters', () => {
   it('combines text and colour filters', () => {
     expect(matchesFilters(n, searchTerms('law'), ['rose'])).toBe(false);
     expect(matchesFilters(n, searchTerms('law'), ['sky'])).toBe(true);
+  });
+
+  it('matches the words of formatted text, not its markers', () => {
+    const formatted = note({ text: 'A **key** *insight* about \\*stars and m*v' });
+    expect(matchesFilters(formatted, searchTerms('key insight'), [])).toBe(true);
+    expect(matchesFilters(formatted, searchTerms('*stars'), [])).toBe(true);
+    expect(matchesFilters(formatted, searchTerms('m*v'), [])).toBe(true);
+    expect(matchesFilters(formatted, searchTerms('**key'), [])).toBe(false);
   });
 });
 
@@ -158,6 +167,27 @@ describe('highlightSegments', () => {
       { text: 'book', match: true },
       { text: ' 📚', match: false },
     ]);
+  });
+});
+
+describe('markRuns', () => {
+  const run = (text: string, bold = false, italic = false) => ({ text, bold, italic });
+
+  it('marks matches inside and across bold and italic runs', () => {
+    expect(
+      markRuns([run('A '), run('key', true), run(' in'), run('sight', false, true)], ['insight', 'ke']),
+    ).toEqual([
+      { ...run('A '), match: false },
+      { ...run('ke', true), match: true },
+      { ...run('y', true), match: false },
+      { ...run(' '), match: false },
+      { ...run('in'), match: true },
+      { ...run('sight', false, true), match: true },
+    ]);
+  });
+
+  it('leaves runs unmarked without terms', () => {
+    expect(markRuns([run('bold', true)], [])).toEqual([{ ...run('bold', true), match: false }]);
   });
 });
 

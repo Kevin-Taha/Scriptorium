@@ -1,0 +1,91 @@
+/* Focus mode: FocusMode puts `focus-mode` on <html>, and every rule here hangs off it. */
+html.focus-mode {
+  --focus-page-opacity: 0.45;
+  --focus-note-opacity: 0.3;
+}
+
+/* The toolbar leaves the grid and floats over the page, so bringing it back never moves the text. */
+html.focus-mode .reader {
+  position: relative;
+  grid-template-rows: minmax(0, 1fr);
+}
+
+html.focus-mode .reader__toolbar {
+  position: absolute;
+  inset: 0 0 auto;
+  height: var(--toolbar-height);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(calc(-100% - 12px));
+  transition:
+    transform var(--duration-base) var(--ease-out),
+    opacity var(--duration-fast) var(--ease-standard);
+}
+
+/* Back at the top edge (useToolbarReveal), or with keyboard focus inside or a menu open. */
+html.focus-mode.focus-toolbar .reader__toolbar,
+html.focus-mode .reader__toolbar:has(:focus-visible, [aria-expanded='true']) {
+  pointer-events: auto;
+  opacity: 1;
+  transform: none;
+  box-shadow: var(--shadow-md);
+}
+
+.focus-button[aria-pressed='true'] {
+  color: var(--color-text);
+  background: var(--color-pressed);
+}
+
+/* The page being read stays; useSpotlight dims the rest. */
+html.focus-mode .reader__page {
+  transition: opacity var(--duration-slower) var(--ease-standard);
+}
+
+/* Margin notes fade until their page is hovered or a note is focused; the anchor dots stay. */
+html.focus-mode :is(.margin-note, .margin-note__leader, .margin-note__tether) {
+  opacity: var(--focus-note-opacity);
+}
+
+/* notes.css glides settled notes to new slots with a `transition` that would replace the fade. */
+html.focus-mode
+  .margin-column[data-settled]
+  .margin-note-slot[data-ready]
+  :is(.margin-note, .margin-note__leader, .margin-note__tether) {
+  transition:
+    top var(--duration-base) var(--ease-out),
+    height var(--duration-base) var(--ease-out),
+    opacity var(--duration-slow) var(--ease-standard);
+}
+
+html.focus-mode
+  .reader__page:is(:hover, :has(.margin-note:focus-within))
+  :is(.margin-note, .margin-note__leader, .margin-note__tether) {
+  opacity: 1;
+}
+
+/* The entry hint. */
+.focus-hint-region {
+  position: absolute;
+  inset: var(--space-4) 0 auto;
+  z-index: var(--z-sticky);
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.focus-hint {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  color: var(--color-float-text);
+  background: var(--color-float-bg);
+  border: 1px solid var(--color-float-border);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-lg);
+  transition: opacity var(--duration-slow) var(--ease-standard);
+}
+
+.focus-hint[data-fading] {
+  opacity: 0;
+}

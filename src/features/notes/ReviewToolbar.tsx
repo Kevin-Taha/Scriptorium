@@ -2,6 +2,8 @@ import type { RefObject } from 'react';
 import { ArrowLeft, Download, Search, X } from 'lucide-react';
 import { ThemeMenu } from '@/app/ThemeMenu';
 import { NOTE_COLORS, type NoteColor } from '@/lib/types';
+import { ariaKeyShortcuts, keyLabel, withShortcut } from '../commands/keys';
+import { ShortcutsButton } from '../navigation/ShortcutsDialog';
 import { NOTE_COLOR_LABELS } from './noteColors';
 import type { ReviewDensity } from './reviewDensity';
 import { toggleColor, type ReviewFilters } from './reviewFilter';
@@ -34,7 +36,13 @@ export function ReviewToolbar(props: ReviewToolbarProps) {
 
   return (
     <header className="review__toolbar" role="toolbar" aria-label="Notes review">
-      <button type="button" className="btn btn--ghost review__back" onClick={onBack}>
+      <button
+        type="button"
+        className="btn btn--ghost review__back tooltip tooltip--below"
+        data-tooltip={withShortcut('Back to book', 'close-review')}
+        aria-keyshortcuts={ariaKeyShortcuts('close-review')}
+        onClick={onBack}
+      >
         <ArrowLeft /> Back to book
       </button>
       <span className="divider divider--vertical" aria-hidden="true" />
@@ -61,7 +69,7 @@ export function ReviewToolbar(props: ReviewToolbarProps) {
               type="search"
               placeholder="Filter notes"
               aria-label="Filter notes"
-              aria-keyshortcuts="/"
+              aria-keyshortcuts={ariaKeyShortcuts('filter-notes')}
               autoComplete="off"
               spellCheck={false}
               value={filters.query}
@@ -89,7 +97,7 @@ export function ReviewToolbar(props: ReviewToolbarProps) {
             ) : (
               // biome-ignore lint/a11y/noAriaHiddenOnFocusable: <kbd> is not focusable; the hint is redundant for screen readers
               <kbd className="kbd review-search__hint" aria-hidden="true">
-                /
+                {keyLabel('filter-notes')}
               </kbd>
             )}
           </div>
@@ -133,6 +141,8 @@ export function ReviewToolbar(props: ReviewToolbarProps) {
       )}
 
       <ThemeMenu />
+      {/* Near the toolbar's end, its tooltip aligns right so it stays in the window. */}
+      <ShortcutsButton className="review-tooltip-end" />
 
       {hasNotes && (
         <button

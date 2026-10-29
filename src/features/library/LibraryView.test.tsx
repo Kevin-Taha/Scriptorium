@@ -5,7 +5,17 @@ import { useStorageDialogStore } from '@/features/settings/storageDialogStore';
 import { useSyncStore } from '@/features/sync/syncStore';
 import { DB_NAME, resetDBForTests } from '@/lib/storage/db';
 import { requestPersistentStorage } from '@/lib/storage/persistence';
-import { putDocument } from '@/lib/storage/repository';
+import {
+  getBookData,
+  getDocument,
+  getReadingState,
+  putBookmark,
+  putDocument,
+  putHighlight,
+  putNote,
+  putReadingState,
+  resetBookProgress,
+} from '@/lib/storage/repository';
 import type { LibraryDocument } from '@/lib/types';
 import { importPdfFile } from './importPdf';
 import { LibraryView } from './LibraryView';
@@ -15,6 +25,10 @@ vi.mock('@/lib/storage/persistence', () => ({
   getStorageStatus: vi.fn(async () => ({ persisted: true })),
   requestPersistentStorage: vi.fn(async () => true),
 }));
+vi.mock('@/lib/storage/repository', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/storage/repository')>();
+  return { ...actual, resetBookProgress: vi.fn(actual.resetBookProgress) };
+});
 
 const folder = { name: 'Textbooks', linkedAt: 0 };
 const hour = 3600_000;
@@ -160,6 +174,154 @@ describe('books from a linked folder', () => {
     await putDocument(doc(4, { source: { kind: 'folder', path: 'book-4.pdf' } }));
     setSync({ libraryRevision: 1 });
     expect(await screen.findByRole('button', { name: /^Open Book 4,/ })).toBeTruthy();
+  });
+});
+
+describe('pick up where you left off', () => {
+  it('names the chapter you were in, and continues there', async () => {
+    const book = doc(1, {
+      contents: [
+        { title: 'Chapter 1: Kinematics', page: 3, depth: 0 },
+        { title: 'Chapter 2: Newton’s Laws', page: 11, depth: 0 },
+      ],
+    });
+    await putDocument(book);
+    await putReadingState({
+      docId: book.id,
+      location: { page: 14, offset: 0 },
+      zoom: { mode: 'fit-width', scale: 1 },
+      updatedAt: 1,
+    });
+    render(<LibraryView />);
+    const section = await screen.findByRole('region', { name: 'Pick up where you left off' });
+    expect(within(section).getByText('Chapter 2: Newton’s Laws')).toBeTruthy();
+    expect(within(section).getByText('Chapter 2 of 2 · Page 14 of 100 · 13%')).toBeTruthy();
+
+    fireEvent.click(within(section).getByRole('button', { name: 'Continue reading' }));
+    expect(window.location.hash).toBe(`#/read/${book.id}`);
+  });
+});
+
+describe('resetting a book', () => {
+  const zoom = { mode: 'custom', scale: 1.3 } as const;
+
+  /** A book being read, holding two notes, a highlight and three bookmarks. */
+  async function seedReading(book: LibraryDocument): Promise<void> {
+    await putDocument(book);
+    for (const id of ['n1', 'n2']) {
+      await putNote({
+        id,
+        docId: book.id,
+        page: 3,
+        y: 0.1,
+        text: id,
+        color: 'amber',
+        createdAt: 1,
+        updatedAt: 1,
+      });
+    }
+    await putHighlight({
+      id: 'h1',
+      docId: book.id,
+      page: 2,
+      rects: [{ x: 0.1, y: 0.1, w: 0.5, h: 0.02 }],
+      text: 'h1',
+      color: 'sky',
+      createdAt: 1,
+      updatedAt: 1,
+    });
+    for (const id of ['b1', 'b2', 'b3']) {
+      await putBookmark({ id, docId: book.id, page: 4, label: id, createdAt: 1 });
+    }
+    await putReadingState({
+      docId: book.id,
+      location: { page: 50, offset: 0 },
+      zoom,
+      updatedAt: 1,
+    });
+  }
+
+  const openResetDialog = async (title: string) => {
+    fireEvent.click(await screen.findByRole('button', { name: `More options for ${title}` }));
+    fireEvent.click(screen.getByRole('button', { name: 'Reset progress…' }));
+    return screen.findByRole('dialog', { name: `Reset “${title}”?` });
+  };
+
+  it('says what will be deleted, and Cancel changes nothing', async () => {
+    const book = doc(1);
+    await seedReading(book);
+    render(<LibraryView />);
+    const dialog = await openResetDialog('Book 1');
+    expect(
+      within(dialog).getByText(
+        /^This returns you to the start and deletes 2 notes, 1 highlight and 3 bookmarks\./,
+      ),
+    ).toBeTruthy();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'More options for Book 1' })),
+    );
+    expect(resetBookProgress).not.toHaveBeenCalled();
+    const data = await getBookData(book.id);
+    expect([data.notes.length, data.highlights.length, data.bookmarks.length]).toEqual([2, 1, 3]);
+    expect(data.progress?.location.page).toBe(50);
+  });
+
+  it('wipes the book’s notes and progress, then shows it as not started', async () => {
+    const book = doc(1);
+    await seedReading(book);
+    render(<LibraryView />);
+    expect(await screen.findByRole('region', { name: 'Pick up where you left off' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Open Book 1, 49% read/ })).toBeTruthy();
+    const dialog = await openResetDialog('Book 1');
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Reset' }));
+    await waitFor(() =>
+      expect(useToastStore.getState().toasts.map((toast) => toast.message)).toEqual(['Reset “Book 1”']),
+    );
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.getByRole('button', { name: /^Open Book 1, 0% read/ })).toBeTruthy();
+    expect(screen.getByText('Not opened yet')).toBeTruthy();
+    expect(screen.queryByRole('region', { name: 'Pick up where you left off' })).toBeNull();
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'More options for Book 1' })),
+    );
+
+    const data = await getBookData(book.id);
+    expect([data.notes, data.highlights, data.bookmarks]).toEqual([[], [], []]);
+    expect(data.tombstones).toHaveLength(6);
+    expect(await getReadingState(book.id)).toMatchObject({ location: { page: 1, offset: 0 }, zoom });
+    expect((await getDocument(book.id))?.lastOpenedAt).toBe(0);
+  });
+
+  it('tells folder readers that their other devices will see the reset', async () => {
+    await putDocument(doc(1, { source: { kind: 'folder', path: 'book-1.pdf' } }));
+    setSync({ status: 'idle', folder, lastSyncedAt: Date.now() });
+    render(<LibraryView />);
+    const dialog = await openResetDialog('Book 1');
+    expect(
+      within(dialog).getByText(/Other devices using this folder will see the reset too\.$/),
+    ).toBeTruthy();
+  });
+
+  it('reports a failure without claiming the reset, and keeps the dialog for another try', async () => {
+    const book = doc(1);
+    await seedReading(book);
+    vi.mocked(resetBookProgress).mockRejectedValueOnce(new Error('disk full'));
+    render(<LibraryView />);
+    const dialog = await openResetDialog('Book 1');
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Reset' }));
+    await waitFor(() =>
+      expect(useToastStore.getState().toasts.map((toast) => [toast.message, toast.tone])).toEqual([
+        ['Couldn’t reset this book. Please try again.', 'error'],
+      ]),
+    );
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    expect(within(dialog).getByRole('button', { name: 'Reset' })).toHaveProperty('disabled', false);
+    expect((await getBookData(book.id)).notes).toHaveLength(2);
   });
 });
 

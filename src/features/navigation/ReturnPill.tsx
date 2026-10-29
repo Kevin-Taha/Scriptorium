@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Undo2, X } from 'lucide-react';
+import { ariaKeyShortcuts, keyLabel } from '../commands/keys';
 import { useReaderStore } from '../reader/readerStore';
 import { useHistoryStore } from './historyStore';
 import { usePageLabel } from './pageLabels';
@@ -39,7 +40,13 @@ export function ReturnPill() {
     >
       {target && (
         <div className="return-pill">
-          <button type="button" className="return-pill__action tooltip" data-tooltip="Alt+←" onClick={goBack}>
+          <button
+            type="button"
+            className="return-pill__action tooltip"
+            data-tooltip={keyLabel('back')}
+            aria-keyshortcuts={ariaKeyShortcuts('back')}
+            onClick={goBack}
+          >
             <Undo2 aria-hidden="true" />
             <span key={target.page} className="return-pill__label">
               Return to p. <strong>{targetLabel}</strong>

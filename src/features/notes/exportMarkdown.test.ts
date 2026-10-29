@@ -38,6 +38,24 @@ const outline: OutlineItem[] = [
 const exportedAt = new Date(2026, 9, 26, 12, 0, 0);
 
 describe('notesToMarkdown', () => {
+  it('keeps bold and italic markers and escaped asterisks, which are already Markdown', () => {
+    const markdown = notesToMarkdown({
+      title: 'Physics',
+      exportedAt,
+      notes: [note({ text: 'A **key** idea, *not* \\*all\\* of it\n**Second** line' })],
+    });
+    expect(markdown).toContain('A **key** idea, *not* \\*all\\* of it\n**Second** line');
+  });
+
+  it('escapes asterisks inside words, which Markdown would read as emphasis', () => {
+    const markdown = notesToMarkdown({
+      title: 'Physics',
+      exportedAt,
+      notes: [note({ text: '*Work:* 2*3*4 = 24, p = m*v*t and x**2 + y**2 = r**2' })],
+    });
+    expect(markdown).toContain('*Work:* 2\\*3\\*4 = 24, p = m\\*v\\*t and x\\*\\*2 + y\\*\\*2 = r\\*\\*2');
+  });
+
   it('renders the title, export line and one section per page', () => {
     const markdown = notesToMarkdown({
       title: 'Physics',

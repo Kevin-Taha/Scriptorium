@@ -26,11 +26,13 @@ export function BookCard({
   doc,
   reading,
   onOpen,
+  onReset,
   onRemove,
 }: {
   doc: LibraryDocument;
   reading?: ReadingState;
   onOpen(): void;
+  onReset(opener: HTMLButtonElement | null): void;
   onRemove(opener: HTMLButtonElement | null): void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -97,6 +99,15 @@ export function BookCard({
         </button>
         {menuOpen && (
           <div className="book-card__popover">
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                onReset(menuButton.current);
+              }}
+            >
+              Reset progress…
+            </button>
             {folderPath !== null ? (
               <p className="book-card__popover-note">Remove the file from the folder to remove this book.</p>
             ) : (

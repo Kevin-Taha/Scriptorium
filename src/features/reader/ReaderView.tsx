@@ -1,18 +1,23 @@
 import { useCallback, useMemo } from 'react';
-import { Keyboard, LibraryBig, NotebookText, PanelLeft, Search as SearchIcon } from 'lucide-react';
+import { LibraryBig, NotebookText, PanelLeft } from 'lucide-react';
 import { AppearanceMenu } from '@/app/AppearanceMenu';
 import { navigate } from '@/app/router';
-import { usePagesInverted } from '@/app/settingsStore';
+import { usePagesInverted, useSettingsStore } from '@/app/settingsStore';
 import { sectionForPage } from '@/lib/pdf/outline';
-import { BookmarkRibbon } from '../navigation/BookmarkRibbon';
+import { BookMap } from '../bookmap/BookMap';
+import { ariaKeyShortcuts, withShortcut } from '../commands/keys';
+import { FocusMode } from '../focus/FocusMode';
+import { FocusModeButton } from '../focus/FocusModeButton';
+import { ReadingRuler } from '../focus/ReadingRuler';
+import { BookmarkRibbon, useRibbonReveal } from '../navigation/BookmarkRibbon';
 import { BookmarksPanel } from '../navigation/BookmarksPanel';
-import { BookmarkToggle } from '../navigation/BookmarkToggle';
+import { ChapterProgress } from '../navigation/ChapterProgress';
 import { HistoryButtons } from '../navigation/HistoryButtons';
 import { useHistoryStore } from '../navigation/historyStore';
 import { OutlinePanel } from '../navigation/OutlinePanel';
 import { PageIndicator } from '../navigation/PageIndicator';
 import { ReturnPill } from '../navigation/ReturnPill';
-import { openShortcutsDialog, ShortcutsDialog } from '../navigation/ShortcutsDialog';
+import { ShortcutsButton } from '../navigation/ShortcutsDialog';
 import { useKeyboardShortcuts } from '../navigation/useKeyboardShortcuts';
 import { MarginColumn } from '../notes/MarginColumn';
 import { NotesPanel } from '../notes/NotesPanel';
@@ -21,8 +26,9 @@ import { useHighlightsStore } from '../notes/highlightsStore';
 import { PageHighlights } from '../notes/PageHighlights';
 import { PageNoteMarkers } from '../notes/PageNoteMarkers';
 import { SelectionNotePopover } from '../notes/SelectionNotePopover';
+import { GoToPalette } from '../palette/GoToPalette';
+import { openGoTo } from '../palette/paletteStore';
 import { SearchHighlights } from '../search/SearchHighlights';
-import { SearchPanel } from '../search/SearchPanel';
 import { useSearchShortcut } from '../search/useSearchShortcut';
 import { useReaderStore, type SidebarTab } from './readerStore';
 import { Viewer, type PageSize } from './Viewer';
@@ -44,8 +50,11 @@ export function ReaderView() {
   const sidebarOpen = useReaderStore((s) => s.sidebarOpen);
   const jumpTo = useHistoryStore((s) => s.jumpTo);
   const inverted = usePagesInverted();
+  const bookMap = useSettingsStore((s) => s.bookMap);
+  const readingRuler = useSettingsStore((s) => s.readingRuler);
   useKeyboardShortcuts();
   useSearchShortcut();
+  useRibbonReveal();
 
   return (
     <div className={`reader${inverted ? ' invert-pages' : ''}`} data-sidebar-open={sidebarOpen}>
@@ -59,11 +68,15 @@ export function ReaderView() {
             renderMargin={renderMargin}
             renderPageOverlay={renderPageOverlay}
           />
+          {/* Mounted after the ruler so the map (and its preview card) paint above the ruler's veil. */}
+          {readingRuler && <ReadingRuler />}
+          {bookMap && <BookMap />}
           <ReturnPill />
           <SelectionNotePopover />
         </main>
       </div>
-      <ShortcutsDialog />
+      <FocusMode />
+      <GoToPalette />
     </div>
   );
 }
@@ -73,6 +86,7 @@ function ReaderToolbar() {
   const docId = useReaderStore((s) => s.docId);
   const sidebarOpen = useReaderStore((s) => s.sidebarOpen);
   const toggleSidebar = useReaderStore((s) => s.toggleSidebar);
+  const chapterProgress = useSettingsStore((s) => s.chapterProgress);
   const section = useCurrentSection();
   const noteCount = useAnnotationCount();
 
@@ -91,8 +105,9 @@ function ReaderToolbar() {
         <button
           type="button"
           className="btn btn--ghost btn--icon tooltip tooltip--below"
-          data-tooltip="Sidebar ( [ )"
+          data-tooltip={withShortcut('Sidebar', 'sidebar')}
           aria-label="Toggle sidebar"
+          aria-keyshortcuts={ariaKeyShortcuts('sidebar')}
           aria-pressed={sidebarOpen}
           onClick={toggleSidebar}
         >
@@ -105,9 +120,21 @@ function ReaderToolbar() {
             {doc?.title}
           </h1>
           {section && (
-            <span className="reader__section" title={section}>
-              {section}
-            </span>
+            <>
+              <span className="reader__section-dot" aria-hidden="true">
+                ·
+              </span>
+              <button
+                type="button"
+                className="reader__section tooltip tooltip--below"
+                data-tooltip={withShortcut('Go to…', 'go-to')}
+                aria-label={`${section}. Go to a page, chapter or note`}
+                aria-keyshortcuts={ariaKeyShortcuts('go-to')}
+                onClick={() => openGoTo()}
+              >
+                <span>{section}</span>
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -117,13 +144,15 @@ function ReaderToolbar() {
         <span className="divider divider--vertical" aria-hidden="true" />
         <ZoomControls />
         <span className="divider divider--vertical" aria-hidden="true" />
-        <BookmarkToggle />
+        <ShortcutsButton />
+        <FocusModeButton />
         <AppearanceMenu />
         <button
           type="button"
           className="btn btn--sm reader__review-btn tooltip tooltip--below"
-          data-tooltip="Review all notes (Shift+R)"
+          data-tooltip={withShortcut('Review all notes', 'review')}
           aria-label={`Review notes (${noteCount})`}
+          aria-keyshortcuts={ariaKeyShortcuts('review')}
           onClick={() => docId && navigate({ name: 'review', docId })}
         >
           <NotebookText />
@@ -131,6 +160,7 @@ function ReaderToolbar() {
           {noteCount > 0 && <span className="reader__count">{noteCount}</span>}
         </button>
       </div>
+      {chapterProgress && <ChapterProgress />}
     </header>
   );
 }
@@ -152,11 +182,10 @@ function useAnnotationCount(): number {
   }, [notes, highlights]);
 }
 
-const TABS: { id: SidebarTab; label: string; Icon?: typeof SearchIcon }[] = [
+const TABS: { id: SidebarTab; label: string }[] = [
   { id: 'contents', label: 'Contents' },
   { id: 'bookmarks', label: 'Bookmarks' },
   { id: 'notes', label: 'Notes' },
-  { id: 'search', label: 'Search', Icon: SearchIcon },
 ];
 
 function ReaderSidebar() {
@@ -182,15 +211,13 @@ function ReaderSidebar() {
             key={t.id}
             id={`sidebar-tab-${t.id}`}
             role="tab"
-            className={`segmented__item${t.Icon ? ' sidebar__tab--icon' : ''}`}
+            className="segmented__item"
             aria-selected={tab === t.id}
             aria-controls="sidebar-panel"
-            aria-label={t.Icon ? `${t.label} (Ctrl+F)` : undefined}
-            title={t.Icon ? `${t.label} (Ctrl+F)` : undefined}
             tabIndex={tab === t.id ? 0 : -1}
             onClick={() => setTab(t.id)}
           >
-            {t.Icon ? <t.Icon aria-hidden="true" /> : t.label}
+            {t.label}
           </button>
         ))}
       </div>
@@ -203,23 +230,6 @@ function ReaderSidebar() {
         {tab === 'contents' && <OutlinePanel />}
         {tab === 'bookmarks' && <BookmarksPanel />}
         {tab === 'notes' && <NotesPanel />}
-        {tab === 'search' && <SearchPanel />}
-      </div>
-      <div className="sidebar__footer">
-        <button
-          type="button"
-          className="btn btn--ghost sidebar__shortcuts tooltip"
-          data-tooltip="Keyboard shortcuts (?)"
-          aria-label="Keyboard shortcuts"
-          onClick={openShortcutsDialog}
-        >
-          <Keyboard aria-hidden="true" />
-          <span>Keyboard shortcuts</span>
-          {/* biome-ignore lint/a11y/noAriaHiddenOnFocusable: <kbd> is not focusable; the hint is redundant for screen readers */}
-          <kbd className="kbd" aria-hidden="true">
-            ?
-          </kbd>
-        </button>
       </div>
     </aside>
   );

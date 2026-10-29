@@ -1,17 +1,11 @@
-import {
-  memo,
-  useLayoutEffect,
-  useRef,
-  type FocusEvent,
-  type KeyboardEvent,
-  type MouseEvent,
-  type RefObject,
-} from 'react';
+import { memo, useRef, type FocusEvent, type KeyboardEvent, type MouseEvent, type RefObject } from 'react';
 import { ArrowUpRight, Trash2 } from 'lucide-react';
 import type { Highlight, MarginNote } from '@/lib/types';
 import { deleteNoteWithUndo } from './noteActions';
 import { NOTE_COLOR_LABELS } from './noteColors';
 import { NoteSwatches } from './NoteSwatches';
+import { NoteText } from './NoteText';
+import { NoteTextField } from './NoteTextField';
 import { useNotesStore } from './notesStore';
 import { jumpToNote } from './reviewActions';
 import { focusNoteById, neighbourNoteId } from './reviewFocus';
@@ -55,7 +49,7 @@ export const ReviewNote = memo(function ReviewNote({
 
   // Keep focus in the editor when pressing anywhere else in the note (swatches, padding).
   const handleMouseDown = (event: MouseEvent<HTMLDivElement>) => {
-    if (editing && !(event.target as Element).closest('textarea')) event.preventDefault();
+    if (editing && !(event.target as Element).closest('.note-field')) event.preventDefault();
   };
 
   const handleBlur = (event: FocusEvent<HTMLDivElement>) => {
@@ -101,7 +95,7 @@ export const ReviewNote = memo(function ReviewNote({
           <NoteEditor note={note} rootRef={rootRef} onEdit={onEdit} />
         ) : (
           <p className={`review-note__text${note.text.trim() ? '' : ' is-empty'}`}>
-            {note.text.trim() ? <MarkedText text={note.text} terms={terms} /> : 'Empty note'}
+            {note.text.trim() ? <NoteText text={note.text} terms={terms} /> : 'Empty note'}
           </p>
         )}
       </div>
@@ -127,28 +121,6 @@ interface NoteEditorProps {
 }
 
 function NoteEditor({ note, rootRef, onEdit }: NoteEditorProps) {
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  useLayoutEffect(() => {
-    const textarea = textareaRef.current!;
-    textarea.focus();
-    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
-  }, []);
-
-  useLayoutEffect(() => {
-    const textarea = textareaRef.current!;
-    textarea.style.height = 'auto';
-    textarea.style.height = `${textarea.scrollHeight}px`;
-  }, [note.text]);
-
-  const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key !== 'Escape') return;
-    event.preventDefault();
-    event.stopPropagation();
-    onEdit(null);
-    rootRef.current?.focus();
-  };
-
   const handleDelete = (event: MouseEvent<HTMLButtonElement>) => {
     // A keyboard-triggered click has no pointer position; keep keyboard users in the list.
     const neighbour = event.detail === 0 ? neighbourNoteId(note.id) : undefined;
@@ -159,15 +131,15 @@ function NoteEditor({ note, rootRef, onEdit }: NoteEditorProps) {
 
   return (
     <>
-      <textarea
-        ref={textareaRef}
+      <NoteTextField
         className="review-note__input"
-        rows={1}
-        value={note.text}
-        placeholder="Write a note…"
-        aria-label={`Note text, page ${note.page}`}
-        onChange={(event) => useNotesStore.getState().updateNote(note.id, { text: event.target.value })}
-        onKeyDown={handleKeyDown}
+        text={note.text}
+        label={`Note text, page ${note.page}`}
+        onChange={(text) => useNotesStore.getState().updateNote(note.id, { text })}
+        onCommit={() => {
+          onEdit(null);
+          rootRef.current?.focus();
+        }}
       />
       <div className="review-note__editbar">
         <NoteSwatches

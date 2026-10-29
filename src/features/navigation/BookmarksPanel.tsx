@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { Bookmark, Pencil, Trash2 } from 'lucide-react';
 import { showToast } from '@/components/Toast';
 import type { Bookmark as BookmarkRecord } from '@/lib/types';
+import { ariaKeyShortcuts, keyLabel } from '../commands/keys';
 import { useReaderStore } from '../reader/readerStore';
 import { useBookmarksStore, useIsBookmarked } from './bookmarksStore';
 import { useHistoryStore } from './historyStore';
@@ -15,10 +16,15 @@ export function BookmarksPanel() {
 
   return (
     <div className="bookmark-list">
-      <button type="button" className="btn btn--ghost bookmark-list__toggle" onClick={() => toggle(page)}>
+      <button
+        type="button"
+        className="btn btn--ghost bookmark-list__toggle"
+        aria-keyshortcuts={ariaKeyShortcuts('bookmark')}
+        onClick={() => toggle(page)}
+      >
         <Bookmark fill={bookmarked ? 'currentColor' : 'none'} aria-hidden="true" />
         <span>{bookmarked ? 'Remove bookmark' : 'Bookmark this page'}</span>
-        <kbd className="kbd">B</kbd>
+        <kbd className="kbd">{keyLabel('bookmark')}</kbd>
       </button>
       {bookmarks.length ? (
         <ul>
@@ -33,7 +39,8 @@ export function BookmarksPanel() {
           </span>
           <h2 className="empty-state__title">No bookmarks yet</h2>
           <p className="empty-state__body">
-            Press <kbd className="kbd">B</kbd> to mark the current page.
+            Press <kbd className="kbd">{keyLabel('bookmark')}</kbd> to mark the current page, or click the
+            ribbon at a page’s top-right corner.
           </p>
         </div>
       )}
