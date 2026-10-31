@@ -1,6 +1,10 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import { Coffee, HardDrive, Moon, Palette, Sun } from 'lucide-react';
-import { keyLabel } from '@/features/commands/keys';
+import { ALargeSmall, Coffee, HardDrive, Keyboard, Moon, Sun } from 'lucide-react';
+import type { CommandId } from '@/features/commands/commands';
+import { ariaKeyShortcuts, keyLabel } from '@/features/commands/keys';
+import { toggleFocusMode, useFocusStore } from '@/features/focus/focusStore';
+import { openShortcutsDialog } from '@/features/navigation/ShortcutsDialog';
+import { ZoomControls } from '@/features/reader/ZoomControls';
 import { openLibraryStorageDialog } from '@/features/settings/storageDialogStore';
 import type { Theme } from '@/lib/types';
 import { type SettingSwitch, useSettingsStore } from './settingsStore';
@@ -11,27 +15,30 @@ const THEMES: { id: Theme; label: string; Icon: typeof Sun }[] = [
   { id: 'dark', label: 'Dark', Icon: Moon },
 ];
 
-const READING_SWITCHES: { key: SettingSwitch; label: string; detail: string }[] = [
-  {
-    key: 'readingRuler',
-    label: 'Reading ruler',
-    detail: `Keeps your place on the line (${keyLabel('ruler')})`,
-  },
-  { key: 'bookMap', label: 'Book map', detail: 'The whole book along the right edge' },
-  {
-    key: 'chapterProgress',
-    label: 'Chapter progress',
-    detail: 'Your place in each chapter, under the toolbar',
-  },
+const READING_SWITCHES: { key: SettingSwitch; label: string; command?: CommandId }[] = [
+  { key: 'readingRuler', label: 'Reading ruler', command: 'ruler' },
+  { key: 'bookMap', label: 'Book map' },
+  { key: 'chapterProgress', label: 'Chapter progress' },
 ];
 
-/** Toolbar popover with the theme, page inversion and reading aids. */
+/** A keycap beside a menu row; the control itself carries `aria-keyshortcuts`. */
+function KeyHint({ command }: { command: CommandId }) {
+  return (
+    // biome-ignore lint/a11y/noAriaHiddenOnFocusable: <kbd> is not focusable; the control carries aria-keyshortcuts
+    <kbd className="kbd appearance-menu__key" aria-hidden="true">
+      {keyLabel(command)}
+    </kbd>
+  );
+}
+
+/** The reader's view menu: theme, zoom, focus mode and reading aids, plus shortcuts and storage. */
 export function AppearanceMenu() {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelId = useId();
   const settings = useSettingsStore();
+  const focusActive = useFocusStore((s) => s.active);
   const { theme } = settings;
 
   useEffect(() => {
@@ -40,11 +47,11 @@ export function AppearanceMenu() {
       if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
     };
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation();
-        setOpen(false);
-        buttonRef.current?.focus();
-      }
+      // The zoom menu inside closes itself first.
+      if (e.key !== 'Escape' || (e.target as Element | null)?.closest?.('[role="menu"]')) return;
+      e.stopPropagation();
+      setOpen(false);
+      buttonRef.current?.focus();
     };
     document.addEventListener('pointerdown', onPointerDown);
     document.addEventListener('keydown', onKeyDown, true);
@@ -53,6 +60,13 @@ export function AppearanceMenu() {
       document.removeEventListener('keydown', onKeyDown, true);
     };
   }, [open]);
+
+  /** Closes the menu, handing focus back to its button so a dialog opened next can return it there. */
+  const closeThen = (action: () => void) => {
+    setOpen(false);
+    buttonRef.current?.focus();
+    action();
+  };
 
   return (
     <div className="appearance-menu" ref={rootRef}>
@@ -66,68 +80,94 @@ export function AppearanceMenu() {
         aria-controls={panelId}
         onClick={() => setOpen((o) => !o)}
       >
-        <Palette />
+        <ALargeSmall />
       </button>
       {open && (
         <div className="popover appearance-menu__panel" id={panelId} role="dialog" aria-label="Appearance">
-          <div className="appearance-menu__label">Theme</div>
-          <div className="segmented segmented--full" role="radiogroup" aria-label="Theme">
-            {THEMES.map(({ id, label, Icon }) => (
-              <button
-                type="button"
-                key={id}
-                role="radio"
-                className="segmented__item"
-                aria-checked={theme === id}
-                onClick={() => settings.setTheme(id)}
-              >
-                <Icon /> {label}
-              </button>
-            ))}
-          </div>
-          <label className={`appearance-menu__switch${theme === 'dark' ? '' : ' is-disabled'}`}>
-            <span>
-              Invert page colours
-              <small>Night reading, dark theme only</small>
-            </span>
-            <input
-              type="checkbox"
-              // biome-ignore lint/a11y/useAriaPropsForRole: the native checkbox already exposes its checked state
-              role="switch"
-              checked={settings.invertPagesInDark}
-              disabled={theme !== 'dark'}
-              onChange={(e) => settings.setInvertPagesInDark(e.target.checked)}
-            />
-          </label>
-          <hr className="divider appearance-menu__divider" />
-          <div className="appearance-menu__label">Reading</div>
-          {READING_SWITCHES.map(({ key, label, detail }) => (
-            <label className="appearance-menu__switch" key={key}>
+          <div className="appearance-menu__group">
+            <div className="segmented segmented--full" role="radiogroup" aria-label="Theme">
+              {THEMES.map(({ id, label, Icon }) => (
+                <button
+                  type="button"
+                  key={id}
+                  role="radio"
+                  className="segmented__item"
+                  aria-checked={theme === id}
+                  onClick={() => settings.setTheme(id)}
+                >
+                  <Icon /> {label}
+                </button>
+              ))}
+            </div>
+            <label className={`appearance-menu__switch${theme === 'dark' ? '' : ' is-disabled'}`}>
               <span>
-                {label}
-                <small>{detail}</small>
+                Invert page colours
+                <small>Night reading, dark theme only</small>
               </span>
               <input
                 type="checkbox"
                 // biome-ignore lint/a11y/useAriaPropsForRole: the native checkbox already exposes its checked state
                 role="switch"
-                checked={settings[key]}
-                onChange={() => settings.toggle(key)}
+                checked={settings.invertPagesInDark}
+                disabled={theme !== 'dark'}
+                onChange={(e) => settings.setInvertPagesInDark(e.target.checked)}
               />
             </label>
-          ))}
-          <hr className="divider appearance-menu__divider" />
-          <button
-            type="button"
-            className="appearance-menu__link"
-            onClick={() => {
-              setOpen(false);
-              openLibraryStorageDialog(buttonRef.current);
-            }}
-          >
-            <HardDrive aria-hidden="true" />
-            Library & storage…
-          </button>
+          </div>
+
+          <div className="appearance-menu__group">
+            <div className="appearance-menu__row">
+              <span>Zoom</span>
+              <ZoomControls />
+            </div>
+            <label className="appearance-menu__switch">
+              <span>Focus mode</span>
+              <KeyHint command="focus" />
+              <input
+                type="checkbox"
+                // biome-ignore lint/a11y/useAriaPropsForRole: the native checkbox already exposes its checked state
+                role="switch"
+                checked={focusActive}
+                aria-keyshortcuts={ariaKeyShortcuts('focus')}
+                onChange={() => closeThen(toggleFocusMode)}
+              />
+            </label>
+            {READING_SWITCHES.map(({ key, label, command }) => (
+              <label className="appearance-menu__switch" key={key}>
+                <span>{label}</span>
+                {command && <KeyHint command={command} />}
+                <input
+                  type="checkbox"
+                  // biome-ignore lint/a11y/useAriaPropsForRole: the native checkbox already exposes its checked state
+                  role="switch"
+                  checked={settings[key]}
+                  aria-keyshortcuts={command && ariaKeyShortcuts(command)}
+                  onChange={() => settings.toggle(key)}
+                />
+              </label>
+            ))}
+          </div>
+
+          <div className="appearance-menu__group appearance-menu__group--links">
+            <button
+              type="button"
+              className="appearance-menu__link"
+              aria-keyshortcuts={ariaKeyShortcuts('help')}
+              onClick={() => closeThen(openShortcutsDialog)}
+            >
+              <Keyboard aria-hidden="true" />
+              Keyboard shortcuts
+              <KeyHint command="help" />
+            </button>
+            <button
+              type="button"
+              className="appearance-menu__link"
+              onClick={() => closeThen(() => openLibraryStorageDialog(buttonRef.current))}
+            >
+              <HardDrive aria-hidden="true" />
+              Library & storage…
+            </button>
+          </div>
         </div>
       )}
     </div>

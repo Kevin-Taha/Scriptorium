@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
-import { importFixture } from './support/reader';
+import { importFixture, openAppearance } from './support/reader';
 
 const dialog = (page: Page) => page.getByRole('dialog', { name: 'Keyboard shortcuts' });
 
@@ -25,21 +25,20 @@ test('? opens every shortcut, grouped, and the pointer ways, from the library', 
   await expect(dialog(page)).toBeHidden();
 });
 
-test('the reader toolbar and the review both open the shortcuts', async ({ page }) => {
+test('the reader’s Appearance menu and the review both open the shortcuts', async ({ page }) => {
   await importFixture(page);
-  const toolbarButton = page
-    .getByRole('toolbar', { name: 'Reader' })
-    .getByRole('button', { name: 'Keyboard shortcuts' });
-  await expect(toolbarButton).toHaveAttribute('data-tooltip', 'Keyboard shortcuts (?)');
-  await expect(toolbarButton).toHaveAttribute('aria-keyshortcuts', '?');
-  await toolbarButton.click();
+  const appearance = page.getByRole('button', { name: 'Appearance' });
+  const menuItem = async () =>
+    (await openAppearance(page)).getByRole('button', { name: 'Keyboard shortcuts' });
+  await expect(await menuItem()).toHaveAttribute('aria-keyshortcuts', '?');
+  await (await menuItem()).click();
   await expectDialogOpensAndCloses(page);
-  await expect(toolbarButton).toBeFocused();
+  await expect(appearance).toBeFocused();
 
   await page.locator('.reader__viewport').focus();
   await page.keyboard.press('[');
   await expect(page.locator('.reader')).toHaveAttribute('data-sidebar-open', 'false');
-  await toolbarButton.click();
+  await (await menuItem()).click();
   await expectDialogOpensAndCloses(page);
 
   await page.locator('.reader__viewport').focus();
@@ -60,14 +59,21 @@ test('the reader toolbar and the review both open the shortcuts', async ({ page 
   await expectDialogOpensAndCloses(page);
 });
 
-test('toolbar controls carry their keys in tooltips and aria-keyshortcuts', async ({ page }) => {
+test('reader controls carry their keys in tooltips and aria-keyshortcuts', async ({ page }) => {
   await importFixture(page);
-  const zoomIn = page.getByRole('button', { name: 'Zoom in', exact: true });
-  const zoomOut = page.getByRole('button', { name: 'Zoom out', exact: true });
+  await expect(page.getByRole('button', { name: /Go to a page, chapter or note$/ })).toHaveAttribute(
+    'aria-keyshortcuts',
+    'G',
+  );
+  const menu = await openAppearance(page);
+  const zoomIn = menu.getByRole('button', { name: 'Zoom in', exact: true });
+  const zoomOut = menu.getByRole('button', { name: 'Zoom out', exact: true });
   await expect(zoomIn).toHaveAttribute('data-tooltip', 'Zoom in (+)');
   await expect(zoomIn).toHaveAttribute('aria-keyshortcuts', 'Plus =');
   await expect(zoomOut).toHaveAttribute('data-tooltip', 'Zoom out (−)');
   await expect(zoomOut).toHaveAttribute('aria-keyshortcuts', '-');
+  await expect(menu.getByRole('switch', { name: 'Focus mode' })).toHaveAttribute('aria-keyshortcuts', 'F');
+  await expect(menu.getByRole('switch', { name: 'Reading ruler' })).toHaveAttribute('aria-keyshortcuts', 'R');
   await expect(page.getByRole('button', { name: 'Toggle sidebar' })).toHaveAttribute(
     'aria-keyshortcuts',
     '[',

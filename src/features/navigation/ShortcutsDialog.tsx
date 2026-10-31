@@ -57,8 +57,8 @@ const POINTER_WAYS = [
   ['Add a note', 'Click the margin beside a page'],
   ['Highlight or quote', 'Select text, then pick a colour or “Add margin note”'],
   ['Bookmark a page', 'Click the ribbon at its top-right corner'],
-  ['Go to a page or chapter', 'Click the section name in the toolbar'],
-  ['Ruler, book map, chapter progress', 'Appearance → Reading'],
+  ['Go to a page or chapter', 'Click the book’s title in the toolbar'],
+  ['Zoom, focus mode, ruler, book map', 'Appearance (Aa) in the toolbar'],
   ['Review all notes', 'Review notes, at the end of the toolbar'],
 ] as const;
 

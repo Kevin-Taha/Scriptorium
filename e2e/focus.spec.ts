@@ -1,10 +1,12 @@
 import { expect, type Page, test } from '@playwright/test';
-import { addNote, backToLibrary, goToPage, importFixture } from './support/reader';
+import { addNote, backToLibrary, goToPage, importFixture, openAppearance } from './support/reader';
 
 const html = (page: Page) => page.locator('html');
 const toolbar = (page: Page) => page.getByRole('toolbar', { name: 'Reader' });
-const focusButton = (page: Page) => page.getByRole('button', { name: 'Focus mode' });
 const sidebar = (page: Page) => page.getByRole('complementary', { name: 'Sidebar' });
+/** The Focus mode switch, in the Appearance menu (opened if need be). */
+const focusSwitch = async (page: Page) =>
+  (await openAppearance(page)).getByRole('switch', { name: 'Focus mode' });
 
 async function readOnPage(page: Page, number: number): Promise<void> {
   await importFixture(page);
@@ -30,12 +32,13 @@ test('F enters focus mode, keeps your page, brings the toolbar back at the top e
 }) => {
   await readOnPage(page, 14);
   await expect(sidebar(page)).toBeVisible();
-  await expect(focusButton(page)).toHaveAttribute('aria-pressed', 'false');
-  await expect(focusButton(page)).toHaveAttribute('aria-keyshortcuts', 'F');
+  await expect(await focusSwitch(page)).not.toBeChecked();
+  await expect(await focusSwitch(page)).toHaveAttribute('aria-keyshortcuts', 'F');
+  await page.keyboard.press('Escape');
+  await page.locator('.reader__viewport').focus();
 
   await page.keyboard.press('f');
   await expect(html(page)).toHaveClass(/focus-mode/);
-  await expect(focusButton(page)).toHaveAttribute('aria-pressed', 'true');
   await expect(sidebar(page)).toHaveCount(0);
   await expect(toolbar(page)).toHaveCSS('opacity', '0');
   const hint = page.locator('.focus-hint-region');
@@ -88,31 +91,25 @@ test('Esc that closes the selection toolbar stays in focus mode', async ({ page 
   await expect(html(page)).not.toHaveClass(/focus-mode/);
 });
 
-test('a sidebar that was closed stays closed, and the toolbar button reflects and toggles focus mode', async ({
+test('a sidebar that was closed stays closed, and the Appearance switch reflects and toggles focus mode', async ({
   page,
 }) => {
   await readOnPage(page, 6);
   await page.keyboard.press('[');
   await expect(sidebar(page)).toHaveCount(0);
 
-  await focusButton(page).click();
+  await (await focusSwitch(page)).click();
   await expect(html(page)).toHaveClass(/focus-mode/);
-  await expect(focusButton(page)).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('dialog', { name: 'Appearance' })).toHaveCount(0);
   await expect(toolbar(page)).toHaveCSS('opacity', '0');
 
-  // The pointer is still up at the button: wiggling there doesn't bounce the toolbar back…
-  await page.mouse.move(640, 14);
-  await page.mouse.move(660, 18);
-  await page.waitForTimeout(400);
-  await expect(toolbar(page)).toHaveCSS('opacity', '0');
-
-  // …but leaving the top edge and returning does.
+  // Reaching the top edge brings the toolbar back, and the menu's switch turns focus mode off.
   await page.mouse.move(660, 400);
   await page.mouse.move(660, 14);
   await expect(toolbar(page)).toHaveCSS('opacity', '1');
-  await focusButton(page).click();
+  await expect(await focusSwitch(page)).toBeChecked();
+  await (await focusSwitch(page)).click();
   await expect(html(page)).not.toHaveClass(/focus-mode/);
-  await expect(focusButton(page)).toHaveAttribute('aria-pressed', 'false');
   await expect(sidebar(page)).toHaveCount(0);
   await expect(page.locator('#page-field')).toHaveValue('6');
 });

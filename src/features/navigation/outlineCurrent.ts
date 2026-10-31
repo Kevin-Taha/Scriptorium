@@ -48,3 +48,13 @@ export function ancestorKeys(key: string): string[] {
   const parts = key.split('.');
   return parts.slice(0, -1).map((_, index) => parts.slice(0, index + 1).join('.'));
 }
+
+// "2.2", "2.2.1", "A.1", "3", "3." or "IV." followed by the title. Numbers of four or more digits
+// ("1984 and After") and unpunctuated letters ("A Pattern Language") stay part of the title.
+const SECTION_NUMBER = /^((?:\d{1,3}|[A-Z])(?:\.\d{1,3})+\.?|\d{1,3}\.?|[IVXL]{1,6}\.)\s+(\S.*)$/;
+
+/** Splits a leading section number off an outline title so it can be set in its own column. */
+export function splitSectionNumber(title: string): { number: string; text: string } | null {
+  const match = SECTION_NUMBER.exec(title.trim());
+  return match ? { number: match[1], text: match[2] } : null;
+}

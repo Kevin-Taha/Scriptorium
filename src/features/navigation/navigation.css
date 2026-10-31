@@ -35,6 +35,10 @@
 .outline {
   padding-bottom: var(--space-2);
 }
+/* A little air between chapters, so each reads as a group with its sections. */
+.outline > [role='treeitem'] + [role='treeitem'] {
+  margin-top: var(--space-1);
+}
 .outline [role='treeitem']:focus-visible {
   outline-offset: -2px;
   border-radius: var(--radius-xs);
@@ -44,12 +48,19 @@
   align-items: center;
   min-height: 32px;
   padding-right: var(--space-2);
-  border-radius: var(--radius-xs);
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: var(--transition-colors);
 }
 .outline__item:hover {
+  color: var(--color-text);
   background: var(--color-hover);
+}
+/* Chapters (the top level) are set heavier and darker than their sections. */
+.outline__item[data-depth='1'] {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
 }
 .outline__item.is-current {
   color: var(--color-accent);
@@ -71,13 +82,29 @@
   width: 16px;
   height: 16px;
 }
+/* Section number and title in two columns, so a wrapped title hangs clear of its number. */
+.outline__label {
+  display: flex;
+  flex: 1;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-snug);
+}
+.outline__number {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+.outline__item.is-current .outline__number {
+  color: inherit;
+}
 .outline__title {
   display: -webkit-box;
   flex: 1;
   min-width: 0;
   overflow: hidden;
-  font-size: var(--font-size-sm);
-  line-height: var(--leading-snug);
   overflow-wrap: anywhere;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -88,6 +115,9 @@
   font-size: var(--font-size-xs);
   font-variant-numeric: tabular-nums;
   color: var(--color-text-muted);
+}
+.outline__item.is-current .outline__page {
+  color: inherit;
 }
 .outline__empty,
 .bookmark-list__empty {

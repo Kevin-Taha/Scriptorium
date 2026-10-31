@@ -66,25 +66,34 @@
 .appearance-menu__panel {
   display: flex;
   flex-direction: column;
+  gap: var(--space-4);
+  width: 288px;
+}
+
+/* Groups are told apart by space, not rules or caps labels. */
+.appearance-menu__group {
+  display: flex;
+  flex-direction: column;
   gap: var(--space-3);
-  width: 280px;
 }
 
-.appearance-menu__label {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  letter-spacing: var(--tracking-caps);
-  text-transform: uppercase;
-  color: var(--color-text-secondary);
-}
-
+.appearance-menu__row,
 .appearance-menu__switch {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
+  gap: var(--space-2);
+  min-height: 28px;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
+}
+
+.appearance-menu__row > span,
+.appearance-menu__switch > span {
+  flex: 1;
+  min-width: 0;
+}
+
+.appearance-menu__switch {
   cursor: pointer;
 }
 
@@ -100,15 +109,20 @@
   opacity: 0.55;
 }
 
-.appearance-menu__divider {
-  margin: 0;
+.appearance-menu__key {
+  flex: none;
+  background: transparent;
+}
+
+.appearance-menu__group--links {
+  gap: 0;
+  margin: 0 calc(-1 * var(--space-2)) calc(-1 * var(--space-1));
 }
 
 .appearance-menu__link {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  margin: calc(-1 * var(--space-1)) calc(-1 * var(--space-1));
   padding: var(--space-2);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
@@ -125,6 +139,10 @@
 .appearance-menu__link .lucide {
   width: 16px;
   height: 16px;
+}
+
+.appearance-menu__link .appearance-menu__key {
+  margin-left: auto;
 }
 
 /* Native checkbox restyled as a switch. */

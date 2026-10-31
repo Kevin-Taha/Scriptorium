@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { OutlineItem } from '@/lib/types';
-import { ancestorKeys, currentOutlineEntry, outlineEntries } from './outlineCurrent';
+import { ancestorKeys, currentOutlineEntry, outlineEntries, splitSectionNumber } from './outlineCurrent';
 
 const item = (title: string, page: number | null, offset = 0, children: OutlineItem[] = []): OutlineItem => ({
   title,
@@ -24,5 +24,16 @@ describe('current outline section', () => {
     expect(currentOutlineEntry(entries, { page: 0, offset: 0 })).toBeNull();
     expect(ancestorKeys('0.1.0')).toEqual(['0', '0.1']);
     expect(ancestorKeys('0')).toEqual([]);
+  });
+  it('splits a leading section number from the title', () => {
+    expect(splitSectionNumber('2.2 Hierarchical Data')).toEqual({ number: '2.2', text: 'Hierarchical Data' });
+    expect(splitSectionNumber('2.2.1 Sequences')).toEqual({ number: '2.2.1', text: 'Sequences' });
+    expect(splitSectionNumber('3 Modularity')).toEqual({ number: '3', text: 'Modularity' });
+    expect(splitSectionNumber('1. Introduction')).toEqual({ number: '1.', text: 'Introduction' });
+    expect(splitSectionNumber('A.1 Proofs')).toEqual({ number: 'A.1', text: 'Proofs' });
+    expect(splitSectionNumber('IV. Results')).toEqual({ number: 'IV.', text: 'Results' });
+    for (const title of ['Chapter 2: Laws', '1984 and After', 'A Pattern Language', '3D Graphics', '2.1']) {
+      expect(splitSectionNumber(title)).toBeNull();
+    }
   });
 });

@@ -8,13 +8,15 @@
   background: var(--color-bg-app);
 }
 
-/* ---- Toolbar ------------------------------------------------------------- */
+/* ---- Toolbar -------------------------------------------------------------
+   Three columns: the side groups take what they need, and the Go to field sits
+   centred between them, giving up its width first when room runs short. */
 .reader__toolbar {
   position: relative;
   z-index: var(--z-toolbar);
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(max-content, 1fr) minmax(0, 560px) minmax(max-content, 1fr);
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-3);
   padding: 0 var(--space-3);
   background: var(--color-surface);
@@ -28,11 +30,7 @@
   min-width: 0;
 }
 
-.reader__toolbar-group--start {
-  flex: 1;
-}
 .reader__toolbar-group--end {
-  flex: 0 0 auto;
   justify-content: flex-end;
 }
 
@@ -42,54 +40,70 @@
   background: var(--color-pressed);
 }
 
+/* The title field: book · section, opening Go to. A transparent button covers it. */
 .reader__heading {
+  position: relative;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: var(--space-2);
   min-width: 0;
-  margin-left: var(--space-2);
+  height: 32px;
+  padding: 0 6px 0 var(--space-3);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  background: var(--color-hover);
+  border-radius: var(--radius-md);
+  transition: var(--transition-colors);
+}
+
+.reader__heading:hover {
+  background: var(--color-pressed);
+}
+
+.reader__heading-icon {
+  flex: none;
+  width: 16px;
+  height: 16px;
 }
 
 .reader__title {
   flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
-  font-family: var(--font-serif);
-  font-size: var(--font-size-base);
+  font-family: var(--font-ui);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
+  letter-spacing: normal;
+  color: var(--color-text);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .reader__section-dot {
   flex: none;
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
 }
 
-/* The current section doubles as the way into Go to (G). */
 .reader__section {
-  display: flex;
   flex: 0 10 auto;
   min-width: 0;
-  margin: 0 calc(-1 * var(--space-1));
-  padding: 2px var(--space-1);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-  border-radius: var(--radius-xs);
-  transition: var(--transition-colors);
-}
-
-.reader__section > span {
-  min-width: 0;
   overflow: hidden;
+  color: var(--color-text-secondary);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.reader__section:hover {
-  color: var(--color-text);
-  background: var(--color-hover);
+.reader__heading-key {
+  flex: none;
+  margin-left: auto;
+  background: transparent;
+}
+
+.reader__go-to {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  cursor: pointer;
 }
 
 .reader__review-btn {
@@ -165,15 +179,14 @@
 }
 
 @media (max-width: 1100px) {
-  .reader__section,
-  .reader__section-dot,
   .reader__review-btn > span:not(.reader__count) {
     display: none;
   }
 }
 
 @media (max-width: 960px) {
-  .reader__heading {
+  .reader__title,
+  .reader__section-dot {
     display: none;
   }
   .sidebar {

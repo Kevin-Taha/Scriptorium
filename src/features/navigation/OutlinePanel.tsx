@@ -3,7 +3,7 @@ import { BookOpen, ChevronDown, ChevronRight } from 'lucide-react';
 import type { OutlineItem } from '@/lib/types';
 import { useReaderStore } from '../reader/readerStore';
 import { useHistoryStore } from './historyStore';
-import { ancestorKeys, currentOutlineEntry, outlineEntries } from './outlineCurrent';
+import { ancestorKeys, currentOutlineEntry, outlineEntries, splitSectionNumber } from './outlineCurrent';
 import { pageLabelFor } from './pageLabels';
 
 export function OutlinePanel() {
@@ -64,6 +64,7 @@ export function OutlinePanel() {
     items.map((item, index) => {
       const key = parentKey === null ? String(index) : `${parentKey}.${index}`;
       const expanded = item.children.length > 0 && isExpanded(key, depth);
+      const numbered = splitSectionNumber(item.title);
       return (
         <div
           key={key}
@@ -121,6 +122,7 @@ export function OutlinePanel() {
           {/* biome-ignore lint/a11y/useKeyWithClickEvents: keyboard activation is handled by the parent treeitem */}
           <div
             className={`outline__item${key === currentKey ? ' is-current' : ''}${!item.location ? ' is-unresolved' : ''}`}
+            data-depth={Math.min(depth, 3)}
             style={{ paddingLeft: `${(depth - 1) * 16}px` }}
             onClick={() => {
               focus(key);
@@ -144,7 +146,10 @@ export function OutlinePanel() {
             ) : (
               <span className="outline__chevron" aria-hidden="true" />
             )}
-            <span className="outline__title">{item.title}</span>
+            <span className="outline__label">
+              {numbered && <span className="outline__number">{numbered.number}</span>}
+              <span className="outline__title">{numbered ? numbered.text : item.title}</span>
+            </span>
             {item.location && (
               <span className="outline__page">{pageLabelFor(labels, item.location.page)}</span>
             )}

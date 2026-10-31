@@ -1,13 +1,12 @@
 import { useCallback, useMemo } from 'react';
-import { LibraryBig, NotebookText, PanelLeft } from 'lucide-react';
+import { LibraryBig, NotebookText, PanelLeft, Search } from 'lucide-react';
 import { AppearanceMenu } from '@/app/AppearanceMenu';
 import { navigate } from '@/app/router';
 import { usePagesInverted, useSettingsStore } from '@/app/settingsStore';
 import { sectionForPage } from '@/lib/pdf/outline';
 import { BookMap } from '../bookmap/BookMap';
-import { ariaKeyShortcuts, withShortcut } from '../commands/keys';
+import { ariaKeyShortcuts, keyLabel, withShortcut } from '../commands/keys';
 import { FocusMode } from '../focus/FocusMode';
-import { FocusModeButton } from '../focus/FocusModeButton';
 import { ReadingRuler } from '../focus/ReadingRuler';
 import { BookmarkRibbon, useRibbonReveal } from '../navigation/BookmarkRibbon';
 import { BookmarksPanel } from '../navigation/BookmarksPanel';
@@ -17,7 +16,6 @@ import { useHistoryStore } from '../navigation/historyStore';
 import { OutlinePanel } from '../navigation/OutlinePanel';
 import { PageIndicator } from '../navigation/PageIndicator';
 import { ReturnPill } from '../navigation/ReturnPill';
-import { ShortcutsButton } from '../navigation/ShortcutsDialog';
 import { useKeyboardShortcuts } from '../navigation/useKeyboardShortcuts';
 import { MarginColumn } from '../notes/MarginColumn';
 import { NotesPanel } from '../notes/NotesPanel';
@@ -32,7 +30,6 @@ import { SearchHighlights } from '../search/SearchHighlights';
 import { useSearchShortcut } from '../search/useSearchShortcut';
 import { useReaderStore, type SidebarTab } from './readerStore';
 import { Viewer, type PageSize } from './Viewer';
-import { ZoomControls } from './ZoomControls';
 import './reader.css';
 
 const renderMargin = (page: number, size: PageSize) => <MarginColumn page={page} size={size} />;
@@ -113,39 +110,38 @@ function ReaderToolbar() {
         >
           <PanelLeft />
         </button>
-        <span className="divider divider--vertical" aria-hidden="true" />
         <HistoryButtons />
-        <div className="reader__heading">
-          <h1 className="reader__title" title={doc?.title}>
-            {doc?.title}
-          </h1>
-          {section && (
-            <>
-              <span className="reader__section-dot" aria-hidden="true">
-                ·
-              </span>
-              <button
-                type="button"
-                className="reader__section tooltip tooltip--below"
-                data-tooltip={withShortcut('Go to…', 'go-to')}
-                aria-label={`${section}. Go to a page, chapter or note`}
-                aria-keyshortcuts={ariaKeyShortcuts('go-to')}
-                onClick={() => openGoTo()}
-              >
-                <span>{section}</span>
-              </button>
-            </>
-          )}
-        </div>
+      </div>
+
+      {/* The book's title doubles as the way into Go to (G): pages, contents, notes and text search. */}
+      <div className="reader__heading">
+        <Search className="reader__heading-icon" aria-hidden="true" />
+        <h1 className="reader__title" title={doc?.title}>
+          {doc?.title}
+        </h1>
+        {section && (
+          <>
+            <span className="reader__section-dot" aria-hidden="true">
+              ·
+            </span>
+            <span className="reader__section">{section}</span>
+          </>
+        )}
+        {/* biome-ignore lint/a11y/noAriaHiddenOnFocusable: <kbd> is not focusable; the button carries aria-keyshortcuts */}
+        <kbd className="kbd reader__heading-key" aria-hidden="true">
+          {keyLabel('go-to')}
+        </kbd>
+        <button
+          type="button"
+          className="reader__go-to"
+          aria-label={section ? `${section}. Go to a page, chapter or note` : 'Go to a page, chapter or note'}
+          aria-keyshortcuts={ariaKeyShortcuts('go-to')}
+          onClick={() => openGoTo()}
+        />
       </div>
 
       <div className="reader__toolbar-group reader__toolbar-group--end">
         <PageIndicator />
-        <span className="divider divider--vertical" aria-hidden="true" />
-        <ZoomControls />
-        <span className="divider divider--vertical" aria-hidden="true" />
-        <ShortcutsButton />
-        <FocusModeButton />
         <AppearanceMenu />
         <button
           type="button"

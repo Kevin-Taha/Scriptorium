@@ -24,7 +24,7 @@ where you left off — days later.
   (<kbd>Alt</kbd>+<kbd>←</kbd>/<kbd>→</kbd>) take you straight back.
 - **Peek at references.** Hover a link like *"see Figure 3.2"* to preview the figure in a card
   without leaving the page; jump there only if you want to.
-- **Go to anything.** Press <kbd>G</kbd> or <kbd>Ctrl</kbd>+<kbd>F</kbd> (or click the section name in
+- **Go to anything.** Press <kbd>G</kbd> or <kbd>Ctrl</kbd>+<kbd>F</kbd> (or click the book's title in
   the toolbar) and type a page number, a chapter, a bookmark, words from a note or anything in the
   book — or an action like *dark* or *focus*. Text matches stay highlighted; <kbd>F3</kbd> steps
   through them.

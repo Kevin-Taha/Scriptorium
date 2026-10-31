@@ -2,7 +2,6 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { type ViewerController, useReaderStore } from '../reader/readerStore';
 import { FocusMode } from './FocusMode';
-import { FocusModeButton } from './FocusModeButton';
 import { exitFocusMode, toggleFocusMode, useFocusStore } from './focusStore';
 import { ReadingRuler } from './ReadingRuler';
 
@@ -28,19 +27,6 @@ afterEach(() => {
   exitFocusMode();
   useReaderStore.setState({ controller: null, sidebarOpen: true });
   vi.useRealTimers();
-});
-
-describe('FocusModeButton', () => {
-  it('shows and toggles the state with its shortcut announced', () => {
-    render(<FocusModeButton />);
-    const button = screen.getByRole('button', { name: 'Focus mode' });
-    expect(button.getAttribute('aria-keyshortcuts')).toBe('F');
-    expect(button.getAttribute('data-tooltip')).toBe('Focus mode (F)');
-
-    fireEvent.click(button);
-    expect(useFocusStore.getState().active).toBe(true);
-    expect(button.getAttribute('aria-pressed')).toBe('true');
-  });
 });
 
 describe('FocusMode', () => {
