@@ -147,6 +147,10 @@ All persistence goes through `src/lib/storage/repository.ts`, which keeps the do
 filesystem-backed store in a future desktop build. State lives in small
 [Zustand](https://github.com/pmndrs/zustand) stores per feature.
 
+The production build ships a strict Content-Security-Policy (`contentSecurityPolicy` in
+`vite.config.ts`): scripts, styles, fonts and workers come only from the app's own origin, and
+runtime styles go through constructed stylesheets rather than `<style>` elements.
+
 See [`docs/ROADMAP.md`](docs/ROADMAP.md) for what's next, [`docs/DATA.md`](docs/DATA.md) for how data is stored and synced, and [`docs/DESIGN.md`](docs/DESIGN.md)
 for the design system.
 
