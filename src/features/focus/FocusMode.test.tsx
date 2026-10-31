@@ -6,7 +6,10 @@ import { exitFocusMode, toggleFocusMode, useFocusStore } from './focusStore';
 import { ReadingRuler } from './ReadingRuler';
 
 const html = document.documentElement;
-const spotlight = () => document.head.querySelector('style')?.textContent;
+const spotlight = () =>
+  document.adoptedStyleSheets
+    .flatMap((sheet) => [...sheet.cssRules].map((rule) => rule.cssText))
+    .join('\n') || undefined;
 
 function controllerAt(page: number): ViewerController {
   const location = { page, offset: 0.5 };
@@ -55,7 +58,7 @@ describe('FocusMode', () => {
     expect(html.classList.contains('focus-mode')).toBe(false);
     expect(useFocusStore.getState().active).toBe(false);
     expect(useReaderStore.getState().sidebarOpen).toBe(true);
-    expect(document.head.querySelector('style')).toBeNull();
+    expect(document.adoptedStyleSheets).toHaveLength(0);
   });
 
   it('spotlights the page at the centre of the viewport, and follows it', () => {

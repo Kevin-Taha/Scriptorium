@@ -120,14 +120,18 @@ function useToolbarReveal() {
  */
 function useSpotlight() {
   useEffect(() => {
-    const style = document.head.appendChild(document.createElement('style'));
+    // A constructed sheet, not a <style> element, so the build's Content-Security-Policy allows it.
+    const sheet = new CSSStyleSheet();
+    document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
     let current = 0;
     const update = () => {
       const { controller, location } = useReaderStore.getState();
       const page = (controller?.getVisibleCenter() ?? location).page;
       if (page === current) return;
       current = page;
-      style.textContent = `html.focus-mode .reader__page:not([data-page="${page}"]) { opacity: var(--focus-page-opacity); }`;
+      sheet.replaceSync(
+        `html.focus-mode .reader__page:not([data-page="${page}"]) { opacity: var(--focus-page-opacity); }`,
+      );
     };
     update();
 
@@ -143,7 +147,7 @@ function useSpotlight() {
     return () => {
       unsubscribe();
       observer.disconnect();
-      style.remove();
+      document.adoptedStyleSheets = document.adoptedStyleSheets.filter((adopted) => adopted !== sheet);
     };
   }, []);
 }

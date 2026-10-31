@@ -46,6 +46,48 @@ function pdfjsAssets(): Plugin {
   };
 }
 
+/**
+ * Gives the built app a strict Content-Security-Policy: everything comes from its own origin, and
+ * the one inline script (the pre-paint theme) is allowed by a hash taken from the final markup so
+ * the two can't drift. Covers and thumbnails are `data:` URLs. The dev server is left without a
+ * policy because Vite injects inline scripts for hot reloading.
+ */
+function contentSecurityPolicy(): Plugin {
+  return {
+    name: 'scriptorium:content-security-policy',
+    apply: 'build',
+    transformIndexHtml: {
+      order: 'post',
+      handler(html) {
+        const inlineScripts = [...html.matchAll(/<script\b(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)];
+        const hashes = inlineScripts.map(
+          ([, source]) => `'sha256-${createHash('sha256').update(source).digest('base64')}'`,
+        );
+        const policy = [
+          "default-src 'self'",
+          ["script-src 'self'", ...hashes].join(' '),
+          "style-src 'self'",
+          "img-src 'self' data: blob:",
+          "font-src 'self' data:",
+          "connect-src 'self'",
+          "worker-src 'self'",
+          "manifest-src 'self'",
+          "object-src 'none'",
+          "base-uri 'self'",
+          "form-action 'self'",
+        ].join('; ');
+        return [
+          {
+            tag: 'meta',
+            attrs: { 'http-equiv': 'Content-Security-Policy', content: policy },
+            injectTo: 'head-prepend',
+          },
+        ];
+      },
+    },
+  };
+}
+
 function offlineApp(): Plugin {
   let outDir: string;
   return {
@@ -93,7 +135,7 @@ export default defineConfig({
   // Browser storage belongs to an exact address, so a fallback port would open an empty library.
   server: { port: 5173, strictPort: true },
   preview: { port: 4173, strictPort: true },
-  plugins: [react(), pdfjsAssets(), offlineApp()],
+  plugins: [react(), pdfjsAssets(), contentSecurityPolicy(), offlineApp()],
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
