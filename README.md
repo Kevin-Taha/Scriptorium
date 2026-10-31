@@ -149,3 +149,7 @@ filesystem-backed store in a future desktop build. State lives in small
 
 See [`docs/ROADMAP.md`](docs/ROADMAP.md) for what's next, [`docs/DATA.md`](docs/DATA.md) for how data is stored and synced, and [`docs/DESIGN.md`](docs/DESIGN.md)
 for the design system.
+
+## License
+
+[MIT](LICENSE)
