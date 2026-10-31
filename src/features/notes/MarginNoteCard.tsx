@@ -194,6 +194,7 @@ export const MarginNoteCard = memo(function MarginNoteCard({
   const anchor = Math.round(placement.anchor);
   const top = Math.round(placement.top);
   const attach = top + NOTE_ATTACH_OFFSET;
+  const tetherDown = attach > anchor;
   const clamped = bodyMetrics !== null && bodyMetrics.natural > bodyMetrics.limit + 1;
   const bodyStyle = bodyExpanded && bodyMetrics ? { maxHeight: bodyMetrics.natural } : undefined;
   const colorName = NOTE_COLOR_LABELS[note.color];
@@ -206,25 +207,27 @@ export const MarginNoteCard = memo(function MarginNoteCard({
   if (paletteOpen) classes.push('has-palette');
 
   return (
-    <div
-      className={`margin-note-slot${placement.displaced ? ' is-displaced' : ''}`}
-      data-note-color={note.color}
-      data-ready={ready || undefined}
-    >
+    <div className="margin-note-slot" data-note-color={note.color} data-ready={ready || undefined}>
       <span
         className="margin-note__anchor"
         style={{ top: anchor }}
         aria-hidden="true"
         onClick={() => cardRef.current?.focus()}
       />
-      <span className="margin-note__leader" style={{ top: attach }} aria-hidden="true" />
-      {placement.displaced && (
-        <span
+      {placement.displaced ? (
+        // A displaced card is reached by a soft S-curve from its anchor. The path is drawn in a
+        // unit box stretched over the gap, so it glides with the card like a plain line would.
+        <svg
           className="margin-note__tether"
           style={{ top: Math.min(anchor, attach), height: Math.abs(attach - anchor) }}
-          data-direction={attach > anchor ? 'down' : 'up'}
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
           aria-hidden="true"
-        />
+        >
+          <path d={tetherDown ? 'M0 0C50 0 50 100 100 100' : 'M0 100C50 100 50 0 100 0'} />
+        </svg>
+      ) : (
+        <span className="margin-note__leader" style={{ top: attach }} aria-hidden="true" />
       )}
 
       <div

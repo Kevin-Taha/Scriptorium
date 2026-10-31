@@ -23,6 +23,17 @@ export function ReaderScreen({ docId, view }: ReaderScreenProps) {
 
   useEffect(() => () => useReaderStore.getState().closeDocument(), []);
 
+  // The browser tab (or app window) is named after the book that's open.
+  const title = useReaderStore((s) => (s.docId === docId ? s.doc?.title : undefined));
+  useEffect(() => {
+    if (!title) return;
+    const previous = document.title;
+    document.title = view === 'review' ? `${title} — Notes` : title;
+    return () => {
+      document.title = previous;
+    };
+  }, [title, view]);
+
   if (status === 'error') {
     return (
       <div className="screen-center">

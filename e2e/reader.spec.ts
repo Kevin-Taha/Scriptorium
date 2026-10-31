@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { goToPage, importFixture } from './support/reader';
+import { goToPage, importFixture, openAppearance } from './support/reader';
 
 test.beforeEach(async ({ page }) => importFixture(page));
 
@@ -22,8 +22,9 @@ test('scrolling updates the page and G navigates; invalid pages do not navigate'
   await expect(page.locator('#page-field')).toHaveValue('15');
 });
 
-test('toolbar and keyboard zoom preserve the current page', async ({ page }) => {
+test('menu and keyboard zoom preserve the current page', async ({ page }) => {
   await goToPage(page, 11);
+  await openAppearance(page);
   const zoom = page.getByRole('button', { name: /^Zoom level/ });
   const initial = await zoom.innerText();
   await page.getByRole('button', { name: 'Zoom in', exact: true }).click();

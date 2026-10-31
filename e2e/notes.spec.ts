@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { addNote, goToPage, importFixture, waitForProgressSave } from './support/reader';
+import { addNote, goToPage, importFixture, waitForProgressSave, zoomIn } from './support/reader';
 
 test.beforeEach(async ({ page }) => importFixture(page));
 
@@ -119,7 +119,7 @@ test('note remains on its page and anchor after zoom and virtualization', async 
       );
     });
   const before = await normalizedAnchor();
-  await page.getByRole('button', { name: 'Zoom in', exact: true }).click();
+  await zoomIn(page);
   await expect(note).toBeVisible();
   await expect.poll(async () => Math.abs((await normalizedAnchor()) - before)).toBeLessThan(0.01);
   await goToPage(page, 30);

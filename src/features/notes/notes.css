@@ -3,7 +3,7 @@
    ========================================================================== */
 
 .margin-column {
-  --note-gutter: 16px;
+  --note-gutter: 24px;
   --note-line: calc(var(--font-size-note) * var(--leading-normal));
   position: absolute;
   inset: 0;
@@ -13,21 +13,12 @@
   cursor: pointer;
 }
 
-/* Wraps one note's anchor, leader, tether and card. It never takes pointer
+/* Wraps one note's anchor, leader or tether, and card. It never takes pointer
    events itself, so :hover/:focus-within on it mean "this note is active". */
 .margin-note-slot {
-  /* Displaced notes run their tether down their own lane, so neighbours' tethers
-     stay parallel instead of overprinting each other. */
-  --lane: 7px;
   position: absolute;
   inset: 0;
   pointer-events: none;
-}
-.margin-note-slot:nth-child(3n + 2) {
-  --lane: 10px;
-}
-.margin-note-slot:nth-child(3n + 3) {
-  --lane: 13px;
 }
 
 /* ---- Anchor, leader, tether ------------------------------------------------ */
@@ -53,43 +44,34 @@
   inset: -6px;
 }
 
-.margin-note__leader,
-.margin-note__tether {
-  position: absolute;
-  background: color-mix(in srgb, var(--note-dot) 70%, transparent);
-  pointer-events: none;
-}
-
+/* A card level with its anchor: a straight line across the gutter. */
 .margin-note__leader {
+  position: absolute;
   left: 0;
   width: var(--note-gutter);
   height: 1px;
   margin-top: -1px;
-}
-.margin-note-slot.is-displaced .margin-note__leader {
-  left: var(--lane);
-  width: calc(var(--note-gutter) - var(--lane));
+  background: color-mix(in srgb, var(--note-dot) 70%, transparent);
+  pointer-events: none;
 }
 
+/* A displaced card: an S-curve from the anchor to the card's attach point. The SVG
+   stretches to the gap; the stroke keeps its width (non-scaling). Because cards never
+   reorder, neighbouring curves fan out side by side instead of crossing. */
 .margin-note__tether {
-  left: var(--lane);
-  width: 1px;
-}
-
-.margin-note__tether::before {
-  content: '';
   position: absolute;
-  left: calc(var(--lane) * -1);
-  width: var(--lane);
-  height: 1px;
-  background: inherit;
+  left: 0;
+  width: var(--note-gutter);
+  overflow: visible;
+  pointer-events: none;
 }
 
-.margin-note__tether[data-direction='down']::before {
-  top: 0;
-}
-.margin-note__tether[data-direction='up']::before {
-  bottom: 0;
+.margin-note__tether path {
+  fill: none;
+  stroke: color-mix(in srgb, var(--note-dot) 70%, transparent);
+  stroke-width: 1;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
 }
 
 .margin-note-slot:hover .margin-note__anchor,
@@ -103,10 +85,10 @@
   background: var(--note-dot);
 }
 
-.margin-note-slot:hover .margin-note__tether,
-.margin-note-slot:focus-within .margin-note__tether {
-  width: 2px;
-  background: var(--note-dot);
+.margin-note-slot:hover .margin-note__tether path,
+.margin-note-slot:focus-within .margin-note__tether path {
+  stroke: var(--note-dot);
+  stroke-width: 2;
 }
 
 /* Cards glide to a new slot when neighbours change. Transitions wait until the
@@ -127,8 +109,7 @@
 .margin-column[data-settled] .margin-note-slot[data-ready] .margin-note__tether {
   transition:
     top var(--duration-base) var(--ease-out),
-    height var(--duration-base) var(--ease-out),
-    width var(--duration-fast) var(--ease-standard);
+    height var(--duration-base) var(--ease-out);
 }
 
 /* ---- Card ------------------------------------------------------------------ */
@@ -144,7 +125,7 @@
   line-height: var(--leading-normal);
   color: var(--note-text);
   background: var(--note-bg);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
   cursor: text;
   pointer-events: auto;
@@ -475,7 +456,7 @@
   line-height: 1;
   color: var(--color-text-secondary);
   border: 1px dashed var(--color-border-control);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   opacity: 0;
   pointer-events: none;
   transition: opacity 120ms var(--ease-standard);

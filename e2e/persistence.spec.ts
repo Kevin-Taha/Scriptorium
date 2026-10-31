@@ -1,5 +1,11 @@
 import { expect, test } from '@playwright/test';
-import { backToLibrary, goToPage, importFixture, waitForProgressSave } from './support/reader';
+import {
+  backToLibrary,
+  goToPage,
+  importFixture,
+  openAppearance,
+  waitForProgressSave,
+} from './support/reader';
 
 test('page, intra-page offset and zoom survive reload and library continuation', async ({ page }) => {
   await importFixture(page);
@@ -17,6 +23,7 @@ test('page, intra-page offset and zoom survive reload and library continuation',
       );
     });
   await expect.poll(offset).toBeGreaterThan(0.1);
+  await openAppearance(page);
   await page.getByRole('button', { name: 'Zoom in', exact: true }).click();
   const zoom = await page.getByRole('button', { name: /^Zoom level/ }).innerText();
   const savedOffset = await offset();
@@ -24,12 +31,14 @@ test('page, intra-page offset and zoom survive reload and library continuation',
   await page.reload();
   await expect(page.locator('#page-field')).toHaveValue('11');
   await expect(sheet.locator('canvas')).toBeVisible();
+  await openAppearance(page);
   await expect(page.getByRole('button', { name: /^Zoom level/ })).toHaveText(zoom);
   await expect.poll(async () => Math.abs((await offset()) - savedOffset)).toBeLessThan(0.03);
   await backToLibrary(page);
   await page.getByRole('button', { name: 'Continue reading' }).click();
   await expect(page.locator('#page-field')).toHaveValue('11');
   await expect(sheet.locator('canvas')).toBeVisible();
+  await openAppearance(page);
   await expect(page.getByRole('button', { name: /^Zoom level/ })).toHaveText(zoom);
   await expect.poll(async () => Math.abs((await offset()) - savedOffset)).toBeLessThan(0.03);
 });

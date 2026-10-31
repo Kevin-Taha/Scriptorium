@@ -31,11 +31,6 @@ html.focus-mode .reader__toolbar:has(:focus-visible, [aria-expanded='true']) {
   box-shadow: var(--shadow-md);
 }
 
-.focus-button[aria-pressed='true'] {
-  color: var(--color-text);
-  background: var(--color-pressed);
-}
-
 /* The page being read stays; useSpotlight dims the rest. */
 html.focus-mode .reader__page {
   transition: opacity var(--duration-slower) var(--ease-standard);

@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { goToPage, importFixture, waitForProgressSave } from './support/reader';
+import { goToPage, importFixture, waitForProgressSave, zoomIn } from './support/reader';
 
 test.beforeEach(async ({ page }) => importFixture(page));
 
@@ -127,7 +127,7 @@ test('highlights stay on their text through zoom and selecting under them still 
     }, PHRASE);
 
   const before = await offsetFromText();
-  await page.getByRole('button', { name: 'Zoom in', exact: true }).click();
+  await zoomIn(page);
   await expect.poll(async () => Math.abs((await offsetFromText()).width - before.width)).toBeLessThan(0.05);
   const after = await offsetFromText();
   expect(Math.abs(after.dx)).toBeLessThan(2);
