@@ -50,12 +50,17 @@ function pdfjsAssets(): Plugin {
  * Gives the built app a strict Content-Security-Policy: everything comes from its own origin, and
  * the one inline script (the pre-paint theme) is allowed by a hash taken from the final markup so
  * the two can't drift. Covers and thumbnails are `data:` URLs. The dev server is left without a
- * policy because Vite injects inline scripts for hot reloading.
+ * policy because Vite injects inline scripts for hot reloading. Builds with a Google client id
+ * (Google Drive sync) also allow Google's sign-in library and the Drive API, and nothing else.
  */
 function contentSecurityPolicy(): Plugin {
+  let google = false;
   return {
     name: 'scriptorium:content-security-policy',
     apply: 'build',
+    configResolved(config) {
+      google = Boolean(config.env.VITE_GOOGLE_CLIENT_ID?.trim());
+    },
     transformIndexHtml: {
       order: 'post',
       handler(html) {
@@ -63,13 +68,16 @@ function contentSecurityPolicy(): Plugin {
         const hashes = inlineScripts.map(
           ([, source]) => `'sha256-${createHash('sha256').update(source).digest('base64')}'`,
         );
+        const signIn = 'https://accounts.google.com/gsi/';
+        const extra = (...sources: string[]) => (google ? sources : []);
         const policy = [
           "default-src 'self'",
-          ["script-src 'self'", ...hashes].join(' '),
-          "style-src 'self'",
+          ["script-src 'self'", ...hashes, ...extra(`${signIn}client`)].join(' '),
+          ["style-src 'self'", ...extra(`${signIn}style`)].join(' '),
           "img-src 'self' data: blob:",
           "font-src 'self' data:",
-          "connect-src 'self'",
+          ["connect-src 'self'", ...extra('https://www.googleapis.com', signIn)].join(' '),
+          ...(google ? [`frame-src 'self' ${signIn}`] : []),
           "worker-src 'self'",
           "manifest-src 'self'",
           "object-src 'none'",
@@ -147,5 +155,7 @@ export default defineConfig({
     environment: 'happy-dom',
     include: ['src/**/*.test.{ts,tsx}'],
     setupFiles: ['src/test/setup.ts'],
+    // Tests decide for themselves whether Google Drive is offered, whatever `.env.local` says.
+    env: { VITE_GOOGLE_CLIENT_ID: '' },
   },
 });

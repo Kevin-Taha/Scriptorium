@@ -38,7 +38,8 @@ folder shares books, notes and progress.
 
 Requirements: a Chromium-based browser on a computer (Chrome, Edge, Opera, Brave), which
 implement the [File System Access API](https://developer.mozilla.org/docs/Web/API/File_System_API).
-Firefox, Safari and mobile browsers can't link folders; use backups there.
+Firefox, Safari and mobile browsers can't link folders; use backups there, or a
+[Google Drive folder](#google-drive-folders-approval-required) where the site offers it.
 
 After the browser restarts it may ask for permission to open the folder again — the library
 shows a **Reconnect** button, and opening a book from the folder asks in the same click.
@@ -112,23 +113,63 @@ on this device are kept, nothing is deleted. PDFs are not included: books whose 
 the library yet are listed, and their notes appear as soon as the same PDF is added (books
 are matched by content hash).
 
-## Cloud services without a desktop client
+## Google Drive folders (approval required)
 
-Linking a cloud folder works through each service's desktop app, which presents the cloud
-folder as a normal local folder. Talking to Google Drive or OneDrive directly from the
-browser (for example on a tablet) is possible without a server, but needs:
+Where the site offers it, **Library & storage → Library folder → Sync a Google Drive folder
+directly** links a folder in Google Drive itself, without Google Drive for desktop. It works in any
+browser, including phones, tablets, Safari and Firefox, and behaves exactly like a linked local
+folder: the same `.scriptorium/` layout, the same per-device files and the same merging, so a
+computer linking the folder through Google Drive for desktop and a tablet linking it directly share
+one library.
 
-1. An OAuth client registered by the site owner — a Google Cloud project for Google Drive
-   (Google Identity Services, `drive.file` scope plus the Google Picker so the reader chooses
-   the folder), or a Microsoft Entra app for OneDrive (MSAL, Microsoft Graph).
-2. The published site's address registered with that client.
-3. A storage adapter implementing the same small set of operations the folder sync uses
-   (list files, read, write, stat), so the sync and merge logic stays unchanged.
+- **Approval.** Reading the PDFs already in a folder the reader chooses, and saving notes inside it,
+  needs Google's full Drive scope (`https://www.googleapis.com/auth/drive`). Google treats that
+  scope as restricted: until the app passes Google's verification, only accounts the site owner
+  adds as test users can sign in (at most 100), and they see an "unverified app" notice first.
+  Anyone else is told access is blocked. That's why the option is collapsed and says so.
+- **Signing in.** The site has no server, so Google gives it access tokens that last about an hour
+  and can only renew them from a click. When one runs out, sync pauses and the library shows
+  **Reconnect**; one click (usually without any prompt) carries on. Nothing is lost meanwhile.
+- **What Scriptorium touches.** It lists the chosen folder, reads its PDFs, and creates and replaces
+  files only inside `.scriptorium/`. It never changes, moves or deletes anything else. Shortcuts and
+  Google Docs files are ignored, and the folder chooser shows folders in My Drive.
+- **Books kept in the browser.** The first time a device links the folder it downloads each PDF once
+  to identify it, and keeps that copy in the browser (up to 1 GB, oldest dropped first) for reading
+  its title and cover and for opening it — instantly, offline, and before signing in again. Books
+  dropped from the copy download again when opened. Unlinking clears them.
+- **Duplicate names.** Drive allows several entries with one name (two devices creating
+  `.scriptorium` at the same moment, for example). Every device uses the oldest, and a device whose
+  files ended up in a newer duplicate writes them again.
 
-This is a natural follow-up once the site has a permanent address.
+### Setting it up (site owner)
+
+Builds offer Google Drive only when they have a Google OAuth client id; without one nothing about
+Drive is shown or loaded, and the Content-Security-Policy stays limited to the site itself.
+
+1. In the [Google Cloud console](https://console.cloud.google.com/), create a project and enable
+   the **Google Drive API**.
+2. Configure the **OAuth consent screen** (Google Auth Platform): audience *External*, publishing
+   status *Testing*. Under **Data access**, add the `https://www.googleapis.com/auth/drive` scope.
+   Under **Audience → Test users**, add every Google account that may use Drive sync.
+3. Create an **OAuth client ID** of type *Web application*. Add the site's origin to
+   **Authorized JavaScript origins** — `https://kevin-taha.github.io` for the published site, plus
+   `http://localhost:5173` and `http://localhost:4173` for development. No redirect URIs or client
+   secret are needed.
+4. Give the build the client id. It's public by design (it ships in the app), not a secret:
+   - Published site: `gh variable set GOOGLE_CLIENT_ID --body "<id>.apps.googleusercontent.com"`,
+     then re-run **Deploy to GitHub Pages**.
+   - Local development: `VITE_GOOGLE_CLIENT_ID=<id>.apps.googleusercontent.com` in `.env.local`.
+
+With a client id, the policy also allows Google's sign-in library
+(`https://accounts.google.com/gsi/`) and the Drive API (`https://www.googleapis.com`), and nothing
+else. Offering Drive sync to anyone without approval would mean passing Google's restricted-scope
+verification, including a yearly security assessment.
+
+OneDrive could work the same way (a Microsoft Entra app with Microsoft Graph); it isn't built yet.
 
 ## Privacy
 
 Nothing leaves the reader's devices except through services they choose (their own cloud
-folder or backup files). Scriptorium has no analytics and makes no network requests of its
-own beyond loading the app.
+folder, a Google Drive folder they link, or backup files). Scriptorium has no analytics and makes
+no network requests of its own beyond loading the app. With a Google Drive folder linked, the
+browser talks to Google directly; nothing passes through any other server.

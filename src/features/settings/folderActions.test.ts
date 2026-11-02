@@ -8,7 +8,7 @@ vi.mock('@/lib/storage/persistence', () => ({
   requestPersistentStorage: vi.fn(async () => true),
 }));
 
-const folder = { name: 'Textbooks', linkedAt: 0 };
+const folder = { name: 'Textbooks', linkedAt: 0, provider: 'local' as const };
 
 beforeEach(() => vi.clearAllMocks());
 afterEach(() => useSyncStore.setState({ folder: null, status: 'unlinked' }));

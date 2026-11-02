@@ -30,7 +30,7 @@ vi.mock('@/lib/storage/repository', async (importOriginal) => {
   return { ...actual, resetBookProgress: vi.fn(actual.resetBookProgress) };
 });
 
-const folder = { name: 'Textbooks', linkedAt: 0 };
+const folder = { name: 'Textbooks', linkedAt: 0, provider: 'local' as const };
 const hour = 3600_000;
 
 const doc = (n: number, overrides: Partial<LibraryDocument> = {}): LibraryDocument => ({

@@ -17,7 +17,7 @@ test('the build enforces a strict Content-Security-Policy that reading, notes an
   await importFixture(page);
   await expect(page.locator('meta[http-equiv="Content-Security-Policy"]')).toHaveAttribute(
     'content',
-    /script-src 'self' 'sha256-[A-Za-z0-9+/=]+';.*style-src 'self';/,
+    /script-src 'self' 'sha256-[A-Za-z0-9+/=]+'( https:\/\/accounts\.google\.com\/gsi\/client)?;.*style-src 'self'( https:\/\/accounts\.google\.com\/gsi\/style)?;/,
   );
 
   await goToPage(page, 8);

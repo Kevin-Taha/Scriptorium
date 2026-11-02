@@ -66,6 +66,7 @@ export function LibraryView() {
   const loadVersion = useRef(0);
   const dialogOpener = useRef<HTMLButtonElement | null>(null);
   const syncStatus = useSyncStore((s) => s.status);
+  const canLinkLocal = useSyncStore((s) => s.canLinkLocal);
   const folder = useSyncStore((s) => s.folder);
   const libraryRevision = useSyncStore((s) => s.libraryRevision);
   const firstRevision = useRef(libraryRevision);
@@ -377,7 +378,7 @@ export function LibraryView() {
                 )}
                 {importing ? 'Importing…' : 'Open PDF'}
               </button>
-              {syncStatus === 'unlinked' && (
+              {syncStatus === 'unlinked' && canLinkLocal && (
                 <button
                   type="button"
                   className="btn"
@@ -389,7 +390,7 @@ export function LibraryView() {
                 </button>
               )}
             </div>
-            {syncStatus === 'unlinked' && (
+            {syncStatus === 'unlinked' && canLinkLocal && (
               <p className="library__empty-hint">Works with OneDrive and Google Drive folders too.</p>
             )}
           </div>

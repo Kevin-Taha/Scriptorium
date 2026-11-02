@@ -113,8 +113,9 @@ describe('readBookBytes', () => {
   it('asks the reader to reconnect when access lapsed', async () => {
     const { doc } = await folderBook();
     provideFolderAccess({
-      root: async () => ({ status: 'needs-permission', folderName: 'Textbooks' }),
+      root: async () => ({ status: 'needs-permission', folderName: 'Textbooks', provider: 'local' }),
       rescan: async () => undefined,
+      keptBook: async () => null,
     });
     await expect(readBookBytes(doc)).rejects.toThrow(/permission to open “Textbooks” again.*Reconnect/);
   });
