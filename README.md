@@ -5,8 +5,9 @@
 <h1 align="center">Scriptorium</h1>
 
 <p align="center">
-  A PDF reader for textbooks and other long books.<br>
-  Write in the margins, find anything in a few keystrokes, and pick up where you left off.
+  A PDF reader that you actually <i>want</i> to use.<br>
+  Optimized for textbooks and long-form content.<br>
+  Write in the margins, collate and review your notes, track your progress, and navigate your documents seamlessly. 
 </p>
 
 <p align="center">
