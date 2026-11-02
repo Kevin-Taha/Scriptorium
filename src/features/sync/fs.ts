@@ -1,7 +1,7 @@
 /**
  * The subset of the File System Access API that folder sync uses. Handles from
- * `showDirectoryPicker`, the origin private file system, and the in-memory
- * test double all satisfy these interfaces.
+ * `showDirectoryPicker`, the origin private file system, Google Drive folders
+ * (`drive/driveFs.ts`) and the in-memory test double all satisfy these interfaces.
  */
 
 export interface FsFile {
@@ -35,11 +35,19 @@ export interface FsDirectoryHandle {
   values(): AsyncIterable<FsFileHandle | FsDirectoryHandle>;
   getDirectoryHandle(name: string, options?: { create?: boolean }): Promise<FsDirectoryHandle>;
   getFileHandle(name: string, options?: { create?: boolean }): Promise<FsFileHandle>;
-  removeEntry(name: string, options?: { recursive?: boolean }): Promise<void>;
   isSameEntry?(other: FsDirectoryHandle): Promise<boolean>;
   /** Absent outside Chromium's File System Access API (e.g. some OPFS-only browsers). */
   queryPermission?(descriptor: FsPermissionDescriptor): Promise<PermissionState>;
   requestPermission?(descriptor: FsPermissionDescriptor): Promise<PermissionState>;
+  /** Called once the folder is unlinked, to let go of anything kept for it (Google Drive folders). */
+  forget?(): Promise<void>;
+  /**
+   * Keeps a copy of a book read while scanning, under its id, where downloads are costly (Google
+   * Drive), so reading its details or opening it doesn't download it again.
+   */
+  keepBook?(id: string, bytes: ArrayBuffer): Promise<void>;
+  /** A copy kept by `keepBook`, or null. */
+  keptBook?(id: string): Promise<ArrayBuffer | null>;
 }
 
 const READ_WRITE: FsPermissionDescriptor = { mode: 'readwrite' };

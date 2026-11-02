@@ -28,6 +28,7 @@ export function startFolderSync(): Promise<void> {
   provideFolderAccess(sync);
   useSyncStore.setState({
     linkFolder: () => sync.link(),
+    linkDriveFolder: () => sync.link('google-drive'),
     reconnect: () => sync.reconnect(),
     unlinkFolder: () => sync.unlink(),
     syncNow: () => sync.sync(),

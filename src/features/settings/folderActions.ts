@@ -23,7 +23,16 @@ async function attempt(action: () => Promise<void>): Promise<string | null> {
 }
 
 export async function linkLibraryFolder(): Promise<string | null> {
-  const message = await attempt(() => useSyncStore.getState().linkFolder());
+  return linkWith(() => useSyncStore.getState().linkFolder());
+}
+
+/** Links a folder in Google Drive: signs in (from this click), then the reader chooses the folder. */
+export async function linkDriveLibraryFolder(): Promise<string | null> {
+  return linkWith(() => useSyncStore.getState().linkDriveFolder());
+}
+
+async function linkWith(link: () => Promise<void>): Promise<string | null> {
+  const message = await attempt(link);
   if (!message && useSyncStore.getState().folder) requestPersistenceQuietly();
   return message;
 }

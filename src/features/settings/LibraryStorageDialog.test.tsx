@@ -47,7 +47,7 @@ const note = (id: string, docId: string): MarginNote => ({
   updatedAt: 1,
 });
 
-const folder = { name: 'Textbooks', linkedAt: 0 };
+const folder = { name: 'Textbooks', linkedAt: 0, provider: 'local' as const };
 
 function setSync(state: Partial<ReturnType<typeof useSyncStore.getState>>) {
   act(() => useSyncStore.setState(state));
@@ -83,7 +83,10 @@ beforeEach(async () => {
     error: null,
     progress: null,
     devices: [],
+    canLinkLocal: true,
+    canLinkDrive: false,
     linkFolder: vi.fn(async () => {}),
+    linkDriveFolder: vi.fn(async () => {}),
     reconnect: vi.fn(async () => {}),
     unlinkFolder: vi.fn(async () => {}),
     syncNow: vi.fn(async () => {}),
@@ -285,6 +288,70 @@ describe('Library folder', () => {
     const dialog = await openDialog();
     const status = within(dialog).getByText('Synced with “Textbooks”');
     expect(status.getAttribute('role')).toBe('status');
+  });
+});
+
+describe('Google Drive folder', () => {
+  const driveFolder = { ...folder, provider: 'google-drive' as const };
+  const DRIVE_OPTION = 'Sync a Google Drive folder directly';
+
+  it('isn’t mentioned in builds without Google Drive', async () => {
+    const dialog = await openDialog();
+    expect(within(dialog).queryByText(DRIVE_OPTION)).toBeNull();
+  });
+
+  it('is a quiet, collapsed option that says it needs the owner’s approval', async () => {
+    const linkDriveFolder = vi.fn(async () => {
+      useSyncStore.setState({ status: 'syncing', folder: driveFolder });
+    });
+    setSync({ canLinkDrive: true, linkDriveFolder });
+    const dialog = await openDialog();
+    const summary = within(dialog).getByText(DRIVE_OPTION);
+    const details = summary.closest('details')!;
+    expect(details.open).toBe(false);
+    expect(within(dialog).getByRole('button', { name: 'Link a folder…' })).toBeTruthy();
+
+    fireEvent.click(summary);
+    await waitFor(() => expect(details.open).toBe(true));
+    expect(details.textContent).toMatch(
+      /Requires approval\. Google only lets accounts that the owner of this site has approved sign in\./,
+    );
+    fireEvent.click(within(details).getByRole('button', { name: 'Choose a Drive folder…' }));
+    await waitFor(() => expect(linkDriveFolder).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(requestPersistentStorage).toHaveBeenCalled());
+    expect(await within(dialog).findByText('Syncing with “Textbooks”')).toBeTruthy();
+    expect(within(dialog).queryByText(DRIVE_OPTION)).toBeNull();
+  });
+
+  it('is still offered where this browser can’t link a local folder', async () => {
+    setSync({ canLinkLocal: false, canLinkDrive: true });
+    const dialog = await openDialog();
+    expect(
+      within(dialog).getByText('Linking a folder on this device needs Chrome or Edge on a computer.'),
+    ).toBeTruthy();
+    expect(within(dialog).queryByRole('button', { name: 'Link a folder…' })).toBeNull();
+    expect(within(dialog).getByText(DRIVE_OPTION)).toBeTruthy();
+  });
+
+  it('asks to sign in to Google again, and changes folder within Drive', async () => {
+    const reconnect = vi.fn(async () => {});
+    const linkFolder = vi.fn(async () => {});
+    const linkDriveFolder = vi.fn(async () => {});
+    setSync({ canLinkDrive: true, status: 'needs-permission', folder: driveFolder, reconnect });
+    const dialog = await openDialog();
+    expect(
+      within(dialog).getByText('Sign in to Google Drive again to keep “Textbooks” in sync.'),
+    ).toBeTruthy();
+    expect(within(dialog).getByText('Google asks about once an hour. Nothing has been lost.')).toBeTruthy();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Reconnect' }));
+    await waitFor(() => expect(reconnect).toHaveBeenCalledTimes(1));
+
+    setSync({ status: 'idle', lastSyncedAt: Date.now() - 2 * 60_000, linkFolder, linkDriveFolder });
+    expect(within(dialog).getByText('In Google Drive · Last synced 2 minutes ago')).toBeTruthy();
+    expect(within(dialog).queryByText(DRIVE_OPTION)).toBeNull();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Change folder…' }));
+    await waitFor(() => expect(linkDriveFolder).toHaveBeenCalledTimes(1));
+    expect(linkFolder).not.toHaveBeenCalled();
   });
 });
 

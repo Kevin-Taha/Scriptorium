@@ -1,6 +1,6 @@
 import { getDocument, getDocumentFile, listFolderFiles } from '@/lib/storage/repository';
 import type { LibraryDocument } from '@/lib/types';
-import { folderAccess } from './folderAccess';
+import { type FolderAccess, folderAccess } from './folderAccess';
 import { errorName, type FsDirectoryHandle, type FsFile, isPermissionError, resolveFile } from './fs';
 
 type FolderBook = LibraryDocument & { source: { kind: 'folder'; path: string; missing?: boolean } };
@@ -30,14 +30,19 @@ function hasUserActivation(): boolean {
   return activation?.isActive === true;
 }
 
-function needsPermission(folderName: string): Error {
+function needsPermission(folderName: string, drive: boolean): Error {
   return new Error(
-    `Scriptorium needs your permission to open “${folderName}” again. Go back to the library and choose Reconnect — your notes are kept.`,
+    drive
+      ? `Sign in to Google Drive again to open books from “${folderName}”. Go back to the library and choose Reconnect — your notes are kept.`
+      : `Scriptorium needs your permission to open “${folderName}” again. Go back to the library and choose Reconnect — your notes are kept.`,
   );
 }
 
 async function readFromFolder(doc: FolderBook): Promise<ArrayBuffer> {
   const access = folderAccess();
+  // Books from Google Drive are kept in the browser once read, so they reopen offline and signed out.
+  const kept = await access?.keptBook(doc.id);
+  if (kept) return kept;
   const folder = access
     ? await access.root({ request: hasUserActivation() })
     : ({ status: 'unlinked' } as const);
@@ -46,29 +51,42 @@ async function readFromFolder(doc: FolderBook): Promise<ArrayBuffer> {
       `“${doc.title}” is in a library folder that isn’t linked any more. Link the folder again from the library to read it — your notes are kept.`,
     );
   }
-  if (folder.status === 'needs-permission') throw needsPermission(folder.folderName);
+  const drive = folder.provider === 'google-drive';
+  if (folder.status === 'needs-permission') throw needsPermission(folder.folderName, drive);
 
   try {
-    const first = doc.source.missing ? null : await tryRead(folder.root, doc);
-    if (first) return first;
-    // The file moved, changed or vanished since the last scan: rescan and look again.
-    await access.rescan();
-    const fresh = await getDocument(doc.id);
-    const second =
-      fresh?.source?.kind === 'folder' && !fresh.source.missing
-        ? await tryRead(folder.root, fresh as FolderBook)
-        : null;
-    if (second) return second;
+    const bytes = await readCurrent(access, folder.root, doc);
+    if (bytes) {
+      await folder.root.keepBook?.(doc.id, bytes);
+      return bytes;
+    }
   } catch (error) {
-    if (isPermissionError(error)) throw needsPermission(folder.root.name);
+    if (isPermissionError(error)) throw needsPermission(folder.root.name, drive);
     throw new Error(
-      `Couldn’t read “${doc.fileName}” from your library folder. If it’s stored online only, make it available offline and try again.`,
+      drive
+        ? `Couldn’t download “${doc.fileName}” from Google Drive. Check your connection and try again.`
+        : `Couldn’t read “${doc.fileName}” from your library folder. If it’s stored online only, make it available offline and try again.`,
       { cause: error },
     );
   }
   throw new Error(
     `Couldn’t find “${doc.fileName}” in your library folder. If you moved or deleted it, put it back — your notes and progress are kept.`,
   );
+}
+
+/** The book's bytes from the folder, rescanning once if the file moved or changed since the last scan. */
+async function readCurrent(
+  access: FolderAccess,
+  root: FsDirectoryHandle,
+  doc: FolderBook,
+): Promise<ArrayBuffer | null> {
+  const first = doc.source.missing ? null : await tryRead(root, doc);
+  if (first) return first;
+  await access.rescan();
+  const fresh = await getDocument(doc.id);
+  return fresh?.source?.kind === 'folder' && !fresh.source.missing
+    ? tryRead(root, fresh as FolderBook)
+    : null;
 }
 
 /** Reads the book's file if it is still the exact PDF the library knows; null otherwise. */

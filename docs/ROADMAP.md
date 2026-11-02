@@ -178,7 +178,7 @@ builds on the dependable local reading and note-taking loop.
 
 - ✅ **Backup and restore:** move notes, highlights, bookmarks, and progress between browser installations.
 - ✅ **Folder sync:** link a folder of PDFs (local, OneDrive, Google Drive for desktop, Dropbox) and share books, notes, and progress across devices — no account. See [DATA.md](DATA.md).
-- **Direct cloud sync:** Google Drive and OneDrive without their desktop apps (tablets, phones), via each service's browser API.
+- **Direct cloud sync:** ✅ Google Drive without its desktop app (tablets, phones), for accounts the site owner approves — see [DATA.md](DATA.md#google-drive-folders-approval-required). OneDrive through Microsoft Graph is still to come.
 - ✅ **PWA:** make the app installable and support offline launch and reading of locally stored books.
 - **Desktop app:** package with Tauri and support PDF file associations.
 - **Multiple documents:** open books in tabs and move between them without losing each reading position.

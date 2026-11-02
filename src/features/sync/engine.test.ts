@@ -724,7 +724,7 @@ describe('permission', () => {
     await engine.whenIdle();
     expect(useSyncStore.getState()).toMatchObject({
       status: 'idle',
-      folder: { name: 'Textbooks', linkedAt: 1 },
+      folder: { name: 'Textbooks', linkedAt: 1, provider: 'local' },
     });
     expect(await listDocuments()).toHaveLength(1);
   });
@@ -738,7 +738,11 @@ describe('permission', () => {
     });
     await engine.start();
     expect(useSyncStore.getState().status).toBe('needs-permission');
-    expect(await engine.root()).toEqual({ status: 'needs-permission', folderName: 'Textbooks' });
+    expect(await engine.root()).toEqual({
+      status: 'needs-permission',
+      folderName: 'Textbooks',
+      provider: 'local',
+    });
 
     await engine.reconnect();
     expect(useSyncStore.getState().status).toBe('needs-permission');

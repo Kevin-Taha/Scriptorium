@@ -35,5 +35,7 @@ export default defineConfig({
     url: `http://localhost:${PORT}`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    // Builds with Google Drive sync, whose Google endpoints the Drive spec stubs.
+    env: { VITE_GOOGLE_CLIENT_ID: 'e2e.apps.googleusercontent.com' },
   },
 });

@@ -32,6 +32,8 @@ import { canonicalBookData, isEmptyBookData, mergeBookData, stableStringify } fr
 import type { DocId, LibraryDocument } from '@/lib/types';
 import { debounce, isAtStart } from '@/lib/util';
 import type { FolderAccess, FolderRoot } from './folderAccess';
+import { isDriveConfigured } from './drive/config';
+import { type DriveFolderRef, isDriveFolder, openDriveFolder, pickDriveFolder } from './drive/driveFs';
 import {
   ensurePermission,
   errorName,
@@ -66,7 +68,7 @@ import {
   summarizeDevices,
 } from './plan';
 import { type FileStamp, type ScannedPdf, scanDeviceFiles, scanPdfs } from './scan';
-import { type SyncState, useSyncStore } from './syncStore';
+import { type FolderProvider, type LinkedFolder, type SyncState, useSyncStore } from './syncStore';
 
 export interface BookMetadata {
   title: string;
@@ -89,10 +91,29 @@ export interface FolderStore {
 
 const LINKED_FOLDER_KEY = 'linkedFolder';
 
+/** As stored: local handles survive structured cloning; a Drive folder is kept by id and reopened. */
+type StoredFolder = Omit<LinkedFolderRecord, 'handle'> & {
+  handle?: FsDirectoryHandle;
+  drive?: DriveFolderRef;
+};
+
 /** Keeps the linked folder in the database's `meta` store. */
 export const metaFolderStore: FolderStore = {
-  load: () => getMeta<LinkedFolderRecord>(LINKED_FOLDER_KEY),
-  save: (folder) => putMeta(LINKED_FOLDER_KEY, folder),
+  load: async () => {
+    const stored = await getMeta<StoredFolder>(LINKED_FOLDER_KEY);
+    if (stored?.drive)
+      return { name: stored.name, linkedAt: stored.linkedAt, handle: openDriveFolder(stored.drive) };
+    return stored?.handle
+      ? { name: stored.name, linkedAt: stored.linkedAt, handle: stored.handle }
+      : undefined;
+  },
+  save: ({ handle, name, linkedAt }) =>
+    putMeta(
+      LINKED_FOLDER_KEY,
+      (isDriveFolder(handle)
+        ? { name, linkedAt, drive: handle.ref() }
+        : { name, linkedAt, handle }) satisfies StoredFolder,
+    ),
   clear: () => deleteMeta(LINKED_FOLDER_KEY),
 };
 
@@ -101,7 +122,12 @@ export interface EngineOptions {
   extractMetadata(bytes: ArrayBuffer, fileName: string): Promise<BookMetadata>;
   notify?(message: string, tone?: 'neutral' | 'error'): void;
   pickDirectory?(): Promise<FsDirectoryHandle>;
+  /** Signs in to Google and lets the reader choose a Drive folder. */
+  pickDriveFolder?(): Promise<FsDirectoryHandle>;
+  /** Whether this browser can link a local folder. */
   isSupported?(): boolean;
+  /** Whether this build offers Google Drive folders. */
+  isDriveAvailable?(): boolean;
   folderStore?: FolderStore;
   /** Delay before local edits are written to the folder. */
   writeDelayMs?: number;
@@ -113,6 +139,8 @@ class Superseded extends Error {}
 
 const ADDING_BOOKS = 'Adding books';
 const BACKGROUND_MIN_INTERVAL_MS = 2_000;
+/** PDFs read at once while identifying new books; each is held in memory while it is hashed. */
+const HASH_CONCURRENCY = 3;
 
 /**
  * Keeps the library in step with a linked folder: finds the PDFs in it, adds
@@ -168,6 +196,7 @@ export class FolderSyncEngine implements FolderAccess {
 
   /** Restores the linked folder, if any, and syncs when access is still granted. */
   start(): Promise<void> {
+    this.set({ canLinkLocal: this.canLinkLocal(), canLinkDrive: this.canLinkDrive() });
     if (!this.isSupported()) this.set({ status: 'unsupported' });
     this.started = this.restore();
     return this.started;
@@ -183,7 +212,7 @@ export class FolderSyncEngine implements FolderAccess {
         return;
       }
       this.folder = stored;
-      const folder = { name: stored.name, linkedAt: stored.linkedAt };
+      const folder = folderView(stored);
       if (await ensurePermission(stored.handle, false)) {
         this.access = stored.handle;
         this.set({ folder, status: 'syncing' });
@@ -197,20 +226,41 @@ export class FolderSyncEngine implements FolderAccess {
     }
   }
 
-  /** Lets the reader choose a folder and links it. Call from a click. */
-  async link(): Promise<void> {
+  /**
+   * Lets the reader choose a folder and links it: a local one (the default) or one in Google Drive.
+   * Call from a click.
+   */
+  async link(provider: FolderProvider = 'local'): Promise<void> {
     await this.started;
     if (!this.isSupported()) {
       this.set({ status: 'unsupported' });
       return;
     }
+    const drive = provider === 'google-drive';
+    if (drive ? !this.canLinkDrive() : !this.canLinkLocal()) {
+      this.notify(
+        drive
+          ? 'Google Drive isn’t set up for this copy of Scriptorium.'
+          : 'This browser can’t link folders. Use Chrome or Edge on a computer.',
+        'error',
+      );
+      return;
+    }
     let handle: FsDirectoryHandle;
     try {
-      handle = await (this.options.pickDirectory ?? pickDirectory)();
+      handle = await (drive
+        ? (this.options.pickDriveFolder ?? pickDriveFolder)()
+        : (this.options.pickDirectory ?? pickDirectory)());
     } catch (error) {
       if (isAbortError(error)) return;
       console.error('Scriptorium: folder picker failed', error);
-      this.notify('Couldn’t open that folder. Try choosing it again.', 'error');
+      // Drive sign-in failures explain themselves (blocked pop-ups, accounts not yet approved).
+      this.notify(
+        drive && error instanceof Error && error.message
+          ? error.message
+          : 'Couldn’t open that folder. Try choosing it again.',
+        'error',
+      );
       return;
     }
     try {
@@ -231,7 +281,7 @@ export class FolderSyncEngine implements FolderAccess {
       this.resetCaches();
       this.folder = record;
       this.access = handle;
-      this.set({ folder: { name: record.name, linkedAt: record.linkedAt }, error: null });
+      this.set({ folder: folderView(record), error: null });
       const others = await countOtherDevices(handle, (await getDevice()).id).catch(() => 0);
       this.notify(
         others > 0
@@ -253,7 +303,9 @@ export class FolderSyncEngine implements FolderAccess {
     if (!(await ensurePermission(folder.handle, true))) {
       this.set({ status: 'needs-permission' });
       this.notify(
-        `Scriptorium still can’t open “${folder.name}”. Allow access to keep your notes in sync.`,
+        isDriveFolder(folder.handle)
+          ? `Scriptorium is still signed out of Google Drive. Sign in to keep “${folder.name}” in sync.`
+          : `Scriptorium still can’t open “${folder.name}”. Allow access to keep your notes in sync.`,
         'error',
       );
       return;
@@ -270,7 +322,8 @@ export class FolderSyncEngine implements FolderAccess {
    */
   async unlink(): Promise<void> {
     await this.started;
-    if (!this.folder) return;
+    const unlinked = this.folder;
+    if (!unlinked) return;
     await this.flushWrites();
     this.generation++;
     this.scheduleWrite.cancel();
@@ -287,6 +340,7 @@ export class FolderSyncEngine implements FolderAccess {
           if (await getDocumentFile(doc.id)) await updateDocument(doc.id, { source: { kind: 'imported' } });
           else await removeDocumentEntry(doc.id);
         }
+        await unlinked.handle.forget?.();
       } catch (error) {
         console.error('Scriptorium: unlinking the folder failed', error);
       }
@@ -435,16 +489,36 @@ export class FolderSyncEngine implements FolderAccess {
     const total = plan.toHash.length;
     let done = 0;
     if (total > 0) this.set({ status: 'syncing', progress: { label: ADDING_BOOKS, done, total } });
-    for (const file of plan.toHash) {
-      this.checkCurrent(generation);
-      const hash = await this.hashFile(file);
-      if (hash) {
-        hashes.set(file.path, hash);
-        // Add each new book as soon as it is identified, so big folders fill in progressively.
-        if (!docs.has(hash)) docs.set(hash, await this.addFolderBook(hash, file.path, file.size));
+    // A few at a time: over Google Drive each one is a download, mostly spent waiting.
+    const queue = [...plan.toHash];
+    const adding = new Map<DocId, Promise<LibraryDocument>>();
+    const failures: unknown[] = [];
+    const identify = async () => {
+      for (let file = queue.shift(); file && failures.length === 0; file = queue.shift()) {
+        try {
+          this.checkCurrent(generation);
+          const hash = await this.hashFile(file);
+          if (hash) {
+            hashes.set(file.path, hash);
+            // Add each new book as soon as it is identified, so big folders fill in progressively.
+            // Two copies of one PDF may finish together; add the book once.
+            if (!docs.has(hash)) {
+              let added = adding.get(hash);
+              if (!added) {
+                added = this.addFolderBook(hash, file.path, file.size);
+                adding.set(hash, added);
+              }
+              docs.set(hash, await added);
+            }
+          }
+          this.set({ progress: { label: ADDING_BOOKS, done: ++done, total } });
+        } catch (error) {
+          failures.push(error);
+        }
       }
-      this.set({ progress: { label: ADDING_BOOKS, done: ++done, total } });
-    }
+    };
+    await Promise.all(Array.from({ length: Math.min(HASH_CONCURRENCY, queue.length) }, identify));
+    if (failures.length > 0) throw failures[0];
 
     this.checkCurrent(generation);
     const sizes = new Map(scan.pdfs.map((file) => [file.path, file.size]));
@@ -461,7 +535,9 @@ export class FolderSyncEngine implements FolderAccess {
   private async hashFile(file: ScannedPdf): Promise<DocId | null> {
     try {
       const snapshot = await file.handle.getFile();
-      const hash = await contentHash(await snapshot.arrayBuffer());
+      const bytes = await snapshot.arrayBuffer();
+      const hash = await contentHash(bytes);
+      await this.access?.keepBook?.(hash, bytes);
       await putFolderFile({
         path: file.path,
         size: snapshot.size,
@@ -535,8 +611,10 @@ export class FolderSyncEngine implements FolderAccess {
     const doc = await getDocument(id);
     if (!doc || !needsMetadata(doc) || doc.source?.kind !== 'folder') return;
     try {
-      const file = await (await resolveFile(root, doc.source.path)).getFile();
-      const metadata = await this.options.extractMetadata(await file.arrayBuffer(), doc.fileName);
+      const bytes =
+        (await root.keptBook?.(id)) ??
+        (await (await (await resolveFile(root, doc.source.path)).getFile()).arrayBuffer());
+      const metadata = await this.options.extractMetadata(bytes, doc.fileName);
       if (generation !== this.generation) return;
       await updateDocument(id, {
         title: metadata.title,
@@ -707,18 +785,25 @@ export class FolderSyncEngine implements FolderAccess {
     await this.started;
     const folder = this.folder;
     if (!folder) return { status: 'unlinked' };
-    if (this.access) return { status: 'ready', root: this.access };
+    const provider = providerOf(folder.handle);
+    if (this.access) return { status: 'ready', root: this.access, provider };
     if (await ensurePermission(folder.handle, options.request ?? false)) {
       this.access = folder.handle;
       this.verifyOwnFiles = true;
       void this.sync();
-      return { status: 'ready', root: folder.handle };
+      return { status: 'ready', root: folder.handle, provider };
     }
-    return { status: 'needs-permission', folderName: folder.name };
+    return { status: 'needs-permission', folderName: folder.name, provider };
   }
 
   rescan(): Promise<void> {
     return this.sync({ quiet: true });
+  }
+
+  async keptBook(id: DocId): Promise<ArrayBuffer | null> {
+    // Waits for the linked folder: after a reload the reader may ask before it is restored.
+    await this.started;
+    return (await this.folder?.handle.keptBook?.(id)) ?? null;
   }
 
   /** Resolves once no pass, write or metadata read is pending (tests and shutdown). */
@@ -732,8 +817,17 @@ export class FolderSyncEngine implements FolderAccess {
 
   // -------------------------------------------------------------- helpers
 
+  /** Some kind of folder can be linked here. */
   private isSupported(): boolean {
+    return this.canLinkLocal() || this.canLinkDrive();
+  }
+
+  private canLinkLocal(): boolean {
     return (this.options.isSupported ?? isFolderLinkingSupported)();
+  }
+
+  private canLinkDrive(): boolean {
+    return (this.options.isDriveAvailable ?? isDriveConfigured)();
   }
 
   private notify(message: string, tone: 'neutral' | 'error' = 'neutral'): void {
@@ -747,6 +841,14 @@ export class FolderSyncEngine implements FolderAccess {
   private bumpRevision(): void {
     useSyncStore.setState((state) => ({ libraryRevision: state.libraryRevision + 1 }));
   }
+}
+
+function providerOf(handle: FsDirectoryHandle): FolderProvider {
+  return isDriveFolder(handle) ? 'google-drive' : 'local';
+}
+
+function folderView(record: LinkedFolderRecord): LinkedFolder {
+  return { name: record.name, linkedAt: record.linkedAt, provider: providerOf(record.handle) };
 }
 
 async function sameFolder(a: FsDirectoryHandle, b: FsDirectoryHandle): Promise<boolean> {

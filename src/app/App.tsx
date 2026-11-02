@@ -3,6 +3,7 @@ import { ToastHost } from '@/components/Toast';
 import { LibraryView } from '@/features/library/LibraryView';
 import { ShortcutsDialog, useHelpShortcut } from '@/features/navigation/ShortcutsDialog';
 import { ReaderScreen } from '@/features/reader/ReaderScreen';
+import { DriveFolderChooser } from '@/features/settings/DriveFolderChooser';
 import { LibraryStorageDialog } from '@/features/settings/LibraryStorageDialog';
 import { requestPersistenceAtStartup } from '@/features/settings/storageStatus';
 import { useRoute } from './router';
@@ -23,6 +24,7 @@ export function App() {
     <>
       {route.name === 'library' ? <LibraryView /> : <ReaderScreen docId={route.docId} view={route.name} />}
       <LibraryStorageDialog />
+      <DriveFolderChooser />
       <ShortcutsDialog />
       <ToastHost />
     </>
