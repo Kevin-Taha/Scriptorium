@@ -17,7 +17,8 @@
 
 ![A textbook chapter open in Scriptorium: highlighted passages, two margin notes beside them, a bookmark ribbon on the page and the table of contents in the sidebar.](docs/images/reader.webp)
 
-Scriptorium runs in your browser and installs as an app. There's no account and no server: your
+Scriptorium runs in your browser at **[kevin-taha.github.io/Scriptorium](https://kevin-taha.github.io/Scriptorium/)**
+and installs as an app. There's no account and no server: your
 books and notes stay on your devices, or in a folder you choose ([how data is stored](docs/DATA.md)).
 
 ## Margin notes and highlights
@@ -98,8 +99,9 @@ Press <kbd>?</kbd> in the app for the full list.
 
 ## Run it
 
-Scriptorium uses [Bun](https://bun.sh), a single install that provides the runtime, package
-manager and script runner:
+The live site at [kevin-taha.github.io/Scriptorium](https://kevin-taha.github.io/Scriptorium/) is
+published from `main` on every merge. To run it yourself, Scriptorium uses [Bun](https://bun.sh), a
+single install that provides the runtime, package manager and script runner:
 
 ```sh
 # Windows (PowerShell)
