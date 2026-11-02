@@ -14,90 +14,65 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license"></a>
 </p>
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/reader-dark.webp">
-  <img src="docs/images/reader.webp" alt="A textbook chapter open in Scriptorium: highlighted passages, two margin notes beside them, a bookmark ribbon on the page and the table of contents in the sidebar.">
-</picture>
+![A textbook chapter open in Scriptorium: highlighted passages, two margin notes beside them, a bookmark ribbon on the page and the table of contents in the sidebar.](docs/images/reader.webp)
 
-Scriptorium treats a PDF the way you'd treat a well-used textbook. You write in the margins, flip
-back to a figure and return to your place without thinking about it, and pick up where you left
-off days later.
-
-It runs in your browser and installs as an app. There's no account and no server: your books and
-notes stay on your devices, or in a folder you choose ([how data is stored](docs/DATA.md)).
+Scriptorium runs in your browser and installs as an app. There's no account and no server: your
+books and notes stay on your devices, or in a folder you choose ([how data is stored](docs/DATA.md)).
 
 ## Margin notes and highlights
 
-Every page has a margin. Click beside a passage to write a note level with it, or select some text
-and press <kbd>N</kbd> to start a note that quotes it. Highlight a selection in one of five colours
-(<kbd>H</kbd> repeats the last one), then click the highlight to recolour it or attach a note.
-Notes never overlap, take <kbd>Ctrl</kbd>+<kbd>B</kbd> and <kbd>Ctrl</kbd>+<kbd>I</kbd>, and save as
-you type.
+Click beside a passage to write a note level with it, or select text and press <kbd>N</kbd> to quote
+it. Highlight in one of five colours and attach a note to any highlight. Notes never overlap, take
+bold and italics, and save as you type.
 
 ## Review your notes
 
-<kbd>Shift</kbd>+<kbd>R</kbd> lays out every page you've annotated, in order, with a thumbnail of the
-page beside its notes and highlights. Filter by colour or by text, edit notes in place, and export
-the whole set to Markdown.
+<kbd>Shift</kbd>+<kbd>R</kbd> lays out every annotated page with its thumbnail, notes and highlights.
+Filter by colour or text, edit in place, and export to Markdown.
 
 ![The notes review: each annotated page as a thumbnail beside its highlights and notes, with colour filters and an Export Markdown button.](docs/images/review.webp)
 
 ## Go to anything
 
-Press <kbd>G</kbd> (or click the book's title in the toolbar) and type a page number, a chapter, a
-bookmark, words from your notes or anything in the text. Printed page numbers work, so "142" means
-the page with 142 printed on it, roman-numeral front matter included. Text matches stay highlighted
-on the page, and <kbd>F3</kbd> steps through them.
+Press <kbd>G</kbd> and type a page number, a chapter, a bookmark, words from your notes or anything
+in the text. Printed page numbers work, roman numerals included.
 
 ![Go to with "ellipse" typed in: matching highlights, contents entries, a bookmark and matches in the text.](docs/images/go-to.webp)
 
 ## Peek at references
 
-Hover a link like "see Figure 2.1" to see the figure in a card without leaving your page. When you
-do follow a link, a contents entry or a search result, a *Return to p. N* pill takes you back, and
-<kbd>Alt</kbd>+<kbd>←</kbd> / <kbd>Alt</kbd>+<kbd>→</kbd> move through your jumps.
+Hover a link like "see Figure 2.1" to preview it without leaving your page. When you do jump, a
+*Return to p. N* pill takes you back.
 
 ![Hovering a reference to Figure 2.1 shows the figure, from two chapters earlier, in a card over the page.](docs/images/link-peek.webp)
 
 ## Focus mode and themes
 
-<kbd>F</kbd> clears the toolbar and sidebar away and dims every page but the one you're on.
-<kbd>R</kbd> adds a reading ruler that follows the pointer. There are light, sepia and dark themes,
-and in the dark one you can invert the pages for reading at night.
+<kbd>F</kbd> hides everything but the page, and <kbd>R</kbd> adds a reading ruler. Light, sepia and
+dark themes, with optional page inversion for reading at night.
 
 ![Focus mode in the sepia theme, with the reading ruler marking one line of text.](docs/images/focus.webp)
 
 ## Your library
 
-Books get covers and progress bars, and the library leads with the book you were reading last,
-down to the section, so you can carry on in one click. Your place (page, position and zoom) is
-saved as you read.
-
-Link a folder of PDFs, on your computer or inside OneDrive, Google Drive or Dropbox, and
-Scriptorium reads books from it and saves your notes beside them. Every computer that links the
-same folder shares the same books, notes and progress.
+Covers, progress, and your place saved as you read. Link a folder of PDFs, on your computer or in
+OneDrive, Google Drive or Dropbox, and every computer that links it shares the same books, notes
+and progress.
 
 ![The library: the book being read, with its chapter and progress, above a shelf of books with their covers.](docs/images/library.webp)
 
 ## Also
 
-- **Book map.** A slim strip along the right edge marks chapters, notes, highlights and bookmarks.
-  Hover it to preview a page; click or drag to go there.
-- **Chapter progress.** A hairline under the toolbar is divided into chapters and fills as you read.
-- **Bookmarks and contents.** Click the ribbon at a page's corner, or press <kbd>B</kbd>. The contents
-  sidebar follows the section you're in.
-- **Long books.** Pages render as you reach them, so 1,000-page textbooks stay quick.
-- **Backups.** Export everything to one file and restore it anywhere. The library also asks the
-  browser for persistent storage, so it isn't cleared to free up space.
-- **Offline.** Once installed, the library and your books open without a connection. On desktop
-  browsers that support it, you can open PDFs with Scriptorium from your file manager.
-- **Start over.** *Reset progress…* in a book's menu clears its place, notes, highlights and
-  bookmarks and keeps the book.
+- **Book map:** a strip along the right edge marking chapters, notes and bookmarks; hover to preview.
+- **Chapter progress:** a hairline under the toolbar that fills as you read.
+- **Bookmarks:** click the ribbon on a page or press <kbd>B</kbd>.
+- **Long books:** pages render as you reach them, so 1,000-page textbooks stay quick.
+- **Backups:** export everything to one file and restore it anywhere.
+- **Offline:** once installed, your library opens without a connection.
 
 ## Keyboard shortcuts
 
-Press <kbd>?</kbd> in the app (or the help button in the toolbar) for every shortcut, along with how
-to do each thing without the keyboard.
+Press <kbd>?</kbd> in the app for the full list.
 
 <details>
 <summary>The ones you'll use most</summary>
@@ -154,12 +129,8 @@ browser's install button in the address bar, or **Install app** in the library w
 | `bun run test` | Run unit tests (Vitest) |
 | `bun run e2e` | Run end-to-end tests (Playwright) against the production build |
 | `bun run fixture` | Generate the synthetic textbook used by the end-to-end tests |
-| `bun run screenshots` | Retake the screenshots in this README |
 
 The first end-to-end run needs a browser: `bunx playwright install chromium`.
-
-The screenshots show *Orbits*, a short sample textbook written for this repository, and a shelf of
-made-up titles. `scripts/readme/` generates them as PDFs and drives the app to take each picture.
 
 ### Architecture
 
@@ -189,7 +160,7 @@ src/
   styles/       Design tokens and base styles
 docs/           Roadmap, data and sync model, design spec, README images
 e2e/            Playwright end-to-end tests
-scripts/        Test fixture generator, README sample books and screenshots
+scripts/        Development scripts (test fixture generator)
 ```
 
 All persistence goes through `src/lib/storage/repository.ts`, which keeps the door open for a

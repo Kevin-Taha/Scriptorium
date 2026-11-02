@@ -19,7 +19,6 @@
     "test:watch": "vitest",
     "e2e": "playwright test",
     "fixture": "bun scripts/generate-fixture.mjs",
-    "screenshots": "bun scripts/readme/screenshots.mjs",
     "check": "bun run typecheck && bun run lint && bun run format:check && bun run test && bun run build",
     "format": "biome format --write .",
     "format:check": "biome format ."
