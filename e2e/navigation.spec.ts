@@ -31,6 +31,26 @@ test('outline, Return, and back/forward history', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Forward (Alt+Right)' })).toBeDisabled();
 });
 
+test('Return steps back through a chain of jumps, or skips straight to an earlier one', async ({ page }) => {
+  const field = page.locator('#page-field');
+  await goToPage(page, 6);
+  await goToPage(page, 11);
+  await goToPage(page, 15);
+  await page.getByRole('button', { name: 'Return to p. 11' }).click();
+  await expect(field).toHaveValue('11');
+  await page.getByRole('button', { name: 'Return to p. 6' }).click();
+  await expect(field).toHaveValue('6');
+  await expect(page.getByRole('button', { name: 'Return to p. 1' })).toBeVisible();
+  await page.keyboard.press('Alt+ArrowRight');
+  await page.keyboard.press('Alt+ArrowRight');
+  await expect(field).toHaveValue('15');
+  await page.getByRole('button', { name: '2 earlier places' }).click();
+  await page.getByRole('menuitem', { name: /^p\. 1\b/ }).click();
+  await expect(field).toHaveValue('1');
+  await expect(page.locator('.return-pill')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Forward to page 6 (Alt+Right)' })).toBeEnabled();
+});
+
 test('bookmark toggle, label, rename persistence, jump and delete', async ({ page }) => {
   await goToPage(page, 6);
   await page.keyboard.press('b');

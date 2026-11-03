@@ -63,7 +63,7 @@ installation, desktop packaging, and cross-device sync are later milestones.
 - [x] A link, outline item, bookmark, go-to-page, or notes-review jump records the location being left.
 - [x] Back and Forward return to the recorded page and intra-page position in the expected order.
 - [x] A new jump after going Back clears the forward branch; ordinary scrolling does not create history entries.
-- [x] After a jump, a floating “Return to p. N” control identifies and returns to the location just left.
+- [x] After a jump, a floating “Return to p. N” control identifies and returns to the location just left, stays up to step back through a chain of jumps, and lists earlier places to return to directly.
 - [x] Back, Forward, and Return do not create duplicate jump entries; unavailable history actions are disabled.
 - [x] Navigation history belongs to the current reading session; persisted progress remains the resume point.
 - [x] Search-result jumps will follow the same history rules when search is introduced in M2.

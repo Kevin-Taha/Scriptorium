@@ -126,6 +126,40 @@ describe('return pill', () => {
     expect(useHistoryStore.getState().returnTarget).toBeNull();
   });
 
+  it('stays up through a chain of returns and offers earlier places in a menu', () => {
+    useReaderStore.setState({
+      outline: [
+        { title: 'Opening', location: { page: 1, offset: 0 }, children: [] },
+        { title: 'Middle', location: { page: 6, offset: 0 }, children: [] },
+      ],
+    });
+    render(<ReturnPill />);
+    const history = useHistoryStore.getState();
+    act(() => history.jumpTo({ page: 4, offset: 0 }));
+    act(() => history.jumpTo({ page: 7, offset: 0 }));
+    act(() => history.jumpTo({ page: 12, offset: 0 }));
+    expect(screen.getByRole('button', { name: 'Return to p. 7' })).toBeTruthy();
+    const more = screen.getByRole('button', { name: '2 earlier places' });
+    fireEvent.click(more);
+    const items = screen.getAllByRole('menuitem');
+    expect(items.map((item) => item.textContent)).toEqual(['p. 4Opening', 'p. 1Opening']);
+    expect(document.activeElement).toBe(items[0]);
+    fireEvent.keyDown(items[0], { key: 'ArrowDown' });
+    expect(document.activeElement).toBe(items[1]);
+    fireEvent.keyDown(items[1], { key: 'Escape' });
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(document.activeElement).toBe(more);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Return to p. 7' }));
+    expect(useReaderStore.getState().location.page).toBe(7);
+    expect(screen.getByRole('button', { name: 'Return to p. 4' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '1 earlier place' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'p. 1 Opening' }));
+    expect(useReaderStore.getState().location.page).toBe(1);
+    expect(useHistoryStore.getState().returnTarget).toBeNull();
+    expect(useHistoryStore.getState().forward).toHaveLength(3);
+  });
+
   it('pauses its 12-second inactivity timeout while hovered or focused', () => {
     vi.useFakeTimers();
     const { container } = render(<ReturnPill />);

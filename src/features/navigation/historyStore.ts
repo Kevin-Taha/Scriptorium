@@ -7,7 +7,10 @@ const MAX_HISTORY = 100;
 interface HistoryState {
   back: ReadingLocation[];
   forward: ReadingLocation[];
-  /** Where the most recent jump came from; drives the "Return to p. N" pill. */
+  /**
+   * The place the "Return to p. N" pill offers, always the top of `back` while shown. It stays
+   * up after a return so the reader can keep stepping back through a chain of jumps.
+   */
   returnTarget: ReadingLocation | null;
 
   /**
@@ -22,6 +25,8 @@ interface HistoryState {
    */
   recordJump(from: ReadingLocation): void;
   goBack(): void;
+  /** Returns straight to `back[index]`, as if going back repeatedly; skipped places become forward history. */
+  returnTo(index: number): void;
   goForward(): void;
   dismissReturn(): void;
   reset(): void;
@@ -68,14 +73,19 @@ export const useHistoryStore = create<HistoryState>()((set, get) => {
     },
 
     goBack() {
+      get().returnTo(get().back.length - 1);
+    },
+
+    returnTo(index) {
       const { back } = get();
-      const target = back.at(-1);
+      const target = back[index];
       if (!target) return;
       const from = currentLocation();
+      const remaining = back.slice(0, index);
       set((s) => ({
-        back: s.back.slice(0, -1),
-        forward: [...s.forward, from].slice(-MAX_HISTORY),
-        returnTarget: null,
+        back: remaining,
+        forward: [...s.forward, from, ...back.slice(index + 1).reverse()].slice(-MAX_HISTORY),
+        returnTarget: remaining.at(-1) ?? null,
       }));
       scrollTo(target);
     },

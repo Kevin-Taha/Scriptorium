@@ -44,7 +44,8 @@ in the text. Printed page numbers work, roman numerals included.
 ## Peek at references
 
 Hover a link like "see Figure 2.1" to preview it without leaving your page. When you do jump, a
-*Return to p. N* pill takes you back.
+*Return to p. N* pill takes you back, and keeps offering the next place back through a chain of
+jumps; its menu skips straight to any earlier one.
 
 ![Hovering a reference to Figure 2.1 shows the figure, from two chapters earlier, in a card over the page.](docs/images/link-peek.webp)
 
