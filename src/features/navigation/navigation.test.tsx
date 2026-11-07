@@ -176,6 +176,32 @@ describe('return pill', () => {
     act(() => vi.advanceTimersByTime(12_000));
     expect(useHistoryStore.getState().returnTarget).toBeNull();
   });
+
+  it('restores focus after choosing an earlier place, even when the menu trigger disappears', () => {
+    render(
+      <>
+        <ReturnPill />
+        <div className="reader__viewport" tabIndex={-1} />
+      </>,
+    );
+    const history = useHistoryStore.getState();
+    act(() => history.jumpTo({ page: 4, offset: 0 }));
+    act(() => history.jumpTo({ page: 7, offset: 0 }));
+    act(() => history.jumpTo({ page: 12, offset: 0 }));
+    fireEvent.click(screen.getByRole('button', { name: '2 earlier places' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'p. 4' }));
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Return to p. 1' }));
+
+    act(() => history.jumpTo({ page: 12, offset: 0 }));
+    fireEvent.click(screen.getByRole('button', { name: '1 earlier place' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'p. 1' }));
+    expect(document.activeElement?.className).toBe('reader__viewport');
+
+    vi.useFakeTimers();
+    act(() => history.jumpTo({ page: 9, offset: 0 }));
+    act(() => vi.advanceTimersByTime(12_000));
+    expect(useHistoryStore.getState().returnTarget).toBeNull();
+  });
 });
 
 describe('outline tree', () => {

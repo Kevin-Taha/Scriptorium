@@ -42,13 +42,78 @@ test('Return steps back through a chain of jumps, or skips straight to an earlie
   await expect(field).toHaveValue('6');
   await expect(page.getByRole('button', { name: 'Return to p. 1' })).toBeVisible();
   await page.keyboard.press('Alt+ArrowRight');
+  await expect(field).toHaveValue('11');
   await page.keyboard.press('Alt+ArrowRight');
   await expect(field).toHaveValue('15');
   await page.getByRole('button', { name: '2 earlier places' }).click();
   await page.getByRole('menuitem', { name: /^p\. 1\b/ }).click();
   await expect(field).toHaveValue('1');
   await expect(page.locator('.return-pill')).toHaveCount(0);
+  await expect(page.locator('.reader__viewport')).toBeFocused();
   await expect(page.getByRole('button', { name: 'Forward to page 6 (Alt+Right)' })).toBeEnabled();
+});
+
+test('earlier places supports keyboard selection and restores focus to the remaining Return action', async ({
+  page,
+}) => {
+  await goToPage(page, 6);
+  await goToPage(page, 11);
+  await goToPage(page, 15);
+  const more = page.getByRole('button', { name: '2 earlier places' });
+  await more.focus();
+  await page.keyboard.press('ArrowUp');
+  const items = page.getByRole('menuitem');
+  await expect(items.first()).toBeFocused();
+  await page.keyboard.press('End');
+  await expect(items.last()).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(more).toBeFocused();
+  await expect(page.getByRole('menu', { name: 'Return to', exact: true })).toBeHidden();
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#page-field')).toHaveValue('6');
+  await expect(page.getByRole('button', { name: 'Return to p. 1' })).toBeFocused();
+});
+
+test('returning to another position on the same offered page keeps the next Return available', async ({
+  page,
+}) => {
+  await page.locator('.reader__viewport').evaluate((viewport) => {
+    viewport.scrollTop += 400;
+  });
+  await expect
+    .poll(() =>
+      page.locator('.page-sheet[data-page="1"]').evaluate((sheet) => {
+        const viewport = sheet.closest('.reader__viewport')!;
+        return viewport.getBoundingClientRect().top - sheet.getBoundingClientRect().top;
+      }),
+    )
+    .toBeGreaterThan(300);
+  await goToPage(page, 1);
+  await page.locator('.page-sheet[data-page="1"]').evaluate((sheet) => {
+    const viewport = sheet.closest('.reader__viewport')!;
+    viewport.scrollTop +=
+      sheet.getBoundingClientRect().top -
+      viewport.getBoundingClientRect().top +
+      sheet.getBoundingClientRect().height * 0.6;
+  });
+  await expect
+    .poll(() =>
+      page.locator('.page-sheet[data-page="1"]').evaluate((sheet) => {
+        const viewport = sheet.closest('.reader__viewport')!;
+        return (
+          (viewport.getBoundingClientRect().top - sheet.getBoundingClientRect().top) /
+          sheet.getBoundingClientRect().height
+        );
+      }),
+    )
+    .toBeGreaterThan(0.5);
+  await goToPage(page, 2);
+  await page.getByRole('button', { name: 'Return to p. 1' }).click();
+  await expect(page.locator('#page-field')).toHaveValue('1');
+  await expect(page.getByRole('button', { name: 'Return to p. 1' })).toBeVisible();
+  await page.getByRole('button', { name: 'Return to p. 1' }).click();
+  await expect(page.locator('.return-pill')).toHaveCount(0);
 });
 
 test('bookmark toggle, label, rename persistence, jump and delete', async ({ page }) => {

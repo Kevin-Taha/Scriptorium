@@ -37,10 +37,12 @@ function currentLocation(): ReadingLocation {
   return controller?.getLocation() ?? location;
 }
 
-function scrollTo(target: ReadingLocation): void {
+function scrollTo(target: ReadingLocation, options?: { smooth?: boolean }): void {
   const { controller, setLocation } = useReaderStore.getState();
-  if (controller) controller.scrollTo(target);
-  else setLocation(target);
+  if (controller) {
+    if (options) controller.scrollTo(target, options);
+    else controller.scrollTo(target);
+  } else setLocation(target);
 }
 
 /** Two locations are "the same place" if they are on the same page and nearly the same offset. */
@@ -87,7 +89,8 @@ export const useHistoryStore = create<HistoryState>()((set, get) => {
         forward: [...s.forward, from, ...back.slice(index + 1).reverse()].slice(-MAX_HISTORY),
         returnTarget: remaining.at(-1) ?? null,
       }));
-      scrollTo(target);
+      // Publish the restored location with the new history, not on later smooth-scroll frames.
+      scrollTo(target, { smooth: false });
     },
 
     goForward() {
@@ -100,7 +103,7 @@ export const useHistoryStore = create<HistoryState>()((set, get) => {
         back: [...s.back, from].slice(-MAX_HISTORY),
         returnTarget: from,
       }));
-      scrollTo(target);
+      scrollTo(target, { smooth: false });
     },
 
     dismissReturn: () => set({ returnTarget: null }),

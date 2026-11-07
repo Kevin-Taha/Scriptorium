@@ -15,6 +15,7 @@ export function ReturnPill() {
   const targetLabel = usePageLabel(target?.page ?? page);
   const previousPage = useRef(page);
   const previousTarget = useRef(target);
+  const actionRef = useRef<HTMLButtonElement>(null);
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const [trailOpen, setTrailOpen] = useState(false);
@@ -34,8 +35,20 @@ export function ReturnPill() {
   }, [target, hovered, focused, dismiss]);
 
   useEffect(() => {
-    if (!target || depth < 2) setTrailOpen(false);
+    setTrailOpen(false);
+    if (!target) {
+      setHovered(false);
+      setFocused(false);
+    }
   }, [target, depth]);
+
+  const returnTo = (index: number) => {
+    setTrailOpen(false);
+    const nextFocus =
+      index > 0 ? actionRef.current : document.querySelector<HTMLElement>('.reader__viewport');
+    nextFocus?.focus({ preventScroll: true });
+    useHistoryStore.getState().returnTo(index);
+  };
 
   return (
     <div
@@ -53,6 +66,7 @@ export function ReturnPill() {
         <div className="return-pill">
           <button
             type="button"
+            ref={actionRef}
             className="return-pill__action tooltip"
             data-tooltip={keyLabel('back')}
             aria-keyshortcuts={ariaKeyShortcuts('back')}
@@ -63,7 +77,7 @@ export function ReturnPill() {
               Return to p. <strong>{targetLabel}</strong>
             </span>
           </button>
-          {depth > 1 && <ReturnTrail open={trailOpen} setOpen={setTrailOpen} />}
+          {depth > 1 && <ReturnTrail open={trailOpen} setOpen={setTrailOpen} returnTo={returnTo} />}
           <button type="button" className="return-pill__close" aria-label="Dismiss" onClick={dismiss}>
             <X aria-hidden="true" />
           </button>
@@ -74,9 +88,16 @@ export function ReturnPill() {
 }
 
 /** The back stack beneath the pill's own target, newest first, so the reader can return several jumps at once. */
-function ReturnTrail({ open, setOpen }: { open: boolean; setOpen: (open: boolean) => void }) {
+function ReturnTrail({
+  open,
+  setOpen,
+  returnTo,
+}: {
+  open: boolean;
+  setOpen: (open: boolean) => void;
+  returnTo: (index: number) => void;
+}) {
   const back = useHistoryStore((s) => s.back);
-  const returnTo = useHistoryStore((s) => s.returnTo);
   const labels = useReaderStore((s) => s.pageLabels);
   const outline = useReaderStore((s) => s.outline);
   const entries = useMemo(() => outlineEntries(outline), [outline]);
@@ -179,7 +200,6 @@ function ReturnTrail({ open, setOpen }: { open: boolean; setOpen: (open: boolean
                   className="return-trail__item"
                   onClick={() => {
                     returnTo(index);
-                    setOpen(false);
                   }}
                 >
                   <span className="return-trail__page">{formatPageRef(labels, location.page)}</span>

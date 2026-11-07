@@ -88,6 +88,10 @@ describe('navigation history', () => {
     useHistoryStore.getState().jumpTo(loc(9, 0.7));
     expect(useHistoryStore.getState().returnTarget).toEqual(loc(4, 0.4));
     expect(scrollTo).toHaveBeenCalledWith(loc(9, 0.7));
+    useHistoryStore.getState().goBack();
+    expect(scrollTo).toHaveBeenLastCalledWith(loc(4, 0.4), { smooth: false });
+    useHistoryStore.getState().goForward();
+    expect(scrollTo).toHaveBeenLastCalledWith(loc(4, 0.4), { smooth: false });
   });
 
   it('records a jump that already happened without scrolling, unless it went nowhere', () => {
