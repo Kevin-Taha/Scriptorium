@@ -126,14 +126,13 @@ describe('return pill', () => {
     expect(useHistoryStore.getState().returnTarget).toBeNull();
   });
 
-  it('stays up through a chain of returns and offers earlier places in a menu', () => {
-    useReaderStore.setState({
-      outline: [
-        { title: 'Opening', location: { page: 1, offset: 0 }, children: [] },
-        { title: 'Middle', location: { page: 6, offset: 0 }, children: [] },
-      ],
-    });
-    render(<ReturnPill />);
+  it('stays up through returns and lists earlier places as ordinary buttons', () => {
+    render(
+      <>
+        <ReturnPill />
+        <div className="reader__viewport" tabIndex={-1} />
+      </>,
+    );
     const history = useHistoryStore.getState();
     act(() => history.jumpTo({ page: 4, offset: 0 }));
     act(() => history.jumpTo({ page: 7, offset: 0 }));
@@ -141,23 +140,20 @@ describe('return pill', () => {
     expect(screen.getByRole('button', { name: 'Return to p. 7' })).toBeTruthy();
     const more = screen.getByRole('button', { name: '2 earlier places' });
     fireEvent.click(more);
-    const items = screen.getAllByRole('menuitem');
-    expect(items.map((item) => item.textContent)).toEqual(['p. 4Opening', 'p. 1Opening']);
-    expect(document.activeElement).toBe(items[0]);
-    fireEvent.keyDown(items[0], { key: 'ArrowDown' });
-    expect(document.activeElement).toBe(items[1]);
-    fireEvent.keyDown(items[1], { key: 'Escape' });
-    expect(screen.queryByRole('menu')).toBeNull();
-    expect(document.activeElement).toBe(more);
-
-    fireEvent.click(screen.getByRole('button', { name: 'Return to p. 7' }));
-    expect(useReaderStore.getState().location.page).toBe(7);
-    expect(screen.getByRole('button', { name: 'Return to p. 4' })).toBeTruthy();
+    expect(screen.getByRole('group', { name: 'Earlier places' }).textContent).toBe('p. 4p. 1');
+    fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole('group', { name: 'Earlier places' })).toBeNull();
+    fireEvent.click(more);
+    fireEvent.click(screen.getByRole('button', { name: 'p. 4' }));
+    expect(useReaderStore.getState().location.page).toBe(4);
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Return to p. 1' }));
+    act(() => history.goForward());
     fireEvent.click(screen.getByRole('button', { name: '1 earlier place' }));
-    fireEvent.click(screen.getByRole('menuitem', { name: 'p. 1 Opening' }));
+    fireEvent.click(screen.getByRole('button', { name: 'p. 1' }));
     expect(useReaderStore.getState().location.page).toBe(1);
     expect(useHistoryStore.getState().returnTarget).toBeNull();
     expect(useHistoryStore.getState().forward).toHaveLength(3);
+    expect(document.activeElement?.className).toBe('reader__viewport');
   });
 
   it('pauses its 12-second inactivity timeout while hovered or focused', () => {
@@ -173,32 +169,6 @@ describe('return pill', () => {
     act(() => vi.advanceTimersByTime(20_000));
     expect(useHistoryStore.getState().returnTarget).toBeTruthy();
     fireEvent.blur(screen.getByRole('button', { name: 'Return to p. 1' }));
-    act(() => vi.advanceTimersByTime(12_000));
-    expect(useHistoryStore.getState().returnTarget).toBeNull();
-  });
-
-  it('restores focus after choosing an earlier place, even when the menu trigger disappears', () => {
-    render(
-      <>
-        <ReturnPill />
-        <div className="reader__viewport" tabIndex={-1} />
-      </>,
-    );
-    const history = useHistoryStore.getState();
-    act(() => history.jumpTo({ page: 4, offset: 0 }));
-    act(() => history.jumpTo({ page: 7, offset: 0 }));
-    act(() => history.jumpTo({ page: 12, offset: 0 }));
-    fireEvent.click(screen.getByRole('button', { name: '2 earlier places' }));
-    fireEvent.click(screen.getByRole('menuitem', { name: 'p. 4' }));
-    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Return to p. 1' }));
-
-    act(() => history.jumpTo({ page: 12, offset: 0 }));
-    fireEvent.click(screen.getByRole('button', { name: '1 earlier place' }));
-    fireEvent.click(screen.getByRole('menuitem', { name: 'p. 1' }));
-    expect(document.activeElement?.className).toBe('reader__viewport');
-
-    vi.useFakeTimers();
-    act(() => history.jumpTo({ page: 9, offset: 0 }));
     act(() => vi.advanceTimersByTime(12_000));
     expect(useHistoryStore.getState().returnTarget).toBeNull();
   });
