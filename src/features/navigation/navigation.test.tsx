@@ -126,6 +126,36 @@ describe('return pill', () => {
     expect(useHistoryStore.getState().returnTarget).toBeNull();
   });
 
+  it('stays up through returns and lists earlier places as ordinary buttons', () => {
+    render(
+      <>
+        <ReturnPill />
+        <div className="reader__viewport" tabIndex={-1} />
+      </>,
+    );
+    const history = useHistoryStore.getState();
+    act(() => history.jumpTo({ page: 4, offset: 0 }));
+    act(() => history.jumpTo({ page: 7, offset: 0 }));
+    act(() => history.jumpTo({ page: 12, offset: 0 }));
+    expect(screen.getByRole('button', { name: 'Return to p. 7' })).toBeTruthy();
+    const more = screen.getByRole('button', { name: '2 earlier places' });
+    fireEvent.click(more);
+    expect(screen.getByRole('group', { name: 'Earlier places' }).textContent).toBe('p. 4p. 1');
+    fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole('group', { name: 'Earlier places' })).toBeNull();
+    fireEvent.click(more);
+    fireEvent.click(screen.getByRole('button', { name: 'p. 4' }));
+    expect(useReaderStore.getState().location.page).toBe(4);
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Return to p. 1' }));
+    act(() => history.goForward());
+    fireEvent.click(screen.getByRole('button', { name: '1 earlier place' }));
+    fireEvent.click(screen.getByRole('button', { name: 'p. 1' }));
+    expect(useReaderStore.getState().location.page).toBe(1);
+    expect(useHistoryStore.getState().returnTarget).toBeNull();
+    expect(useHistoryStore.getState().forward).toHaveLength(3);
+    expect(document.activeElement?.className).toBe('reader__viewport');
+  });
+
   it('pauses its 12-second inactivity timeout while hovered or focused', () => {
     vi.useFakeTimers();
     const { container } = render(<ReturnPill />);

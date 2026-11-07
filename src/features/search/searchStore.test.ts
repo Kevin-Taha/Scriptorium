@@ -134,7 +134,7 @@ describe('choosing and stepping', () => {
     expect(history().back).toEqual([loc(2, 0.5)]);
     expect(scrollTo).toHaveBeenCalledTimes(6);
     history().goBack();
-    expect(scrollTo).toHaveBeenLastCalledWith(loc(2, 0.5));
+    expect(scrollTo).toHaveBeenLastCalledWith(loc(2, 0.5), { smooth: false });
   });
 
   it('keeps the chosen match as earlier pages stream in', () => {

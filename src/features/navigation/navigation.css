@@ -306,6 +306,42 @@
 .return-pill__close:hover {
   background: color-mix(in srgb, var(--color-float-text) 14%, transparent);
 }
+.return-trail {
+  position: relative;
+}
+.popover.return-trail__list {
+  top: auto;
+  right: auto;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  width: max-content;
+  min-width: 100px;
+  max-height: min(320px, 50dvh);
+  padding: var(--space-1);
+  overflow-y: auto;
+  color: var(--color-float-text);
+  background: var(--color-float-bg);
+  border-color: var(--color-float-border);
+  translate: -50% 0;
+}
+.return-trail__item {
+  display: block;
+  width: 100%;
+  min-height: 30px;
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--font-size-sm);
+  text-align: left;
+  border-radius: var(--radius-xs);
+  color: var(--color-float-accent);
+  font-variant-numeric: tabular-nums;
+}
+.return-trail__item:hover,
+.return-trail__item:focus-visible {
+  background: color-mix(in srgb, var(--color-float-text) 12%, transparent);
+}
+.return-trail__item:focus-visible {
+  outline-offset: -2px;
+}
 @keyframes return-enter {
   from {
     opacity: 0;

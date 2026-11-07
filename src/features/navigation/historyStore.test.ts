@@ -21,15 +21,36 @@ describe('navigation history', () => {
     });
     history.goBack();
     expect(useReaderStore.getState().location).toEqual(loc(7, 0.6));
-    expect(useHistoryStore.getState().returnTarget).toBeNull();
+    expect(useHistoryStore.getState().returnTarget).toEqual(loc(1, 0.3));
     history.goBack();
     expect(useReaderStore.getState().location).toEqual(loc(1, 0.3));
+    expect(useHistoryStore.getState().returnTarget).toBeNull();
     history.goForward();
     expect(useReaderStore.getState().location).toEqual(loc(7, 0.6));
     expect(useHistoryStore.getState().returnTarget).toEqual(loc(1, 0.3));
     history.goForward();
     expect(useReaderStore.getState().location).toEqual(loc(15, 0.2));
     expect(useHistoryStore.getState().forward).toEqual([]);
+  });
+
+  it('returns several jumps at once, keeping the skipped places as forward history', () => {
+    const history = useHistoryStore.getState();
+    history.jumpTo(loc(5));
+    history.jumpTo(loc(9, 0.4));
+    history.jumpTo(loc(14));
+    history.returnTo(1);
+    expect(useReaderStore.getState().location).toEqual(loc(5));
+    expect(useHistoryStore.getState()).toMatchObject({
+      back: [loc(1, 0.3)],
+      forward: [loc(14), loc(9, 0.4)],
+      returnTarget: loc(1, 0.3),
+    });
+    history.goForward();
+    expect(useReaderStore.getState().location).toEqual(loc(9, 0.4));
+    history.goForward();
+    expect(useReaderStore.getState().location).toEqual(loc(14));
+    history.returnTo(7);
+    expect(useReaderStore.getState().location).toEqual(loc(14));
   });
 
   it('clears the forward branch on a new jump, but not a same-place jump', () => {
@@ -67,6 +88,10 @@ describe('navigation history', () => {
     useHistoryStore.getState().jumpTo(loc(9, 0.7));
     expect(useHistoryStore.getState().returnTarget).toEqual(loc(4, 0.4));
     expect(scrollTo).toHaveBeenCalledWith(loc(9, 0.7));
+    useHistoryStore.getState().goBack();
+    expect(scrollTo).toHaveBeenLastCalledWith(loc(4, 0.4), { smooth: false });
+    useHistoryStore.getState().goForward();
+    expect(scrollTo).toHaveBeenLastCalledWith(loc(4, 0.4), { smooth: false });
   });
 
   it('records a jump that already happened without scrolling, unless it went nowhere', () => {

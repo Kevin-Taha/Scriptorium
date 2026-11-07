@@ -31,6 +31,72 @@ test('outline, Return, and back/forward history', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Forward (Alt+Right)' })).toBeDisabled();
 });
 
+test('Return steps back through a chain of jumps, or skips straight to an earlier one', async ({ page }) => {
+  const field = page.locator('#page-field');
+  await goToPage(page, 6);
+  await goToPage(page, 11);
+  await goToPage(page, 15);
+  await page.getByRole('button', { name: 'Return to p. 11' }).click();
+  await expect(field).toHaveValue('11');
+  await page.getByRole('button', { name: 'Return to p. 6' }).click();
+  await expect(field).toHaveValue('6');
+  await expect(page.getByRole('button', { name: 'Return to p. 1' })).toBeVisible();
+  await page.keyboard.press('Alt+ArrowRight');
+  await expect(field).toHaveValue('11');
+  await page.keyboard.press('Alt+ArrowRight');
+  await expect(field).toHaveValue('15');
+  await page.getByRole('button', { name: '2 earlier places' }).click();
+  await page
+    .getByRole('group', { name: 'Earlier places' })
+    .getByRole('button', { name: 'p. 1', exact: true })
+    .click();
+  await expect(field).toHaveValue('1');
+  await expect(page.locator('.return-pill')).toHaveCount(0);
+  await expect(page.locator('.reader__viewport')).toBeFocused();
+  await expect(page.getByRole('button', { name: 'Forward to page 6 (Alt+Right)' })).toBeEnabled();
+});
+
+test('returning to another position on the same offered page keeps the next Return available', async ({
+  page,
+}) => {
+  await page.locator('.reader__viewport').evaluate((viewport) => {
+    viewport.scrollTop += 400;
+  });
+  await expect
+    .poll(() =>
+      page.locator('.page-sheet[data-page="1"]').evaluate((sheet) => {
+        const viewport = sheet.closest('.reader__viewport')!;
+        return viewport.getBoundingClientRect().top - sheet.getBoundingClientRect().top;
+      }),
+    )
+    .toBeGreaterThan(300);
+  await goToPage(page, 1);
+  await page.locator('.page-sheet[data-page="1"]').evaluate((sheet) => {
+    const viewport = sheet.closest('.reader__viewport')!;
+    viewport.scrollTop +=
+      sheet.getBoundingClientRect().top -
+      viewport.getBoundingClientRect().top +
+      sheet.getBoundingClientRect().height * 0.6;
+  });
+  await expect
+    .poll(() =>
+      page.locator('.page-sheet[data-page="1"]').evaluate((sheet) => {
+        const viewport = sheet.closest('.reader__viewport')!;
+        return (
+          (viewport.getBoundingClientRect().top - sheet.getBoundingClientRect().top) /
+          sheet.getBoundingClientRect().height
+        );
+      }),
+    )
+    .toBeGreaterThan(0.5);
+  await goToPage(page, 2);
+  await page.getByRole('button', { name: 'Return to p. 1' }).click();
+  await expect(page.locator('#page-field')).toHaveValue('1');
+  await expect(page.getByRole('button', { name: 'Return to p. 1' })).toBeVisible();
+  await page.getByRole('button', { name: 'Return to p. 1' }).click();
+  await expect(page.locator('.return-pill')).toHaveCount(0);
+});
+
 test('bookmark toggle, label, rename persistence, jump and delete', async ({ page }) => {
   await goToPage(page, 6);
   await page.keyboard.press('b');
