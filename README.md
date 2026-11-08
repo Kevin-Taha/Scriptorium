@@ -31,6 +31,8 @@ bold and italics, and save as you type.
 
 <kbd>Shift</kbd>+<kbd>R</kbd> lays out every annotated page with its thumbnail, notes and highlights.
 Filter by colour or text, edit in place, and export to Markdown.
+Large reviews load pages as you scroll; the review filter still searches every note. Select **Show all
+pages** to make every note available to the browser's Find command or an assistive technology at once.
 
 ![The notes review: each annotated page as a thumbnail beside its highlights and notes, with colour filters and an Export Markdown button.](docs/images/review.webp)
 

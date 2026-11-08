@@ -4,7 +4,6 @@ import type { Highlight } from '@/lib/types';
 import { deleteHighlightWithUndo } from './highlightActions';
 import { NOTE_COLOR_LABELS } from './noteColors';
 import { jumpToHighlightInBook } from './reviewActions';
-import { focusNoteById, neighbourNoteId } from './reviewFocus';
 import { MarkedText } from './ReviewText';
 import './highlights.css';
 
@@ -13,6 +12,7 @@ interface ReviewHighlightProps {
   /** Folded search words to mark in the passage. */
   terms: string[];
   onActive(id: string | null): void;
+  onDeleteFocus(id: string): void;
 }
 
 /** A highlight that has no note: its passage as a quote, with a bar in the highlight's colour. */
@@ -20,6 +20,7 @@ export const ReviewHighlight = memo(function ReviewHighlight({
   highlight,
   terms,
   onActive,
+  onDeleteFocus,
 }: ReviewHighlightProps) {
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.target !== event.currentTarget || event.key !== 'Enter') return;
@@ -33,9 +34,8 @@ export const ReviewHighlight = memo(function ReviewHighlight({
 
   const handleDelete = (event: MouseEvent<HTMLButtonElement>) => {
     // A keyboard-triggered click has no pointer position; keep keyboard users in the list.
-    const neighbour = event.detail === 0 ? neighbourNoteId(highlight.id) : undefined;
+    if (event.detail === 0) onDeleteFocus(highlight.id);
     deleteHighlightWithUndo(highlight);
-    requestAnimationFrame(() => focusNoteById(neighbour));
   };
 
   return (

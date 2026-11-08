@@ -3,11 +3,11 @@ interface Watcher {
   callbacks: Map<Element, (near: boolean) => void>;
 }
 
-const watchers = new WeakMap<Element | Document, Watcher>();
+const watchers = new WeakMap<Element | Document, Map<number, Watcher>>();
 
 /**
  * Reports when `element` comes within `marginPx` of the `root` scroller's visible
- * area (vertically). Elements sharing a root share one IntersectionObserver.
+ * area (vertically). Elements sharing a root and margin share one IntersectionObserver.
  * Returns a function that stops watching.
  */
 export function observeNearViewport(
@@ -17,7 +17,12 @@ export function observeNearViewport(
   onChange: (near: boolean) => void,
 ): () => void {
   const key = root ?? document;
-  let watcher = watchers.get(key);
+  let byMargin = watchers.get(key);
+  if (!byMargin) {
+    byMargin = new Map();
+    watchers.set(key, byMargin);
+  }
+  let watcher = byMargin.get(marginPx);
   if (!watcher) {
     const callbacks = new Map<Element, (near: boolean) => void>();
     const observer = new IntersectionObserver(
@@ -27,7 +32,7 @@ export function observeNearViewport(
       { root, rootMargin: `${marginPx}px 0px` },
     );
     watcher = { observer, callbacks };
-    watchers.set(key, watcher);
+    byMargin.set(marginPx, watcher);
   }
 
   const { observer, callbacks } = watcher;
@@ -38,7 +43,8 @@ export function observeNearViewport(
     observer.unobserve(element);
     if (callbacks.size === 0) {
       observer.disconnect();
-      watchers.delete(key);
+      byMargin.delete(marginPx);
+      if (byMargin.size === 0) watchers.delete(key);
     }
   };
 }

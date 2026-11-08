@@ -21,6 +21,7 @@ interface ReviewRowProps {
   editingId: string | null;
   terms: string[];
   onEdit(id: string | null): void;
+  onDeleteFocus(id: string): void;
 }
 
 function areEqual(prev: ReviewRowProps, next: ReviewRowProps): boolean {
@@ -33,6 +34,7 @@ function areEqual(prev: ReviewRowProps, next: ReviewRowProps): boolean {
     prev.editingId === next.editingId &&
     prev.terms === next.terms &&
     prev.onEdit === next.onEdit &&
+    prev.onDeleteFocus === next.onDeleteFocus &&
     sameAnnotations(prev.items, next.items)
   );
 }
@@ -48,6 +50,7 @@ export const ReviewRow = memo(function ReviewRow({
   editingId,
   terms,
   onEdit,
+  onDeleteFocus,
 }: ReviewRowProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const section = useMemo(() => sectionForPage(outline, page), [outline, page]);
@@ -92,9 +95,15 @@ export const ReviewRow = memo(function ReviewRow({
                   terms={terms}
                   onEdit={onEdit}
                   onActive={setActiveId}
+                  onDeleteFocus={onDeleteFocus}
                 />
               ) : (
-                <ReviewHighlight highlight={item.highlight} terms={terms} onActive={setActiveId} />
+                <ReviewHighlight
+                  highlight={item.highlight}
+                  terms={terms}
+                  onActive={setActiveId}
+                  onDeleteFocus={onDeleteFocus}
+                />
               )}
             </li>
           ))}

@@ -1,4 +1,12 @@
-import { type ReactElement, useCallback, useDeferredValue, useMemo, useRef, useState } from 'react';
+import {
+  type ReactElement,
+  useCallback,
+  useDeferredValue,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { ArrowLeft, NotebookText, SearchX } from 'lucide-react';
 import { navigate } from '@/app/router';
 import { usePagesInverted } from '@/app/settingsStore';
@@ -17,7 +25,8 @@ import {
   searchTerms,
   type ReviewFilters,
 } from './reviewFilter';
-import { ReviewRow } from './ReviewRow';
+import { adjacentItem, focusedItemId, neighbourItem } from './reviewFocus';
+import { ReviewPageSlot } from './ReviewPageSlot';
 import { ReviewToolbar } from './ReviewToolbar';
 import { useReviewShortcuts } from './useReviewShortcuts';
 import './review.css';
@@ -27,6 +36,8 @@ interface Totals {
   highlights: number;
   pages: number;
 }
+
+const VIRTUALIZE_ABOVE = 40;
 
 /** "3 notes and 2 highlights on 4 pages", or "5 of 12 notes and highlights on 2 pages" while filtering. */
 function countText(total: Totals, shown: Totals, filtering: boolean): string {
@@ -51,6 +62,10 @@ export function NotesReview() {
   const [density, setDensity] = useReviewDensity();
   const [filters, setFilters] = useState<ReviewFilters>(NO_FILTERS);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
+  const [list, setList] = useState<HTMLDivElement | null>(null);
+  const [listWidth, setListWidth] = useState(0);
+  const [focusRequest, setFocusRequest] = useState<{ id: string; page: number } | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
   // The filter box stays responsive while a large list catches up with the query.
@@ -62,6 +77,8 @@ export function NotesReview() {
     [items, appliedFilters, editingId],
   );
   const groups = useMemo(() => groupAnnotationsByPage(visibleItems), [visibleItems]);
+  const visibleItemsRef = useRef(visibleItems);
+  visibleItemsRef.current = visibleItems;
   const totalPages = useMemo(() => new Set(items.map((item) => item.page)).size, [items]);
   const colorCounts = useMemo(() => countAnnotationsByColor(items), [items]);
   const exportCount = useMemo(
@@ -83,9 +100,40 @@ export function NotesReview() {
     searchRef.current?.focus();
     searchRef.current?.select();
   }, []);
-  useReviewShortcuts({ onExit: goBack, onFocusSearch: focusSearch });
+  const focusAdjacent = useCallback((direction: 1 | -1) => {
+    const item = adjacentItem(visibleItemsRef.current, focusedItemId(), direction);
+    if (item) setFocusRequest({ id: item.id, page: item.page });
+  }, []);
+  const focusAfterDelete = useCallback((id: string) => {
+    const item = neighbourItem(visibleItemsRef.current, id);
+    if (item) requestAnimationFrame(() => setFocusRequest({ id: item.id, page: item.page }));
+  }, []);
+  useReviewShortcuts({ onExit: goBack, onFocusSearch: focusSearch, onFocusAdjacent: focusAdjacent });
+
+  useLayoutEffect(() => {
+    if (!list) return;
+    const measure = () => setListWidth(list.getBoundingClientRect().width);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(list);
+    return () => observer.disconnect();
+  }, [list]);
+
+  useLayoutEffect(() => {
+    if (!focusRequest) return;
+    const escaped = CSS.escape(focusRequest.id);
+    const element = list?.querySelector<HTMLElement>(
+      `.review-note[data-note-id="${escaped}"], .review-note[data-highlight-id="${escaped}"]`,
+    );
+    if (!element) return;
+    element.focus();
+    element.scrollIntoView({ block: 'nearest' });
+    setFocusRequest(null);
+  }, [focusRequest, list, groups]);
 
   const dense = density === 'dense';
+  const canVirtualize = groups.length > VIRTUALIZE_ABOVE;
+  const virtual = canVirtualize && !showAll;
 
   let body: ReactElement;
   if (items.length === 0) {
@@ -122,27 +170,47 @@ export function NotesReview() {
     );
   } else {
     body = (
-      <div className="review__list" key={density}>
-        {groups.map((group) => (
-          <ReviewRow
-            key={group.page}
-            pdf={pdf}
-            docId={docId}
-            outline={outline}
-            page={group.page}
-            items={group.items}
-            dense={dense}
-            editingId={group.items.some((item) => item.id === editingId) ? editingId : null}
-            terms={terms}
-            onEdit={setEditingId}
-          />
-        ))}
-      </div>
+      <>
+        {canVirtualize && (
+          <div className="review__render-mode">
+            <span>
+              {showAll
+                ? 'All pages are loaded.'
+                : 'Pages load as you scroll; the filter searches all notes. Show all pages for browser find.'}
+            </span>
+            <button type="button" className="btn btn--sm" onClick={() => setShowAll((value) => !value)}>
+              {showAll ? 'Load pages as needed' : 'Show all pages'}
+            </button>
+          </div>
+        )}
+        <div className="review__list" key={density} ref={setList}>
+          {groups.map((group) => (
+            <ReviewPageSlot
+              key={group.page}
+              pdf={pdf}
+              docId={docId}
+              outline={outline}
+              page={group.page}
+              items={group.items}
+              dense={dense}
+              editingId={group.items.some((item) => item.id === editingId) ? editingId : null}
+              terms={terms}
+              onEdit={setEditingId}
+              onDeleteFocus={focusAfterDelete}
+              virtual={virtual}
+              forced={focusRequest?.page === group.page}
+              width={listWidth}
+            />
+          ))}
+        </div>
+      </>
     );
   }
 
   return (
-    <div className={`review${dense ? ' review--dense' : ''}${inverted ? ' invert-pages' : ''}`}>
+    <div
+      className={`review${dense ? ' review--dense' : ''}${virtual ? ' review--virtual' : ''}${inverted ? ' invert-pages' : ''}`}
+    >
       <ReviewToolbar
         title={title}
         countText={countText(

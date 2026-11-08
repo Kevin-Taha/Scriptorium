@@ -8,7 +8,6 @@ import { NoteText } from './NoteText';
 import { NoteTextField } from './NoteTextField';
 import { useNotesStore } from './notesStore';
 import { jumpToNote } from './reviewActions';
-import { focusNoteById, neighbourNoteId } from './reviewFocus';
 import { MarkedText } from './ReviewText';
 import './highlights.css';
 
@@ -21,6 +20,7 @@ interface ReviewNoteProps {
   terms: string[];
   onEdit(id: string | null): void;
   onActive(id: string | null): void;
+  onDeleteFocus(id: string): void;
 }
 
 /** One note in the review: click or press Enter to edit in place; edits save as you type. */
@@ -31,6 +31,7 @@ export const ReviewNote = memo(function ReviewNote({
   terms,
   onEdit,
   onActive,
+  onDeleteFocus,
 }: ReviewNoteProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const quote = highlight?.text ?? note.quote;
@@ -92,7 +93,7 @@ export const ReviewNote = memo(function ReviewNote({
           </blockquote>
         )}
         {editing ? (
-          <NoteEditor note={note} rootRef={rootRef} onEdit={onEdit} />
+          <NoteEditor note={note} rootRef={rootRef} onEdit={onEdit} onDeleteFocus={onDeleteFocus} />
         ) : (
           <p className={`review-note__text${note.text.trim() ? '' : ' is-empty'}`}>
             {note.text.trim() ? <NoteText text={note.text} terms={terms} /> : 'Empty note'}
@@ -118,15 +119,15 @@ interface NoteEditorProps {
   note: MarginNote;
   rootRef: RefObject<HTMLDivElement | null>;
   onEdit(id: string | null): void;
+  onDeleteFocus(id: string): void;
 }
 
-function NoteEditor({ note, rootRef, onEdit }: NoteEditorProps) {
+function NoteEditor({ note, rootRef, onEdit, onDeleteFocus }: NoteEditorProps) {
   const handleDelete = (event: MouseEvent<HTMLButtonElement>) => {
     // A keyboard-triggered click has no pointer position; keep keyboard users in the list.
-    const neighbour = event.detail === 0 ? neighbourNoteId(note.id) : undefined;
+    if (event.detail === 0) onDeleteFocus(note.id);
     onEdit(null);
     deleteNoteWithUndo(note);
-    requestAnimationFrame(() => focusNoteById(neighbour));
   };
 
   return (

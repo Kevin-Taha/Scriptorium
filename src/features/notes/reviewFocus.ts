@@ -1,40 +1,26 @@
-const NOTE_SELECTOR = '.review-note';
+import type { AnnotationItem } from './annotations';
 
-function visibleNotes(): HTMLElement[] {
-  return [...document.querySelectorAll<HTMLElement>(NOTE_SELECTOR)];
+/** The focused note or highlight, including a focused control within it. */
+export function focusedItemId(): string | undefined {
+  const element = document.activeElement?.closest<HTMLElement>('.review-note');
+  return element?.dataset.noteId ?? element?.dataset.highlightId;
 }
 
-/** Rows are notes and highlights; each carries one of the two id attributes. */
-function rowId(element: HTMLElement): string | undefined {
-  return element.dataset.noteId ?? element.dataset.highlightId;
+/** Moves through the complete filtered list, including items outside the rendered window. */
+export function adjacentItem(
+  items: readonly AnnotationItem[],
+  currentId: string | undefined,
+  direction: 1 | -1,
+): AnnotationItem | undefined {
+  if (items.length === 0) return undefined;
+  const current = items.findIndex((item) => item.id === currentId);
+  const index = current === -1 ? (direction === 1 ? 0 : items.length - 1) : current + direction;
+  return items[Math.max(0, Math.min(items.length - 1, index))];
 }
 
-/** Moves focus to the next (or previous) visible note or highlight; the first press lands on the first row. */
-export function focusAdjacentNote(direction: 1 | -1): void {
-  const notes = visibleNotes();
-  if (notes.length === 0) return;
-  const current = document.activeElement?.closest<HTMLElement>(NOTE_SELECTOR);
-  const index = current ? notes.indexOf(current) + direction : direction === 1 ? 0 : notes.length - 1;
-  const target = notes[Math.min(notes.length - 1, Math.max(0, index))];
-  target.focus();
-  target.scrollIntoView({ block: 'nearest' });
-}
-
-/** Focuses the note or highlight row with this id. */
-export function focusNoteById(id: string | undefined): void {
-  if (!id) return;
-  const escaped = CSS.escape(id);
-  document
-    .querySelector<HTMLElement>(
-      `${NOTE_SELECTOR}[data-note-id="${escaped}"], ${NOTE_SELECTOR}[data-highlight-id="${escaped}"]`,
-    )
-    ?.focus();
-}
-
-/** The id of the row after (or, failing that, before) `id` in the current list. */
-export function neighbourNoteId(id: string): string | undefined {
-  const notes = visibleNotes();
-  const index = notes.findIndex((element) => rowId(element) === id);
-  const neighbour = notes[index + 1] ?? notes[index - 1];
-  return neighbour && rowId(neighbour);
+/** The item after (or, failing that, before) a deleted item. */
+export function neighbourItem(items: readonly AnnotationItem[], id: string): AnnotationItem | undefined {
+  const index = items.findIndex((item) => item.id === id);
+  if (index < 0) return undefined;
+  return items[index + 1] ?? items[index - 1];
 }
