@@ -9,9 +9,10 @@ import {
 } from 'react';
 import { Plus } from 'lucide-react';
 import { clamp } from '@/lib/util';
-import type { PageSize } from '../reader/Viewer';
+import { useMarginWidth, type PageSize } from '../reader/Viewer';
 import { layoutNotes, NOTE_ATTACH_OFFSET, NOTE_COMPACT_HEIGHT, overlapsPlacement } from './layoutNotes';
 import { MarginNoteCard } from './MarginNoteCard';
+import { MarginRail } from './MarginRail';
 import { useNotesForPage, useNotesStore } from './notesStore';
 import './notes.css';
 
@@ -19,9 +20,17 @@ import './notes.css';
 const ESTIMATED_CARD_HEIGHT = 72;
 const GHOST_SNAP = 4;
 const GHOST_CLEARANCE = 4;
+/** A margin narrower than this cannot hold note cards (248px), so it shows the rail instead. */
+const MIN_CARD_MARGIN_WIDTH = 200;
+
+/** The margin beside a page: a column of note cards, or on narrow screens a rail of markers. */
+export function MarginColumn({ page, size }: { page: number; size: PageSize }) {
+  const rail = useMarginWidth() < MIN_CARD_MARGIN_WIDTH;
+  return rail ? <MarginRail page={page} size={size} /> : <NoteColumn page={page} size={size} />;
+}
 
 /** Margin column beside a page: its notes, their anchors, and the "add note" affordance. */
-export function MarginColumn({ page, size }: { page: number; size: PageSize }) {
+function NoteColumn({ page, size }: { page: number; size: PageSize }) {
   const notes = useNotesForPage(page);
   const editingId = useNotesStore((s) => s.editingId);
   const columnRef = useRef<HTMLDivElement>(null);

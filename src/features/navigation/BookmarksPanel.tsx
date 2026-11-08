@@ -3,7 +3,7 @@ import { Bookmark, Pencil, Trash2 } from 'lucide-react';
 import { showToast } from '@/components/Toast';
 import type { Bookmark as BookmarkRecord } from '@/lib/types';
 import { ariaKeyShortcuts, keyLabel } from '../commands/keys';
-import { useReaderStore } from '../reader/readerStore';
+import { closeSidebarIfOverlay, useReaderStore } from '../reader/readerStore';
 import { useBookmarksStore, useIsBookmarked } from './bookmarksStore';
 import { useHistoryStore } from './historyStore';
 import { usePageLabel } from './pageLabels';
@@ -109,7 +109,10 @@ function BookmarkItem({ bookmark, current }: { bookmark: BookmarkRecord; current
         <button
           type="button"
           className="bookmark-list__link"
-          onClick={() => jumpTo({ page: bookmark.page, offset: 0 })}
+          onClick={() => {
+            jumpTo({ page: bookmark.page, offset: 0 });
+            closeSidebarIfOverlay();
+          }}
         >
           <span className="bookmark-list__label">{bookmark.label}</span>
           <span className="bookmark-list__page">{pageLabel}</span>

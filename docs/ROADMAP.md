@@ -160,7 +160,7 @@ builds on the dependable local reading and note-taking loop.
 - ✅ **Go to:** one box (<kbd>G</kbd>) for pages, chapters, bookmarks, notes and reader actions.
 - ✅ **Book map:** the whole book along the reader's edge — chapters, annotations, hover previews, snapping to notes and bookmarks.
 - **Pinned reference pane:** keep a page, figure, or appendix visible beside the current reading location ([#8](https://github.com/Kevin-Taha/Scriptorium/issues/8)).
-- **Narrow layouts:** collapse the margin column to a rail of note markers on small windows and tablets.
+- **Narrow layouts:** ✅ the margin becomes a rail of note markers and the page takes the width on small windows, tablets and phones; the sidebar overlays only when asked. Still to come: a toolbar that fits phones, pinch-to-zoom and touch selection ([#18](https://github.com/Kevin-Taha/Scriptorium/issues/18)).
 - **Accessibility:** strengthen screen-reader semantics, focus management, contrast, and keyboard navigation throughout.
 
 ### M3 — Study and review

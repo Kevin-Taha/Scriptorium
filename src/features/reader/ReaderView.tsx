@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { LibraryBig, NotebookText, PanelLeft, Search } from 'lucide-react';
 import { AppearanceMenu } from '@/app/AppearanceMenu';
 import { navigate } from '@/app/router';
@@ -28,7 +28,7 @@ import { GoToPalette } from '../palette/GoToPalette';
 import { openGoTo } from '../palette/paletteStore';
 import { SearchHighlights } from '../search/SearchHighlights';
 import { useSearchShortcut } from '../search/useSearchShortcut';
-import { useReaderStore, type SidebarTab } from './readerStore';
+import { closeSidebarIfOverlay, SIDEBAR_OVERLAY_QUERY, useReaderStore, type SidebarTab } from './readerStore';
 import { Viewer, type PageSize } from './Viewer';
 import './reader.css';
 
@@ -187,6 +187,7 @@ const TABS: { id: SidebarTab; label: string }[] = [
 function ReaderSidebar() {
   const tab = useReaderStore((s) => s.sidebarTab);
   const setTab = useReaderStore((s) => s.setSidebarTab);
+  useOverlayDismiss();
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
@@ -229,4 +230,29 @@ function ReaderSidebar() {
       </div>
     </aside>
   );
+}
+
+/**
+ * A sidebar lying over the pages (tablets, phones) gets out of the way once the reader has
+ * gone somewhere, clicks or taps the page, or narrows the window under it; beside the pages
+ * it stays put. Its panels also close it after a jump to where the reader already is.
+ */
+function useOverlayDismiss() {
+  useEffect(() => {
+    const unsubscribe = useHistoryStore.subscribe((state, prev) => {
+      if (state.back !== prev.back || state.forward !== prev.forward) closeSidebarIfOverlay();
+    });
+    // A click, not a pointerdown: scrolling the visible strip of page leaves the sidebar open.
+    const onClick = (e: MouseEvent) => {
+      if ((e.target as Element).closest?.('.reader__main')) closeSidebarIfOverlay();
+    };
+    const overlay = window.matchMedia?.(SIDEBAR_OVERLAY_QUERY);
+    overlay?.addEventListener('change', closeSidebarIfOverlay);
+    document.addEventListener('click', onClick, true);
+    return () => {
+      unsubscribe();
+      overlay?.removeEventListener('change', closeSidebarIfOverlay);
+      document.removeEventListener('click', onClick, true);
+    };
+  }, []);
 }

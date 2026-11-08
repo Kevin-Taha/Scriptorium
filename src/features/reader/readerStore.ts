@@ -27,8 +27,28 @@ export interface ViewerController {
 }
 
 export const DEFAULT_ZOOM: ZoomState = { mode: 'fit-width', scale: 1 };
-export const MIN_SCALE = 0.4;
+/** Low enough for fit width to fit a letter-size page on a phone (≈ 39%). */
+export const MIN_SCALE = 0.25;
 export const MAX_SCALE = 4;
+
+/** Below this width the sidebar lies over the pages instead of beside them (reader.css). */
+export const SIDEBAR_OVERLAY_QUERY = '(max-width: 960px)';
+
+/** Whether the sidebar currently covers the pages, as on tablets and phones. */
+export function sidebarOverlaysPages(): boolean {
+  return typeof window !== 'undefined' && !!window.matchMedia?.(SIDEBAR_OVERLAY_QUERY).matches;
+}
+
+/**
+ * Closes the sidebar if it is lying over the pages, handing keyboard focus to the pages if it
+ * was inside. Called when the sidebar has taken the reader somewhere, even to where they were.
+ */
+export function closeSidebarIfOverlay(): void {
+  if (!sidebarOverlaysPages() || !useReaderStore.getState().sidebarOpen) return;
+  const hadFocus = !!document.activeElement?.closest('.sidebar');
+  useReaderStore.getState().setSidebarOpen(false);
+  if (hadFocus) document.querySelector<HTMLElement>('.reader__viewport')?.focus({ preventScroll: true });
+}
 
 interface ReaderState {
   docId: DocId | null;
@@ -73,7 +93,8 @@ export const useReaderStore = create<ReaderState>()((set, get) => ({
   location: START,
   zoom: DEFAULT_ZOOM,
   controller: null,
-  sidebarOpen: true,
+  // Where it would cover the page, the sidebar waits to be asked for.
+  sidebarOpen: !sidebarOverlaysPages(),
   sidebarTab: 'contents',
 
   async openDocument(docId) {

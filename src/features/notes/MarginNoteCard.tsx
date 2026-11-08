@@ -127,12 +127,15 @@ export const MarginNoteCard = memo(function MarginNoteCard({
   }, [note.id]);
 
   // If the page scrolls out of the viewer's render window mid-edit, commit instead of
-  // leaving a stale editor to grab focus and scroll when the page comes back.
+  // leaving a stale editor to grab focus and scroll when the page comes back. A card that
+  // was only replaced (the margin switching between column and rail) keeps editing.
   useEffect(() => {
     const card = cardRef.current;
     return () => {
       requestAnimationFrame(() => {
-        if (card && !card.isConnected && useNotesStore.getState().editingId === note.id) finishEditing();
+        if (!card || card.isConnected || useNotesStore.getState().editingId !== note.id) return;
+        const replacement = document.querySelector(`.margin-note[data-note-id="${CSS.escape(note.id)}"]`);
+        if (!replacement) finishEditing();
       });
     };
   }, [note.id, finishEditing]);

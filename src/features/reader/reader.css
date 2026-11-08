@@ -135,6 +135,17 @@
   flex: 1;
   min-width: 0;
   min-height: 0;
+  container: reader-main / inline-size;
+}
+
+/* Too narrow for a page beside a 280px column of notes (tablets, phones, a sidebar open on a
+   small laptop): the margin becomes a rail of note markers and the page takes the room. The
+   viewer reads this token for its layout math, so nothing else needs to know. The side padding
+   stays: on the right it keeps the rail clear of the book map. */
+@container reader-main (width < 960px) {
+  .reader__viewport {
+    --margin-column-width: var(--margin-rail-width);
+  }
 }
 
 .reader__main:has(.reader__viewport:focus-visible)::before {

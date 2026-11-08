@@ -1,4 +1,6 @@
 import {
+  createContext,
+  useContext,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -50,6 +52,13 @@ interface ViewportFrame {
   width: number;
   height: number;
   metrics: LayoutMetrics;
+}
+
+const MarginWidthContext = createContext(DEFAULT_METRICS.marginWidth);
+
+/** Width in CSS px of the margin column beside each page, which narrows on small viewports. */
+export function useMarginWidth(): number {
+  return useContext(MarginWidthContext);
 }
 
 /** Continuous, virtualized PDF page view. */
@@ -196,20 +205,22 @@ function DocumentViewer({ pdf, onLinkClick, renderMargin, renderPageOverlay }: V
       >
         {layout && (
           <div className="reader__pages" style={{ width, height: layout.totalHeight }}>
-            {pages.map((page) => (
-              <PageView
-                key={page}
-                page={page}
-                top={layout.tops[page - 1]}
-                left={rowLeft(layout, page, width)}
-                width={layout.widths[page - 1]}
-                height={layout.heights[page - 1]}
-                scale={layout.scale}
-                renderer={renderer}
-                renderMargin={renderMargin}
-                renderPageOverlay={renderPageOverlay}
-              />
-            ))}
+            <MarginWidthContext value={layout.metrics.marginWidth}>
+              {pages.map((page) => (
+                <PageView
+                  key={page}
+                  page={page}
+                  top={layout.tops[page - 1]}
+                  left={rowLeft(layout, page, width)}
+                  width={layout.widths[page - 1]}
+                  height={layout.heights[page - 1]}
+                  scale={layout.scale}
+                  renderer={renderer}
+                  renderMargin={renderMargin}
+                  renderPageOverlay={renderPageOverlay}
+                />
+              ))}
+            </MarginWidthContext>
           </div>
         )}
       </div>

@@ -5,7 +5,7 @@ import { sectionForPage } from '@/lib/pdf/outline';
 import type { MarginNote } from '@/lib/types';
 import { useHistoryStore } from '../navigation/historyStore';
 import { pageLabelFor } from '../navigation/pageLabels';
-import { useReaderStore } from '../reader/readerStore';
+import { closeSidebarIfOverlay, useReaderStore } from '../reader/readerStore';
 import { buildAnnotations, groupAnnotationsByPage, type AnnotationItem } from './annotations';
 import { jumpToHighlight } from './highlightActions';
 import { useHighlightUiStore } from './highlightUi';
@@ -23,6 +23,7 @@ function jumpToNote(note: MarginNote): void {
   useHistoryStore.getState().jumpTo({ page: note.page, offset: Math.max(0, note.y - JUMP_LEAD) });
   useNoteFocusStore.getState().pulseNote(note.id);
   if (note.highlightId) useHighlightUiStore.getState().pulse(note.highlightId);
+  closeSidebarIfOverlay();
 }
 
 /** "3 notes · 2 highlights" */
@@ -112,7 +113,10 @@ function NotesPanelItem({ item }: { item: AnnotationItem }) {
         className="notes-panel__item"
         data-note-color={highlight.color}
         title={highlight.text}
-        onClick={() => jumpToHighlight(highlight)}
+        onClick={() => {
+          jumpToHighlight(highlight);
+          closeSidebarIfOverlay();
+        }}
       >
         <span className="notes-panel__bar" aria-hidden="true" />
         <span className="notes-panel__excerpt notes-panel__excerpt--quote">

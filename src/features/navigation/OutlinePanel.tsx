@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { BookOpen, ChevronDown, ChevronRight } from 'lucide-react';
-import type { OutlineItem } from '@/lib/types';
-import { useReaderStore } from '../reader/readerStore';
+import type { OutlineItem, ReadingLocation } from '@/lib/types';
+import { closeSidebarIfOverlay, useReaderStore } from '../reader/readerStore';
 import { useHistoryStore } from './historyStore';
 import { ancestorKeys, currentOutlineEntry, outlineEntries, splitSectionNumber } from './outlineCurrent';
 import { pageLabelFor } from './pageLabels';
@@ -9,7 +9,11 @@ import { pageLabelFor } from './pageLabels';
 export function OutlinePanel() {
   const outline = useReaderStore((s) => s.outline);
   const labels = useReaderStore((s) => s.pageLabels);
-  const jumpTo = useHistoryStore((s) => s.jumpTo);
+  const historyJump = useHistoryStore((s) => s.jumpTo);
+  const jumpTo = (location: ReadingLocation) => {
+    historyJump(location);
+    closeSidebarIfOverlay();
+  };
   const entries = useMemo(() => outlineEntries(outline), [outline]);
   const entryByKey = useMemo(() => new Map(entries.map((entry) => [entry.key, entry])), [entries]);
   // Select the derived key (not the location) so scrolling only re-renders when the section changes.
