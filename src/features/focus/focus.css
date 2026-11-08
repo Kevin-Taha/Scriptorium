@@ -37,7 +37,7 @@ html.focus-mode .reader__page {
 }
 
 /* Margin notes fade until their page is hovered or a note is focused; the anchor dots stay. */
-html.focus-mode :is(.margin-note, .margin-note__leader, .margin-note__tether) {
+html.focus-mode :is(.margin-note, .margin-note__leader, .margin-note__tether, .margin-rail__marker) {
   opacity: var(--focus-note-opacity);
 }
 
@@ -53,8 +53,8 @@ html.focus-mode
 }
 
 html.focus-mode
-  .reader__page:is(:hover, :has(.margin-note:focus-within))
-  :is(.margin-note, .margin-note__leader, .margin-note__tether) {
+  .reader__page:is(:hover, :has(.margin-note:focus-within, .margin-rail__marker:focus-visible))
+  :is(.margin-note, .margin-note__leader, .margin-note__tether, .margin-rail__marker) {
   opacity: 1;
 }
 

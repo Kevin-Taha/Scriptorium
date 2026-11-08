@@ -485,6 +485,92 @@
   transform: translate(-50%, -50%);
 }
 
+/* ---- Rail (narrow screens) ------------------------------------------------------------
+   The margin narrowed to --margin-rail-width (reader.css): a marker per note, centred on its
+   anchor, and the open note's card laid over the page's edge to the left of the rail. */
+.margin-rail {
+  --note-gutter: calc((var(--margin-rail-width) - 28px) / 2);
+}
+
+.margin-rail__marker {
+  position: absolute;
+  left: 50%;
+  z-index: var(--z-margin-note);
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  color: var(--note-text);
+  background: var(--note-bg);
+  border: 1px solid var(--note-border);
+  border-left: 3px solid var(--note-dot);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  translate: -50% 0;
+  transition:
+    box-shadow var(--duration-fast) var(--ease-standard),
+    opacity var(--duration-slow) var(--ease-standard);
+}
+
+/* A 44px target for fingers, as wide as the rail. */
+.margin-rail__marker::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+}
+
+.margin-rail__marker .lucide {
+  width: 14px;
+  height: 14px;
+}
+
+.margin-rail__marker:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.margin-rail__marker[aria-expanded='true'] {
+  box-shadow:
+    0 0 0 2px var(--note-dot),
+    var(--shadow-md);
+}
+
+.margin-rail__marker.is-pulsing {
+  animation: note-pulse 1.2s var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .margin-rail__marker.is-pulsing {
+    animation: none;
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+}
+
+/* The card draws its own anchor and leader for the full column; on the rail the marker does. */
+.margin-rail .margin-note-slot > :is(.margin-note__anchor, .margin-note__leader, .margin-note__tether) {
+  display: none;
+}
+
+.margin-rail .margin-note {
+  left: auto;
+  right: calc(100% + var(--space-2));
+  z-index: var(--z-margin-note-active);
+  width: min(var(--margin-note-width), calc(100cqi - var(--margin-rail-width) - 2 * var(--space-4)));
+  box-shadow: var(--shadow-lg);
+}
+
+.margin-rail .margin-note-ghost {
+  left: 50%;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  translate: -50% 0;
+}
+
+.margin-rail .margin-note-ghost::before {
+  left: calc(-1 * var(--note-gutter));
+}
+
 /* ==========================================================================
    Selection popover
    ========================================================================== */
