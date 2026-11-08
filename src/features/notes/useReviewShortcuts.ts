@@ -2,18 +2,18 @@ import { useEffect } from 'react';
 import { isEditableTarget } from '@/lib/util';
 import { matches } from '../commands/keys';
 import { openShortcutsDialog } from '../navigation/ShortcutsDialog';
-import { focusAdjacentNote } from './reviewFocus';
 
 interface ReviewShortcuts {
   onExit(): void;
   onFocusSearch(): void;
+  onFocusAdjacent(direction: 1 | -1): void;
 }
 
 /** In order of precedence: `/` is the filter here even on layouts that type it with Shift. */
 const REVIEW_SHORTCUTS = ['close-review', 'next-note', 'previous-note', 'filter-notes', 'help'] as const;
 
 /** Keyboard shortcuts for the review (the reader's own shortcuts are not mounted here). */
-export function useReviewShortcuts({ onExit, onFocusSearch }: ReviewShortcuts): void {
+export function useReviewShortcuts({ onExit, onFocusSearch, onFocusAdjacent }: ReviewShortcuts): void {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.isComposing || isEditableTarget(event.target)) return;
@@ -26,10 +26,10 @@ export function useReviewShortcuts({ onExit, onFocusSearch }: ReviewShortcuts): 
           onExit();
           break;
         case 'next-note':
-          focusAdjacentNote(1);
+          onFocusAdjacent(1);
           break;
         case 'previous-note':
-          focusAdjacentNote(-1);
+          onFocusAdjacent(-1);
           break;
         case 'filter-notes':
           onFocusSearch();
@@ -41,5 +41,5 @@ export function useReviewShortcuts({ onExit, onFocusSearch }: ReviewShortcuts): 
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [onExit, onFocusSearch]);
+  }, [onExit, onFocusSearch, onFocusAdjacent]);
 }

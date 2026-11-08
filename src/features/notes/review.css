@@ -268,6 +268,10 @@
   scroll-behavior: var(--scroll-behavior);
 }
 
+.review--virtual .review__scroll {
+  scroll-behavior: auto;
+}
+
 .review__column {
   width: min(880px, 100%);
   margin: 0 auto;
@@ -280,6 +284,17 @@
 
 .review__list {
   animation: review-fade-in var(--duration-base) var(--ease-out);
+}
+
+.review__render-mode {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
 }
 
 @keyframes review-fade-in {
@@ -297,7 +312,7 @@
   border-top: 1px solid var(--color-border-subtle);
 }
 
-.review-row:first-child {
+.review-page-slot:first-child .review-row {
   padding-top: 0;
   border-top: 0;
 }
@@ -306,7 +321,7 @@
   display: block;
   padding: var(--space-3) 0;
 }
-.review--dense .review-row:first-child {
+.review--dense .review-page-slot:first-child .review-row {
   padding-top: 0;
 }
 

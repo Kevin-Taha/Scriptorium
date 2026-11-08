@@ -1,7 +1,6 @@
 import { cleanup, fireEvent, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as dialog from '../navigation/ShortcutsDialog';
-import * as reviewFocus from './reviewFocus';
 import { useReviewShortcuts } from './useReviewShortcuts';
 
 afterEach(() => {
@@ -12,9 +11,9 @@ afterEach(() => {
 function setup() {
   const onExit = vi.fn();
   const onFocusSearch = vi.fn();
-  const focusNote = vi.spyOn(reviewFocus, 'focusAdjacentNote').mockImplementation(() => {});
+  const focusNote = vi.fn();
   const openHelp = vi.spyOn(dialog, 'openShortcutsDialog').mockImplementation(() => {});
-  renderHook(() => useReviewShortcuts({ onExit, onFocusSearch }));
+  renderHook(() => useReviewShortcuts({ onExit, onFocusSearch, onFocusAdjacent: focusNote }));
   return { onExit, onFocusSearch, focusNote, openHelp };
 }
 
