@@ -53,15 +53,16 @@ export function MarginRail({ page, size }: { page: number; size: PageSize }) {
       ),
     [notes, size.height],
   );
-  const openNote = openId ? notes.find((n) => n.id === openId) : undefined;
+  const notesById = useMemo(() => new Map(notes.map((n) => [n.id, n])), [notes]);
+  const openNote = openId ? notesById.get(openId) : undefined;
 
   // A note being written on this page, or jumped to from the sidebar, map or review, opens.
   useEffect(() => {
-    if (editingId && notes.some((n) => n.id === editingId)) setOpenId(editingId);
-  }, [editingId, notes]);
+    if (editingId && notesById.has(editingId)) setOpenId(editingId);
+  }, [editingId, notesById]);
   useEffect(() => {
-    if (pulsingId && notes.some((n) => n.id === pulsingId)) setOpenId(pulsingId);
-  }, [pulsingId, notes]);
+    if (pulsingId && notesById.has(pulsingId)) setOpenId(pulsingId);
+  }, [pulsingId, notesById]);
 
   useLayoutEffect(() => {
     if (!openId || !focusCardOnOpen.current) return;
@@ -162,7 +163,7 @@ export function MarginRail({ page, size }: { page: number; size: PageSize }) {
       onBlur={onBlur}
     >
       {markers.map((marker) => {
-        const note = notes.find((n) => n.id === marker.id);
+        const note = notesById.get(marker.id);
         if (!note) return null;
         const open = note.id === openNote?.id;
         return (
@@ -217,7 +218,7 @@ function RailMarker({ note, top, anchor, open, pulsing, onToggle, children }: Ra
   return (
     <>
       <span
-        className="margin-note__anchor margin-rail__anchor"
+        className="margin-note__anchor"
         data-note-color={note.color}
         style={{ top: Math.round(anchor) }}
         aria-hidden="true"
