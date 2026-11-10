@@ -128,6 +128,7 @@ Ctrl/Cmd+F for in-book search). Press `?` in the reader to see them all.
 | --- | --- |
 | `B` | Toggle bookmark on the current page |
 | `N` | Create a margin note at the middle of the visible part of the current page (quoting selected text, if any) |
+| `D` | Look up the selected word or short phrase in the dictionary (Wiktionary) |
 | `G` | Go to: a page (printed labels work; `#N` for a PDF page number), chapter, bookmark, note or action |
 | `F` | Focus mode (`Esc` also leaves) |
 | `R` | Reading ruler |
@@ -168,6 +169,7 @@ builds on the dependable local reading and note-taking loop.
 - ✅ **Chapter progress:** show progress within outline sections as well as across the book (pages and percentages — no time estimates).
 - **Reading insights:** offer optional reading statistics.
 - ✅ **Focus mode:** reduce interface chrome while preserving essential navigation; with an optional reading ruler.
+- **Define:** ✅ select a word and press <kbd>D</kbd> for its dictionary entry from Wiktionary (online). Still to come: an optional offline dictionary download.
 - **Rich notes:** ✅ bold and italic (<kbd>Ctrl</kbd>+<kbd>B</kbd> / <kbd>Ctrl</kbd>+<kbd>I</kbd>); Markdown and LaTeX if readers need more.
 - **Flashcards:** create spaced-repetition cards from notes for a later review session ([#6](https://github.com/Kevin-Taha/Scriptorium/issues/6)).
 - **Read aloud:** listen with a high-quality, local voice while the current sentence is highlighted ([#7](https://github.com/Kevin-Taha/Scriptorium/issues/7)).

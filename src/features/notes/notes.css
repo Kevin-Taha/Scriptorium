@@ -614,6 +614,12 @@
 .selection-popover__action:hover {
   background: var(--color-float-border);
 }
+/* Icon-only actions: their names and keys are in the tooltip. */
+.selection-popover__action--icon {
+  justify-content: center;
+  width: 28px;
+  padding: 0;
+}
 .selection-popover__action .lucide {
   width: 16px;
   height: 16px;

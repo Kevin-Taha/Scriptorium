@@ -6,6 +6,7 @@ import { usePagesInverted, useSettingsStore } from '@/app/settingsStore';
 import { sectionForPage } from '@/lib/pdf/outline';
 import { BookMap } from '../bookmap/BookMap';
 import { ariaKeyShortcuts, keyLabel, withShortcut } from '../commands/keys';
+import { DefineCard } from '../define/DefineCard';
 import { FocusMode } from '../focus/FocusMode';
 import { ReadingRuler } from '../focus/ReadingRuler';
 import { BookmarkRibbon, useRibbonReveal } from '../navigation/BookmarkRibbon';
@@ -70,6 +71,7 @@ export function ReaderView() {
           {bookMap && <BookMap />}
           <ReturnPill />
           <SelectionNotePopover />
+          <DefineCard />
         </main>
       </div>
       <FocusMode />

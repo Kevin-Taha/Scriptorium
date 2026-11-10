@@ -71,6 +71,7 @@ and progress.
 - **Book map:** a strip along the right edge marking chapters, notes and bookmarks; hover to preview.
 - **Chapter progress:** a hairline under the toolbar that fills as you read.
 - **Bookmarks:** click the ribbon on a page or press <kbd>B</kbd>.
+- **Define:** select a word and press <kbd>D</kbd> for its dictionary entry, from Wiktionary.
 - **Long books:** pages render as you reach them, so 1,000-page textbooks stay quick.
 - **Backups:** export everything to one file and restore it anywhere.
 - **Offline:** once installed, your library opens without a connection.
@@ -88,6 +89,7 @@ Press <kbd>?</kbd> in the app for the full list.
 | <kbd>Ctrl</kbd>+<kbd>F</kbd> or <kbd>/</kbd> | Find in the book; <kbd>F3</kbd> / <kbd>Shift</kbd>+<kbd>F3</kbd> step through matches |
 | <kbd>N</kbd> | New margin note on the current page, quoting any selected text |
 | <kbd>H</kbd> | Highlight the selected text in the colour used last |
+| <kbd>D</kbd> | Look up the selected word in the dictionary |
 | <kbd>B</kbd> | Bookmark the current page |
 | <kbd>Shift</kbd>+<kbd>R</kbd> | Open or close the notes review |
 | <kbd>F</kbd> | Focus mode (<kbd>Esc</kbd> also leaves) |
@@ -155,6 +157,7 @@ src/
     palette/    Go to: pages, chapters, bookmarks, notes and actions in one box
     bookmap/    The book map along the reader's right edge
     focus/      Focus mode and the reading ruler
+    define/     Dictionary lookups (Wiktionary)
     notes/      Margin notes (bold/italic editing), collated review, Markdown export
     search/     Full-text index and in-page highlights
     settings/   Library & storage: linked folder, backups, persistent storage
