@@ -171,5 +171,7 @@ OneDrive could work the same way (a Microsoft Entra app with Microsoft Graph); i
 
 Nothing leaves the reader's devices except through services they choose (their own cloud
 folder, a Google Drive folder they link, or backup files). Scriptorium has no analytics and makes
-no network requests of its own beyond loading the app. With a Google Drive folder linked, the
-browser talks to Google directly; nothing passes through any other server.
+no network requests of its own beyond loading the app and dictionary lookups: when the reader asks
+to define a word, that word (and nothing else) is sent to [Wiktionary](https://en.wiktionary.org).
+With a Google Drive folder linked, the browser talks to Google directly; nothing passes through
+any other server.

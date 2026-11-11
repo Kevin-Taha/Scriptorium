@@ -49,7 +49,8 @@ function pdfjsAssets(): Plugin {
 /**
  * Gives the built app a strict Content-Security-Policy: everything comes from its own origin, and
  * the one inline script (the pre-paint theme) is allowed by a hash taken from the final markup so
- * the two can't drift. Covers and thumbnails are `data:` URLs. The dev server is left without a
+ * the two can't drift. Covers and thumbnails are `data:` URLs. Define looks words up on Wiktionary.
+ * The dev server is left without a
  * policy because Vite injects inline scripts for hot reloading. Builds with a Google client id
  * (Google Drive sync) also allow Google's sign-in library and the Drive API, and nothing else.
  */
@@ -76,7 +77,11 @@ function contentSecurityPolicy(): Plugin {
           ["style-src 'self'", ...extra(`${signIn}style`)].join(' '),
           "img-src 'self' data: blob:",
           "font-src 'self' data:",
-          ["connect-src 'self'", ...extra('https://www.googleapis.com', signIn)].join(' '),
+          [
+            "connect-src 'self'",
+            'https://en.wiktionary.org',
+            ...extra('https://www.googleapis.com', signIn),
+          ].join(' '),
           ...(google ? [`frame-src 'self' ${signIn}`] : []),
           "worker-src 'self'",
           "manifest-src 'self'",

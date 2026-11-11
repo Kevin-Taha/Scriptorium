@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { Highlighter, MessageSquarePlus } from 'lucide-react';
+import { BookA, Highlighter, MessageSquarePlus } from 'lucide-react';
 import { NOTE_COLORS } from '@/lib/types';
 import { ariaKeyShortcuts, keyLabel, withShortcut } from '../commands/keys';
+import { termFromSelection } from '../define/dictionary';
+import { lookUpSelection, useDefineStore } from '../define/defineStore';
 import { useFloatingPosition, type FloatingAnchor } from './floatingPosition';
 import { highlightSelection } from './highlightActions';
 import { HighlightPopover } from './HighlightPopover';
@@ -15,7 +17,7 @@ import './notes.css';
 
 /**
  * Everything that appears over the page for annotating: the toolbar for a text
- * selection (highlight in a colour, or add a margin note), the popover for an
+ * selection (highlight in a colour, add a margin note, or look a word up), the popover for an
  * existing highlight, and the `H` shortcut. Mount once in the reader.
  */
 export function SelectionNotePopover() {
@@ -31,7 +33,9 @@ export function SelectionNotePopover() {
 /** Floating toolbar shown while text on a page is selected. */
 function SelectionToolbar() {
   const [anchor, setAnchor] = useState<FloatingAnchor | null>(null);
+  const [isTerm, setIsTerm] = useState(false);
   const editing = useNotesStore((s) => s.editingId !== null);
+  const defining = useDefineStore((s) => s.term !== null);
   const lastColor = useHighlightsStore((s) => s.lastColor);
   const popoverRef = useRef<HTMLDivElement>(null);
 
@@ -41,6 +45,7 @@ function SelectionToolbar() {
 
     const evaluate = () => {
       const selection = useNotesStore.getState().editingId === null ? readPageSelection() : null;
+      setIsTerm(!!selection && termFromSelection(selection.text) !== null);
       setAnchor(
         selection
           ? {
@@ -92,7 +97,11 @@ function SelectionToolbar() {
     };
   }, []);
 
-  const visible = anchor !== null && !editing;
+  const visible = anchor !== null && !editing && !defining;
+  // A lookup takes the toolbar's place; closing the card leaves the page clear.
+  useEffect(() => {
+    if (defining) setAnchor(null);
+  }, [defining]);
   useFloatingPosition(popoverRef, anchor, visible);
 
   if (!visible) return null;
@@ -130,7 +139,9 @@ function SelectionToolbar() {
       <span className="selection-popover__divider" aria-hidden="true" />
       <button
         type="button"
-        className="selection-popover__action"
+        className="selection-popover__action selection-popover__action--icon tooltip"
+        data-tooltip={withShortcut('Add margin note', 'note')}
+        aria-label="Add margin note"
         aria-keyshortcuts={ariaKeyShortcuts('note')}
         onMouseDown={(e) => e.preventDefault()}
         onClick={() => {
@@ -139,9 +150,20 @@ function SelectionToolbar() {
         }}
       >
         <MessageSquarePlus aria-hidden="true" />
-        Add margin note
-        <kbd className="kbd">{keyLabel('note')}</kbd>
       </button>
+      {isTerm && (
+        <button
+          type="button"
+          className="selection-popover__action selection-popover__action--icon tooltip"
+          data-tooltip={withShortcut('Define', 'define')}
+          aria-label="Define"
+          aria-keyshortcuts={ariaKeyShortcuts('define')}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => lookUpSelection()}
+        >
+          <BookA aria-hidden="true" />
+        </button>
+      )}
     </div>
   );
 }

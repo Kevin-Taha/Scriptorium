@@ -106,6 +106,13 @@ export const COMMANDS = {
   'zoom-out': { label: 'Zoom out', group: 'Read', scope: 'reader', keys: [{ key: '-' }] },
   'fit-width': { label: 'Fit page width', group: 'Read', scope: 'reader', keys: [{ key: '0' }] },
   sidebar: { label: 'Show or hide the sidebar', group: 'Read', scope: 'reader', keys: [{ key: '[' }] },
+  define: {
+    label: 'Look up the selected word',
+    detail: 'In the dictionary (Wiktionary)',
+    group: 'Read',
+    scope: 'reader',
+    keys: [{ key: 'd' }],
+  },
 
   bookmark: { label: 'Bookmark the page', group: 'Annotate', scope: 'reader', keys: [{ key: 'b' }] },
   note: {
