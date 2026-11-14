@@ -30,6 +30,7 @@ import { openGoTo } from '../palette/paletteStore';
 import { SearchHighlights } from '../search/SearchHighlights';
 import { useSearchShortcut } from '../search/useSearchShortcut';
 import { closeSidebarIfOverlay, SIDEBAR_OVERLAY_QUERY, useReaderStore, type SidebarTab } from './readerStore';
+import { ToolbarMore } from './ToolbarMore';
 import { Viewer, type PageSize } from './Viewer';
 import './reader.css';
 
@@ -88,6 +89,7 @@ function ReaderToolbar() {
   const chapterProgress = useSettingsStore((s) => s.chapterProgress);
   const section = useCurrentSection();
   const noteCount = useAnnotationCount();
+  const openReview = () => docId && navigate({ name: 'review', docId });
 
   return (
     <header className="reader__toolbar" role="toolbar" aria-label="Reader">
@@ -112,7 +114,9 @@ function ReaderToolbar() {
         >
           <PanelLeft />
         </button>
-        <HistoryButtons />
+        <div className="reader__history">
+          <HistoryButtons />
+        </div>
       </div>
 
       {/* The book's title doubles as the way into Go to (G): pages, contents, notes and text search. */}
@@ -151,12 +155,13 @@ function ReaderToolbar() {
           data-tooltip={withShortcut('Review all notes', 'review')}
           aria-label={`Review notes (${noteCount})`}
           aria-keyshortcuts={ariaKeyShortcuts('review')}
-          onClick={() => docId && navigate({ name: 'review', docId })}
+          onClick={openReview}
         >
           <NotebookText />
           <span>Review notes</span>
           {noteCount > 0 && <span className="reader__count">{noteCount}</span>}
         </button>
+        <ToolbarMore noteCount={noteCount} onReview={openReview} />
       </div>
       {chapterProgress && <ChapterProgress />}
     </header>

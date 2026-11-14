@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { LABELLED_FIXTURE_PDF } from './support/paths';
 import { goToPage, importFixture, waitForProgressSave } from './support/reader';
 
 const TABLET = { width: 820, height: 1180 };
@@ -8,6 +9,22 @@ async function expectNoHorizontalScroll(page: Page): Promise<void> {
   const viewport = page.locator('.reader__viewport');
   const overflow = await viewport.evaluate((el) => el.scrollWidth - el.clientWidth);
   expect(overflow).toBeLessThanOrEqual(0);
+}
+
+/** Every visible toolbar control lies inside the window, none overlapping the next. */
+async function expectToolbarFits(page: Page): Promise<void> {
+  const boxes = await page.getByRole('toolbar', { name: 'Reader' }).evaluate((toolbar) =>
+    [...toolbar.querySelectorAll('button, input')]
+      .filter((el) => el.checkVisibility() && !el.closest('.chapter-progress'))
+      .map((el) => el.getBoundingClientRect())
+      .map(({ left, right }) => ({ left, right }))
+      .sort((a, b) => a.left - b.left),
+  );
+  expect(boxes.length).toBeGreaterThanOrEqual(5);
+  for (const [i, box] of boxes.entries()) {
+    expect(box.left).toBeGreaterThanOrEqual(i === 0 ? 0 : boxes[i - 1].right);
+    expect(box.right).toBeLessThanOrEqual(page.viewportSize()!.width);
+  }
 }
 
 test.describe('tablet', () => {
@@ -110,6 +127,58 @@ test.describe('phone', () => {
     const sheet = (await page.locator('.page-sheet[data-page="1"]').boundingBox())!;
     expect(sheet.x).toBeGreaterThanOrEqual(0);
     expect(sheet.width).toBeGreaterThanOrEqual(PHONE.width - 100);
+  });
+
+  test('the toolbar fits, with Go to as an icon and history and review in More', async ({ page }) => {
+    await importFixture(page);
+    await expectToolbarFits(page);
+    await expect(page.locator('.reader__review-btn')).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Back (Alt+Left)' })).toBeHidden();
+
+    await page.getByRole('button', { name: /Go to a page, chapter or note$/ }).tap();
+    const dialog = page.getByRole('dialog', { name: 'Go to' });
+    const box = (await dialog.boundingBox())!;
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(PHONE.width);
+    await dialog.getByRole('combobox').fill('9');
+    await dialog.getByRole('combobox').press('Enter');
+    const field = page.locator('#page-field');
+    await expect(field).toHaveValue('9');
+
+    const more = page.getByRole('button', { name: 'More', exact: true });
+    await more.tap();
+    await expect(more).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.getByRole('button', { name: 'Forward', exact: true })).toBeDisabled();
+    await page.getByRole('button', { name: 'Back to p. 1' }).tap();
+    await expect(field).toHaveValue('1');
+    await expect(more).toHaveAttribute('aria-expanded', 'false');
+
+    await more.tap();
+    await page.getByRole('button', { name: 'Forward to p. 9' }).tap();
+    await expect(field).toHaveValue('9');
+
+    // A tap elsewhere closes the menu without acting.
+    await more.tap();
+    await page.touchscreen.tap(PHONE.width / 2, PHONE.height / 2);
+    await expect(more).toHaveAttribute('aria-expanded', 'false');
+    await expect(field).toHaveValue('9');
+
+    // Esc closes it onto its button.
+    await more.click();
+    await page.keyboard.press('Escape');
+    await expect(more).toHaveAttribute('aria-expanded', 'false');
+    await expect(more).toBeFocused();
+
+    await more.tap();
+    await page.getByRole('button', { name: 'Review notes (0)' }).tap();
+    await expect(page.getByRole('heading', { name: 'Nothing to review yet' })).toBeVisible();
+  });
+
+  test('the toolbar fits the smallest phones, printed page labels included', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 640 });
+    await importFixture(page, LABELLED_FIXTURE_PDF);
+    await expectToolbarFits(page);
+    await expect(page.locator('#page-field')).toBeVisible();
   });
 });
 
