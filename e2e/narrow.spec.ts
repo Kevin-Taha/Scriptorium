@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
-import { LABELLED_FIXTURE_PDF } from './support/paths';
-import { goToPage, importFixture, waitForProgressSave } from './support/reader';
+import { FIXTURE_PDF, LABELLED_FIXTURE_PDF } from './support/paths';
+import { backToLibrary, goToPage, importFixture, waitForProgressSave } from './support/reader';
 
 const TABLET = { width: 820, height: 1180 };
 const PHONE = { width: 390, height: 844 };
@@ -148,14 +148,44 @@ test.describe('phone', () => {
     const more = page.getByRole('button', { name: 'More', exact: true });
     await more.tap();
     await expect(more).toHaveAttribute('aria-expanded', 'true');
-    await expect(page.getByRole('button', { name: 'Forward', exact: true })).toBeDisabled();
+    const forwardDisabled = page.getByRole('button', { name: 'Forward', exact: true });
+    await expect(forwardDisabled).toBeDisabled();
+    // Tapping a disabled row leaves the menu open rather than dismissing on blur.
+    const disabledBox = (await forwardDisabled.boundingBox())!;
+    await page.touchscreen.tap(disabledBox.x + disabledBox.width / 2, disabledBox.y + disabledBox.height / 2);
+    await expect(more).toHaveAttribute('aria-expanded', 'true');
+
     await page.getByRole('button', { name: 'Back to p. 1' }).tap();
     await expect(field).toHaveValue('1');
     await expect(more).toHaveAttribute('aria-expanded', 'false');
 
+    // Safari blurs a focused trigger to null on mousedown before click when tapping a button;
+    // the menu must stay mounted through mousedown so the item's click still runs.
+    await more.focus();
     await more.tap();
-    await page.getByRole('button', { name: 'Forward to p. 9' }).tap();
+    const forward = page.getByRole('button', { name: 'Forward to p. 9' });
+    await more.evaluate((el) => el.blur());
+    await forward.tap();
     await expect(field).toHaveValue('9');
+
+    // Tabbing past the last item closes the menu onto the next control.
+    await more.focus();
+    await page.keyboard.press('Enter');
+    await expect(more).toHaveAttribute('aria-expanded', 'true');
+    await page.getByRole('button', { name: 'Review notes (0)' }).focus();
+    await page.keyboard.press('Tab');
+    await expect(more).toHaveAttribute('aria-expanded', 'false');
+    await expect(page.locator('.chapter-progress__segment[tabindex="0"]')).toBeFocused();
+
+    // Rotating or widening past the phone breakpoint closes the hidden menu so Esc isn't trapped.
+    await more.tap();
+    await expect(more).toHaveAttribute('aria-expanded', 'true');
+    await page.setViewportSize({ width: 844, height: 390 });
+    await expect(
+      page.getByRole('button', { name: 'More', exact: true, includeHidden: true }),
+    ).toHaveAttribute('aria-expanded', 'false');
+    await page.setViewportSize(PHONE);
+    await expect(more).toHaveAttribute('aria-expanded', 'false');
 
     // A tap elsewhere closes the menu without acting.
     await more.tap();
@@ -178,11 +208,21 @@ test.describe('phone', () => {
     await expect(page.getByRole('heading', { name: 'Nothing to review yet' })).toBeVisible();
   });
 
-  test('the toolbar fits the smallest phones, printed page labels included', async ({ page }) => {
+  test('the toolbar fits the smallest phones, printed page labels and long books included', async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 320, height: 640 });
     await importFixture(page, LABELLED_FIXTURE_PDF);
     await expectToolbarFits(page);
     await expect(page.locator('#page-field')).toBeVisible();
+
+    await backToLibrary(page);
+    await page.locator('input[type=file]').setInputFiles(FIXTURE_PDF);
+    await expect(page.getByRole('toolbar', { name: 'Reader' })).toBeVisible();
+    await page.locator('.page-field__total').evaluate((el) => {
+      el.textContent = '/ 1312';
+    });
+    await expectToolbarFits(page);
   });
 });
 

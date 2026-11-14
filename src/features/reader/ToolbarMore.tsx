@@ -5,6 +5,8 @@ import { useHistoryStore } from '../navigation/historyStore';
 import { formatPageRef } from '../navigation/pageLabels';
 import { useReaderStore } from './readerStore';
 
+const PHONE_QUERY = '(max-width: 600px)';
+
 /**
  * The toolbar's overflow on phones, where Back, Forward and Review notes have no room beside
  * Go to, the page field and Appearance. reader.css shows it only there.
@@ -23,6 +25,9 @@ export function ToolbarMore({ noteCount, onReview }: { noteCount: number; onRevi
     const onPointerDown = (e: PointerEvent) => {
       if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
     };
+    const onFocusIn = (e: FocusEvent) => {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+    };
     // Captured on the document: Safari doesn't focus a tapped button, so focus may be anywhere.
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
@@ -30,11 +35,22 @@ export function ToolbarMore({ noteCount, onReview }: { noteCount: number; onRevi
       setOpen(false);
       buttonRef.current?.focus();
     };
+    const phone = window.matchMedia?.(PHONE_QUERY);
+    const onPhoneChange = (e: MediaQueryListEvent) => {
+      if (e.matches) return;
+      const hadFocus = rootRef.current?.contains(document.activeElement);
+      setOpen(false);
+      if (hadFocus) document.querySelector<HTMLElement>('.reader__viewport')?.focus({ preventScroll: true });
+    };
     document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('focusin', onFocusIn);
     document.addEventListener('keydown', onKeyDown, true);
+    phone?.addEventListener('change', onPhoneChange);
     return () => {
       document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('focusin', onFocusIn);
       document.removeEventListener('keydown', onKeyDown, true);
+      phone?.removeEventListener('change', onPhoneChange);
     };
   }, [open]);
 
@@ -45,14 +61,7 @@ export function ToolbarMore({ noteCount, onReview }: { noteCount: number; onRevi
   };
 
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: closes the menu when focus leaves it; the controls inside are buttons
-    <div
-      className="reader__more"
-      ref={rootRef}
-      onBlur={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOpen(false);
-      }}
-    >
+    <div className="reader__more" ref={rootRef}>
       <button
         type="button"
         ref={buttonRef}
@@ -75,7 +84,9 @@ export function ToolbarMore({ noteCount, onReview }: { noteCount: number; onRevi
             onClick={() => choose(useHistoryStore.getState().goBack)}
           >
             <ArrowLeft aria-hidden="true" />
-            {back ? `Back to ${formatPageRef(labels, back.page)}` : 'Back'}
+            <span className="reader__more-label">
+              {back ? `Back to ${formatPageRef(labels, back.page)}` : 'Back'}
+            </span>
           </button>
           <button
             type="button"
@@ -85,7 +96,9 @@ export function ToolbarMore({ noteCount, onReview }: { noteCount: number; onRevi
             onClick={() => choose(useHistoryStore.getState().goForward)}
           >
             <ArrowRight aria-hidden="true" />
-            {forward ? `Forward to ${formatPageRef(labels, forward.page)}` : 'Forward'}
+            <span className="reader__more-label">
+              {forward ? `Forward to ${formatPageRef(labels, forward.page)}` : 'Forward'}
+            </span>
           </button>
           <button
             type="button"
@@ -95,7 +108,7 @@ export function ToolbarMore({ noteCount, onReview }: { noteCount: number; onRevi
             onClick={() => choose(onReview)}
           >
             <NotebookText aria-hidden="true" />
-            Review notes
+            <span className="reader__more-label">Review notes</span>
             {noteCount > 0 && <span className="reader__count">{noteCount}</span>}
           </button>
         </div>

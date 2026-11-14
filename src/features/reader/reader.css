@@ -112,6 +112,7 @@
 }
 
 .reader__count {
+  flex: none;
   min-width: 18px;
   height: 18px;
   padding: 0 5px;
@@ -138,6 +139,7 @@
   display: flex;
   flex-direction: column;
   min-width: 208px;
+  max-width: calc(100vw - 2 * var(--space-3));
   padding: var(--space-1);
 }
 
@@ -155,8 +157,12 @@
   transition: var(--transition-colors);
 }
 
-.reader__more-item:hover {
+.reader__more-item:not(:disabled):hover {
   background: var(--color-hover);
+}
+
+.reader__more-item:not(:disabled):active {
+  background: var(--color-pressed);
 }
 
 .reader__more-item:focus-visible {
@@ -166,7 +172,6 @@
 .reader__more-item:disabled {
   opacity: 0.45;
   cursor: not-allowed;
-  pointer-events: none;
 }
 
 .reader__more-item .lucide {
@@ -175,8 +180,12 @@
   color: var(--color-text-secondary);
 }
 
-.reader__more-item .reader__count {
-  margin-left: auto;
+.reader__more-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ---- Body ---------------------------------------------------------------- */
@@ -269,6 +278,10 @@
    Review fold into the More menu, and Go to becomes an icon button beside the page field. A
    printed page label stands alone, without its "(12 of 360)". */
 @media (max-width: 600px) {
+  .reader__toolbar {
+    grid-template-columns: max-content minmax(34px, 1fr) max-content;
+    gap: var(--space-1);
+  }
   .reader__history,
   .reader__review-btn,
   .reader__section,
@@ -292,6 +305,10 @@
   .reader__heading:hover {
     color: var(--color-text);
     background: var(--color-hover);
+  }
+  .reader__heading:active {
+    color: var(--color-text);
+    background: var(--color-pressed);
   }
   .reader__heading-icon {
     width: 18px;
