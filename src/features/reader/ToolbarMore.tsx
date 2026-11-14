@@ -23,8 +23,19 @@ export function ToolbarMore({ noteCount, onReview }: { noteCount: number; onRevi
     const onPointerDown = (e: PointerEvent) => {
       if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
     };
+    // Captured on the document: Safari doesn't focus a tapped button, so focus may be anywhere.
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.stopPropagation();
+      setOpen(false);
+      buttonRef.current?.focus();
+    };
     document.addEventListener('pointerdown', onPointerDown);
-    return () => document.removeEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown, true);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown, true);
+    };
   }, [open]);
 
   const choose = (action: () => void) => {
@@ -34,18 +45,12 @@ export function ToolbarMore({ noteCount, onReview }: { noteCount: number; onRevi
   };
 
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: closes the menu on Escape or blur; the controls inside are buttons
+    // biome-ignore lint/a11y/noStaticElementInteractions: closes the menu when focus leaves it; the controls inside are buttons
     <div
       className="reader__more"
       ref={rootRef}
       onBlur={(e) => {
         if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOpen(false);
-      }}
-      onKeyDown={(e) => {
-        if (e.key !== 'Escape' || !open) return;
-        e.stopPropagation();
-        setOpen(false);
-        buttonRef.current?.focus();
       }}
     >
       <button

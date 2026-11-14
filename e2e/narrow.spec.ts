@@ -163,11 +163,15 @@ test.describe('phone', () => {
     await expect(more).toHaveAttribute('aria-expanded', 'false');
     await expect(field).toHaveValue('9');
 
-    // Esc closes it onto its button.
-    await more.click();
+    // Esc closes it onto its button, even when the tap left focus elsewhere (as Safari does),
+    // and goes no further: the Return pill stays.
+    await page.locator('.reader__viewport').focus();
+    await more.dispatchEvent('click');
+    await expect(more).toHaveAttribute('aria-expanded', 'true');
     await page.keyboard.press('Escape');
     await expect(more).toHaveAttribute('aria-expanded', 'false');
     await expect(more).toBeFocused();
+    await expect(page.locator('.return-pill')).toBeVisible();
 
     await more.tap();
     await page.getByRole('button', { name: 'Review notes (0)' }).tap();
