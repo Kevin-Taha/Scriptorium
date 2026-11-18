@@ -6,8 +6,8 @@
      data-theme="sepia"           aged-parchment reading theme
      data-theme="dark"            rich charcoal; add .invert-pages for night pages
 
-   Every text/background pairing documented in docs/DESIGN.md meets WCAG AA
-   (4.5:1 for text, 3:1 for UI boundaries and focus rings) in all three themes.
+   Shared theme tokens maintain accessible text, control, and focus contrast
+   (see docs/DESIGN.md for the design principles).
    ========================================================================== */
 
 :root {
