@@ -303,8 +303,12 @@ export function LibraryView() {
       </div>
       <header className={`library__header ${folderLinked ? 'library__header--with-status' : ''}`}>
         <div>
-          <p className="library__eyebrow">YOUR READING ROOM</p>
           <h1>Library</h1>
+          {entries && (
+            <p className="library__summary">
+              {entries.length} {entries.length === 1 ? 'book' : 'books'}
+            </p>
+          )}
         </div>
         <button
           type="button"
@@ -362,47 +366,45 @@ export function LibraryView() {
                 <BookOpen />
               </span>
             </div>
-            <p className="library__empty-kicker">A SPACE FOR YOUR BOOKS</p>
-            <h2 className="empty-state__title" id="library-empty-title">
-              Begin your library
-            </h2>
-            <p className="empty-state__body">
-              Drop a PDF here, or open one from your computer. Everything stays on this device.
-            </p>
-            <div className="empty-state__actions">
-              <button type="button" className="btn btn--primary" onClick={openPicker} disabled={importing}>
-                {importing ? (
-                  <LoaderCircle className="library__spinner" aria-hidden="true" />
-                ) : (
-                  <FilePlus aria-hidden="true" />
-                )}
-                {importing ? 'Importing…' : 'Open PDF'}
-              </button>
-              {syncStatus === 'unlinked' && canLinkLocal && (
-                <button
-                  type="button"
-                  className="btn"
-                  onClick={() => void linkFolder()}
-                  disabled={linkingFolder}
-                >
-                  <FolderOpen aria-hidden="true" />
-                  Link a folder…
+            <div className="library__empty-copy">
+              <h2 className="empty-state__title" id="library-empty-title">
+                Begin your library
+              </h2>
+              <div className="empty-state__actions">
+                <button type="button" className="btn btn--primary" onClick={openPicker} disabled={importing}>
+                  {importing ? (
+                    <LoaderCircle className="library__spinner" aria-hidden="true" />
+                  ) : (
+                    <FilePlus aria-hidden="true" />
+                  )}
+                  {importing ? 'Importing…' : 'Open PDF'}
                 </button>
+                {syncStatus === 'unlinked' && canLinkLocal && (
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => void linkFolder()}
+                    disabled={linkingFolder}
+                  >
+                    <FolderOpen aria-hidden="true" />
+                    Link a folder…
+                  </button>
+                )}
+              </div>
+              {syncStatus === 'unlinked' && canLinkLocal && (
+                <p className="library__empty-hint">Works with OneDrive and Google Drive folders too.</p>
               )}
             </div>
-            {syncStatus === 'unlinked' && canLinkLocal && (
-              <p className="library__empty-hint">Works with OneDrive and Google Drive folders too.</p>
-            )}
           </div>
         </section>
       )}
       {entries && entries.length > 0 && (
         <>
           {recent && (
-            <section aria-labelledby="continue-heading">
-              <div className="library__section-heading">
-                <h2 id="continue-heading">Pick up where you left off</h2>
-              </div>
+            <section aria-labelledby="continue-heading" className="library__continue">
+              <h2 id="continue-heading" className="visually-hidden">
+                Pick up where you left off
+              </h2>
               <NowReading doc={recent.doc} reading={recent.reading} onContinue={() => openBook(recent.doc)} />
             </section>
           )}
@@ -410,7 +412,7 @@ export function LibraryView() {
             <div className="library__section-heading">
               <h2 id="books-heading">Your books</h2>
               <span>
-                {entries.length} {entries.length === 1 ? 'BOOK' : 'BOOKS'}
+                {entries.length} {entries.length === 1 ? 'book' : 'books'}
               </span>
             </div>
             <div className="library__grid">

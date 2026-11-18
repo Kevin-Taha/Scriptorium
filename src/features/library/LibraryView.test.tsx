@@ -85,6 +85,9 @@ describe('empty library', () => {
     setSync({ linkFolder });
     render(<LibraryView />);
     await screen.findByRole('heading', { name: 'Begin your library' });
+    expect(
+      screen.queryByText('Drop a PDF here, or open one from your computer. Everything stays on this device.'),
+    ).toBeNull();
     expect(screen.getByText('Works with OneDrive and Google Drive folders too.')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Link a folder…' }));
     await waitFor(() => expect(linkFolder).toHaveBeenCalledTimes(1));

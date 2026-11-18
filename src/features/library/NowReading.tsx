@@ -20,11 +20,11 @@ export function NowReading({
     `${percent}%`,
   ];
   return (
-    <div className="now-reading card">
+    <div className="now-reading">
       <BookCover doc={doc} className="now-reading__cover" />
       <div className="now-reading__body">
         <p className="now-reading__eyebrow">
-          NOW READING <span>· {formatOpened(doc.lastOpenedAt)}</span>
+          Continue reading <span>{formatOpened(doc.lastOpenedAt)}</span>
         </p>
         <h3 className="now-reading__title">{doc.title}</h3>
         {chapter && (

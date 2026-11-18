@@ -33,7 +33,7 @@ describe('NowReading', () => {
   it('says where you are in the book and carries on from there', () => {
     const onContinue = vi.fn();
     render(<NowReading doc={doc()} reading={reading(14)} onContinue={onContinue} />);
-    expect(screen.getByText(/^NOW READING/).textContent).toContain('Opened 28 minutes ago');
+    expect(screen.getByText('Opened 28 minutes ago').closest('p')?.textContent).toContain('Continue reading');
     expect(screen.getByRole('heading', { name: 'Classical Mechanics' })).toBeTruthy();
     expect(screen.getByText('Chapter 2: Newton’s Laws / 2.2 The Second Law')).toBeTruthy();
     expect(screen.getByText('Chapter 2 of 3 · Page 14 of 36 · 36%')).toBeTruthy();
