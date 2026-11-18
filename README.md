@@ -167,7 +167,7 @@ src/
     storage/    IndexedDB schema and repository
     sync/       Backup format, merging and device identity
   styles/       Design tokens and base styles
-docs/           Roadmap, data and sync model, design spec, README images
+docs/           Roadmap, data and sync model, design principles, README images
 e2e/            Playwright end-to-end tests
 scripts/        Development scripts (test fixture generator)
 ```
@@ -181,7 +181,7 @@ The production build ships a strict Content-Security-Policy (`contentSecurityPol
 runtime styles go through constructed stylesheets rather than `<style>` elements.
 
 See [`docs/ROADMAP.md`](docs/ROADMAP.md) for what's next, [`docs/DATA.md`](docs/DATA.md) for how
-data is stored and synced, and [`docs/DESIGN.md`](docs/DESIGN.md) for the design system.
+data is stored and synced, and [`docs/DESIGN.md`](docs/DESIGN.md) for the design principles.
 
 ## License
 

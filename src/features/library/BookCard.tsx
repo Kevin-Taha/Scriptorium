@@ -5,12 +5,14 @@ import { formatOpened, progressPercent } from './libraryUtils';
 
 export function BookCover({ doc, className = '' }: { doc: LibraryDocument; className?: string }) {
   return (
-    <div className={`book-card__cover ${className}`}>
+    <div className={`book-card__cover ${className}`} aria-hidden="true">
       {doc.coverDataUrl ? (
         <img src={doc.coverDataUrl} alt="" />
       ) : (
         <div className="book-card__placeholder">
-          <span>{doc.title}</span>
+          <span className="book-card__placeholder-series">Scriptorium</span>
+          <strong className="book-card__placeholder-title">{doc.title}</strong>
+          <span className="book-card__placeholder-format">PDF</span>
         </div>
       )}
     </div>
